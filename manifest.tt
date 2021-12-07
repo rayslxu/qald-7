@@ -1,0 +1,1217 @@
+class @org.wikidata
+#_[name="WikidataQA"]
+#_[description="Question Answering over Wikidata"] {
+  import loader from @org.thingpedia.v2();
+
+  import config from @org.thingpedia.config.none();
+
+  list query human(out id : Entity(org.wikidata:human)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out doctoral_advisor : Entity(org.wikidata:p_doctoral_advisor)
+                   #_[canonical={
+                     base=["doctoral advisor"]
+                   }]
+                   #[wikidata_id="P184"],
+                   out award_received : Entity(org.wikidata:p_award_received)
+                   #_[canonical={
+                     base=["award received"]
+                   }]
+                   #[wikidata_id="P166"],
+                   out spouse : Entity(org.wikidata:p_spouse)
+                   #_[canonical={
+                     base=["spouse"]
+                   }]
+                   #[wikidata_id="P26"],
+                   out educated_at : Entity(org.wikidata:p_educated_at)
+                   #_[canonical={
+                     base=["educated at"]
+                   }]
+                   #[wikidata_id="P69"],
+                   out place_of_birth : Entity(org.wikidata:p_place_of_birth)
+                   #_[canonical={
+                     base=["place of birth"]
+                   }]
+                   #[wikidata_id="P19"],
+                   out country : Entity(org.wikidata:p_country)
+                   #_[canonical={
+                     base=["country"]
+                   }]
+                   #[wikidata_id="P17"],
+                   out place_of_death : Entity(org.wikidata:p_place_of_death)
+                   #_[canonical={
+                     base=["place of death"]
+                   }]
+                   #[wikidata_id="P20"],
+                   out child : Entity(org.wikidata:p_child)
+                   #_[canonical={
+                     base=["child"]
+                   }]
+                   #[wikidata_id="P40"],
+                   out member_of_sports_team : Entity(org.wikidata:p_member_of_sports_team)
+                   #_[canonical={
+                     base=["member of sports team"]
+                   }]
+                   #[wikidata_id="P54"],
+                   out date_of_death : Entity(org.wikidata:p_date_of_death)
+                   #_[canonical={
+                     base=["date of death"]
+                   }]
+                   #[wikidata_id="P570"],
+                   out place_of_burial : Entity(org.wikidata:p_place_of_burial)
+                   #_[canonical={
+                     base=["place of burial"]
+                   }]
+                   #[wikidata_id="P119"],
+                   out cause_of_death : Entity(org.wikidata:p_cause_of_death)
+                   #_[canonical={
+                     base=["cause of death"]
+                   }]
+                   #[wikidata_id="P509"],
+                   out genre : Entity(org.wikidata:p_genre)
+                   #_[canonical={
+                     base=["genre"]
+                   }]
+                   #[wikidata_id="P136"],
+                   out residence : Entity(org.wikidata:p_residence)
+                   #_[canonical={
+                     base=["residence"]
+                   }]
+                   #[wikidata_id="P551"],
+                   out influenced_by : Entity(org.wikidata:p_influenced_by)
+                   #_[canonical={
+                     base=["influenced by"]
+                   }]
+                   #[wikidata_id="P737"],
+                   out discoverer_or_inventor : Entity(org.wikidata:p_discoverer_or_inventor)
+                   #_[canonical={
+                     base=["discoverer or inventor"]
+                   }]
+                   #[wikidata_id="P61"],
+                   out located_in_the_administrative_territorial_entity : Entity(org.wikidata:p_located_in_the_administrative_territorial_entity)
+                   #_[canonical={
+                     base=["located in the administrative territorial entity"]
+                   }]
+                   #[wikidata_id="P131"],
+                   out conflict : Entity(org.wikidata:p_conflict)
+                   #_[canonical={
+                     base=["conflict"]
+                   }]
+                   #[wikidata_id="P607"],
+                   out official_website : Entity(org.wikidata:p_official_website)
+                   #_[canonical={
+                     base=["official website"]
+                   }]
+                   #[wikidata_id="P856"],
+                   out instrument : Entity(org.wikidata:p_instrument)
+                   #_[canonical={
+                     base=["instrument"]
+                   }]
+                   #[wikidata_id="P1303"])
+  #_[canonical=["human"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q5"]]
+  #[minimal_projection=["id"]];
+
+  list query song(out id : Entity(org.wikidata:song)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out composer : Entity(org.wikidata:p_composer)
+                  #_[canonical={
+                    base=["composer"]
+                  }]
+                  #[wikidata_id="P86"])
+  #_[canonical=["song"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q7366"]]
+  #[minimal_projection=["id"]];
+
+  list query moon_landing(out id : Entity(org.wikidata:moon_landing)
+                          #_[canonical={
+                            base=["name"],
+                            passive_verb=["named", "called"]
+                          }],
+                          out crew_member_s_ : Entity(org.wikidata:p_crew_member_s_)
+                          #_[canonical={
+                            base=["crew member(s)"]
+                          }]
+                          #[wikidata_id="P1029"])
+  #_[canonical=["Moon landing"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q495307"]]
+  #[minimal_projection=["id"]];
+
+  list query mountain(out id : Entity(org.wikidata:mountain)
+                      #_[canonical={
+                        base=["name"],
+                        passive_verb=["named", "called"]
+                      }],
+                      out located_in_the_administrative_territorial_entity : Entity(org.wikidata:p_located_in_the_administrative_territorial_entity)
+                      #_[canonical={
+                        base=["located in the administrative territorial entity"]
+                      }]
+                      #[wikidata_id="P131"],
+                      out instance_of : Entity(org.wikidata:p_instance_of)
+                      #_[canonical={
+                        base=["instance of"]
+                      }]
+                      #[wikidata_id="P31"],
+                      out elevation_above_sea_level : Entity(org.wikidata:p_elevation_above_sea_level)
+                      #_[canonical={
+                        base=["elevation above sea level"]
+                      }]
+                      #[wikidata_id="P2044"],
+                      out continent : Entity(org.wikidata:p_continent)
+                      #_[canonical={
+                        base=["continent"]
+                      }]
+                      #[wikidata_id="P30"])
+  #_[canonical=["mountain"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q8502"]]
+  #[minimal_projection=["id"]];
+
+  list query business(out id : Entity(org.wikidata:business)
+                      #_[canonical={
+                        base=["name"],
+                        passive_verb=["named", "called"]
+                      }],
+                      out instance_of : Entity(org.wikidata:p_instance_of)
+                      #_[canonical={
+                        base=["instance of"]
+                      }]
+                      #[wikidata_id="P31"],
+                      out country : Entity(org.wikidata:p_country)
+                      #_[canonical={
+                        base=["country"]
+                      }]
+                      #[wikidata_id="P17"],
+                      out employees : Entity(org.wikidata:p_employees)
+                      #_[canonical={
+                        base=["employees"]
+                      }]
+                      #[wikidata_id="P1128"],
+                      out owned_by : Entity(org.wikidata:p_owned_by)
+                      #_[canonical={
+                        base=["owned by"]
+                      }]
+                      #[wikidata_id="P127"])
+  #_[canonical=["business"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q4830453"]]
+  #[minimal_projection=["id"]];
+
+  list query road(out id : Entity(org.wikidata:road)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out terminus : Entity(org.wikidata:p_terminus)
+                  #_[canonical={
+                    base=["terminus"]
+                  }]
+                  #[wikidata_id="P559"])
+  #_[canonical=["road"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q34442"]]
+  #[minimal_projection=["id"]];
+
+  list query country(out id : Entity(org.wikidata:country)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out capital : Entity(org.wikidata:p_capital)
+                     #_[canonical={
+                       base=["capital"]
+                     }]
+                     #[wikidata_id="P36"],
+                     out instance_of : Entity(org.wikidata:p_instance_of)
+                     #_[canonical={
+                       base=["instance of"]
+                     }]
+                     #[wikidata_id="P31"],
+                     out area : Entity(org.wikidata:p_area)
+                     #_[canonical={
+                       base=["area"]
+                     }]
+                     #[wikidata_id="P2046"],
+                     out head_of_state : Entity(org.wikidata:p_head_of_state)
+                     #_[canonical={
+                       base=["head of state"]
+                     }]
+                     #[wikidata_id="P35"],
+                     out population : Entity(org.wikidata:p_population)
+                     #_[canonical={
+                       base=["population"]
+                     }]
+                     #[wikidata_id="P1082"],
+                     out place_of_birth : Entity(org.wikidata:p_place_of_birth)
+                     #_[canonical={
+                       base=["place of birth"]
+                     }]
+                     #[wikidata_id="P19"],
+                     out official_language : Entity(org.wikidata:p_official_language)
+                     #_[canonical={
+                       base=["official language"]
+                     }]
+                     #[wikidata_id="P37"],
+                     out continent : Entity(org.wikidata:p_continent)
+                     #_[canonical={
+                       base=["continent"]
+                     }]
+                     #[wikidata_id="P30"],
+                     out currency : Entity(org.wikidata:p_currency)
+                     #_[canonical={
+                       base=["currency"]
+                     }]
+                     #[wikidata_id="P38"],
+                     out anthem : Entity(org.wikidata:p_anthem)
+                     #_[canonical={
+                       base=["anthem"]
+                     }]
+                     #[wikidata_id="P85"],
+                     out lyrics_by : Entity(org.wikidata:p_lyrics_by)
+                     #_[canonical={
+                       base=["lyrics by"]
+                     }]
+                     #[wikidata_id="P676"])
+  #_[canonical=["country"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q6256"]]
+  #[minimal_projection=["id"]];
+
+  list query protest(out id : Entity(org.wikidata:protest)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out point_in_time : Entity(org.wikidata:p_point_in_time)
+                     #_[canonical={
+                       base=["point in time"]
+                     }]
+                     #[wikidata_id="P585"])
+  #_[canonical=["protest"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q273120"]]
+  #[minimal_projection=["id"]];
+
+  list query heptalogy(out id : Entity(org.wikidata:heptalogy)
+                       #_[canonical={
+                         base=["name"],
+                         passive_verb=["named", "called"]
+                       }],
+                       out author : Entity(org.wikidata:p_author)
+                       #_[canonical={
+                         base=["author"]
+                       }]
+                       #[wikidata_id="P50"])
+  #_[canonical=["heptalogy"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q614101"]]
+  #[minimal_projection=["id"]];
+
+  list query television_series(out id : Entity(org.wikidata:television_series)
+                               #_[canonical={
+                                 base=["name"],
+                                 passive_verb=["named", "called"]
+                               }],
+                               out cast_member : Entity(org.wikidata:p_cast_member)
+                               #_[canonical={
+                                 base=["cast member"]
+                               }]
+                               #[wikidata_id="P161"],
+                               out composer : Entity(org.wikidata:p_composer)
+                               #_[canonical={
+                                 base=["composer"]
+                               }]
+                               #[wikidata_id="P86"],
+                               out date_of_birth : Entity(org.wikidata:p_date_of_birth)
+                               #_[canonical={
+                                 base=["date of birth"]
+                               }]
+                               #[wikidata_id="P569"],
+                               out instance_of : Entity(org.wikidata:p_instance_of)
+                               #_[canonical={
+                                 base=["instance of"]
+                               }]
+                               #[wikidata_id="P31"],
+                               out creator : Entity(org.wikidata:p_creator)
+                               #_[canonical={
+                                 base=["creator"]
+                               }]
+                               #[wikidata_id="P170"],
+                               out has_part : Entity(org.wikidata:p_has_part)
+                               #_[canonical={
+                                 base=["has part"]
+                               }]
+                               #[wikidata_id="P527"])
+  #_[canonical=["television series"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q5398426"]]
+  #[minimal_projection=["id"]];
+
+  list query u.s._state(out id : Entity(org.wikidata:u.s._state)
+                        #_[canonical={
+                          base=["name"],
+                          passive_verb=["named", "called"]
+                        }],
+                        out shares_border_with : Entity(org.wikidata:p_shares_border_with)
+                        #_[canonical={
+                          base=["shares border with"]
+                        }]
+                        #[wikidata_id="P47"],
+                        out instance_of : Entity(org.wikidata:p_instance_of)
+                        #_[canonical={
+                          base=["instance of"]
+                        }]
+                        #[wikidata_id="P31"])
+  #_[canonical=["U.S. state"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q35657"]]
+  #[minimal_projection=["id"]];
+
+  list query academy_awards(out id : Entity(org.wikidata:academy_awards)
+                            #_[canonical={
+                              base=["name"],
+                              passive_verb=["named", "called"]
+                            }],
+                            out instance_of : Entity(org.wikidata:p_instance_of)
+                            #_[canonical={
+                              base=["instance of"]
+                            }]
+                            #[wikidata_id="P31"])
+  #_[canonical=["Academy Awards"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q19020"]]
+  #[minimal_projection=["id"]];
+
+  list query animated_series(out id : Entity(org.wikidata:animated_series)
+                             #_[canonical={
+                               base=["name"],
+                               passive_verb=["named", "called"]
+                             }],
+                             out creator : Entity(org.wikidata:p_creator)
+                             #_[canonical={
+                               base=["creator"]
+                             }]
+                             #[wikidata_id="P170"])
+  #_[canonical=["animated series"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q581714"]]
+  #[minimal_projection=["id"]];
+
+  list query capital(out id : Entity(org.wikidata:capital)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out head_of_government : Entity(org.wikidata:p_head_of_government)
+                     #_[canonical={
+                       base=["head of government"]
+                     }]
+                     #[wikidata_id="P6"],
+                     out member_of_political_party : Entity(org.wikidata:p_member_of_political_party)
+                     #_[canonical={
+                       base=["member of political party"]
+                     }]
+                     #[wikidata_id="P102"],
+                     out located_in_time_zone : Entity(org.wikidata:p_located_in_time_zone)
+                     #_[canonical={
+                       base=["located in time zone"]
+                     }]
+                     #[wikidata_id="P421"],
+                     out local_dialing_code : Entity(org.wikidata:p_local_dialing_code)
+                     #_[canonical={
+                       base=["local dialing code"]
+                     }]
+                     #[wikidata_id="P473"])
+  #_[canonical=["capital"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q5119"]]
+  #[minimal_projection=["id"]];
+
+  list query fictional_human(out id : Entity(org.wikidata:fictional_human)
+                             #_[canonical={
+                               base=["name"],
+                               passive_verb=["named", "called"]
+                             }],
+                             out voice_actor : Entity(org.wikidata:p_voice_actor)
+                             #_[canonical={
+                               base=["voice actor"]
+                             }]
+                             #[wikidata_id="P725"])
+  #_[canonical=["fictional human"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q15632617"]]
+  #[minimal_projection=["id"]];
+
+  list query film(out id : Entity(org.wikidata:film)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out composer : Entity(org.wikidata:p_composer)
+                  #_[canonical={
+                    base=["composer"]
+                  }]
+                  #[wikidata_id="P86"],
+                  out instance_of : Entity(org.wikidata:p_instance_of)
+                  #_[canonical={
+                    base=["instance of"]
+                  }]
+                  #[wikidata_id="P31"],
+                  out producer : Entity(org.wikidata:p_producer)
+                  #_[canonical={
+                    base=["producer"]
+                  }]
+                  #[wikidata_id="P162"],
+                  out country_of_origin : Entity(org.wikidata:p_country_of_origin)
+                  #_[canonical={
+                    base=["country of origin"]
+                  }]
+                  #[wikidata_id="P495"],
+                  out cast_member : Entity(org.wikidata:p_cast_member)
+                  #_[canonical={
+                    base=["cast member"]
+                  }]
+                  #[wikidata_id="P161"],
+                  out director : Entity(org.wikidata:p_director)
+                  #_[canonical={
+                    base=["director"]
+                  }]
+                  #[wikidata_id="P57"])
+  #_[canonical=["film"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q11424"]]
+  #[minimal_projection=["id"]];
+
+  list query content_management_system(out id : Entity(org.wikidata:content_management_system)
+                                       #_[canonical={
+                                         base=["name"],
+                                         passive_verb=["named", "called"]
+                                       }],
+                                       out country : Entity(org.wikidata:p_country)
+                                       #_[canonical={
+                                         base=["country"]
+                                       }]
+                                       #[wikidata_id="P17"])
+  #_[canonical=["content management system"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q131093"]]
+  #[minimal_projection=["id"]];
+
+  list query association_football_club(out id : Entity(org.wikidata:association_football_club)
+                                       #_[canonical={
+                                         base=["name"],
+                                         passive_verb=["named", "called"]
+                                       }],
+                                       out home_venue : Entity(org.wikidata:p_home_venue)
+                                       #_[canonical={
+                                         base=["home venue"]
+                                       }]
+                                       #[wikidata_id="P115"],
+                                       out maximum_capacity : Entity(org.wikidata:p_maximum_capacity)
+                                       #_[canonical={
+                                         base=["maximum capacity"]
+                                       }]
+                                       #[wikidata_id="P1083"],
+                                       out instance_of : Entity(org.wikidata:p_instance_of)
+                                       #_[canonical={
+                                         base=["instance of"]
+                                       }]
+                                       #[wikidata_id="P31"],
+                                       out league : Entity(org.wikidata:p_league)
+                                       #_[canonical={
+                                         base=["league"]
+                                       }]
+                                       #[wikidata_id="P118"],
+                                       out country : Entity(org.wikidata:p_country)
+                                       #_[canonical={
+                                         base=["country"]
+                                       }]
+                                       #[wikidata_id="P17"])
+  #_[canonical=["association football club"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q476028"]]
+  #[minimal_projection=["id"]];
+
+  list query novel_series(out id : Entity(org.wikidata:novel_series)
+                          #_[canonical={
+                            base=["name"],
+                            passive_verb=["named", "called"]
+                          }],
+                          out has_part : Entity(org.wikidata:p_has_part)
+                          #_[canonical={
+                            base=["has part"]
+                          }]
+                          #[wikidata_id="P527"])
+  #_[canonical=["novel series"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q1667921"]]
+  #[minimal_projection=["id"]];
+
+  list query building_complex(out id : Entity(org.wikidata:building_complex)
+                              #_[canonical={
+                                base=["name"],
+                                passive_verb=["named", "called"]
+                              }],
+                              out located_in_the_administrative_territorial_entity : Entity(org.wikidata:p_located_in_the_administrative_territorial_entity)
+                              #_[canonical={
+                                base=["located in the administrative territorial entity"]
+                              }]
+                              #[wikidata_id="P131"])
+  #_[canonical=["building complex"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q1497364"]]
+  #[minimal_projection=["id"]];
+
+  list query city(out id : Entity(org.wikidata:city)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out instance_of : Entity(org.wikidata:p_instance_of)
+                  #_[canonical={
+                    base=["instance of"]
+                  }]
+                  #[wikidata_id="P31"],
+                  out subclass_of : Entity(org.wikidata:p_subclass_of)
+                  #_[canonical={
+                    base=["subclass of"]
+                  }]
+                  #[wikidata_id="P279"],
+                  out located_in_the_administrative_territorial_entity : Entity(org.wikidata:p_located_in_the_administrative_territorial_entity)
+                  #_[canonical={
+                    base=["located in the administrative territorial entity"]
+                  }]
+                  #[wikidata_id="P131"],
+                  out population : Entity(org.wikidata:p_population)
+                  #_[canonical={
+                    base=["population"]
+                  }]
+                  #[wikidata_id="P1082"],
+                  out country : Entity(org.wikidata:p_country)
+                  #_[canonical={
+                    base=["country"]
+                  }]
+                  #[wikidata_id="P17"],
+                  out head_of_government : Entity(org.wikidata:p_head_of_government)
+                  #_[canonical={
+                    base=["head of government"]
+                  }]
+                  #[wikidata_id="P6"])
+  #_[canonical=["city"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q515"]]
+  #[minimal_projection=["id"]];
+
+  list query river(out id : Entity(org.wikidata:river)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out instance_of : Entity(org.wikidata:p_instance_of)
+                   #_[canonical={
+                     base=["instance of"]
+                   }]
+                   #[wikidata_id="P31"],
+                   out country : Entity(org.wikidata:p_country)
+                   #_[canonical={
+                     base=["country"]
+                   }]
+                   #[wikidata_id="P17"],
+                   out length : Entity(org.wikidata:p_length)
+                   #_[canonical={
+                     base=["length"]
+                   }]
+                   #[wikidata_id="P2043"],
+                   out mouth_of_the_watercourse : Entity(org.wikidata:p_mouth_of_the_watercourse)
+                   #_[canonical={
+                     base=["mouth of the watercourse"]
+                   }]
+                   #[wikidata_id="P403"])
+  #_[canonical=["river"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q4022"]]
+  #[minimal_projection=["id"]];
+
+  list query dwarf_planet(out id : Entity(org.wikidata:dwarf_planet)
+                          #_[canonical={
+                            base=["name"],
+                            passive_verb=["named", "called"]
+                          }],
+                          out discoverer_or_inventor : Entity(org.wikidata:p_discoverer_or_inventor)
+                          #_[canonical={
+                            base=["discoverer or inventor"]
+                          }]
+                          #[wikidata_id="P61"])
+  #_[canonical=["dwarf planet"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q2199"]]
+  #[minimal_projection=["id"]];
+
+  list query superior_planet(out id : Entity(org.wikidata:superior_planet)
+                             #_[canonical={
+                               base=["name"],
+                               passive_verb=["named", "called"]
+                             }],
+                             out child_astronomical_body : Entity(org.wikidata:p_child_astronomical_body)
+                             #_[canonical={
+                               base=["child astronomical body"]
+                             }]
+                             #[wikidata_id="P398"])
+  #_[canonical=["superior planet"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q844911"]]
+  #[minimal_projection=["id"]];
+
+  list query album(out id : Entity(org.wikidata:album)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out instance_of : Entity(org.wikidata:p_instance_of)
+                   #_[canonical={
+                     base=["instance of"]
+                   }]
+                   #[wikidata_id="P31"],
+                   out performer : Entity(org.wikidata:p_performer)
+                   #_[canonical={
+                     base=["performer"]
+                   }]
+                   #[wikidata_id="P175"],
+                   out publication_date : Entity(org.wikidata:p_publication_date)
+                   #_[canonical={
+                     base=["publication date"]
+                   }]
+                   #[wikidata_id="P577"])
+  #_[canonical=["album"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q482994"]]
+  #[minimal_projection=["id"]];
+
+  list query military_operation(out id : Entity(org.wikidata:military_operation)
+                                #_[canonical={
+                                  base=["name"],
+                                  passive_verb=["named", "called"]
+                                }],
+                                out start_time : Entity(org.wikidata:p_start_time)
+                                #_[canonical={
+                                  base=["start time"]
+                                }]
+                                #[wikidata_id="P580"])
+  #_[canonical=["military operation"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q645883"]]
+  #[minimal_projection=["id"]];
+
+  list query baseball_team(out id : Entity(org.wikidata:baseball_team)
+                           #_[canonical={
+                             base=["name"],
+                             passive_verb=["named", "called"]
+                           }],
+                           out home_venue : Entity(org.wikidata:p_home_venue)
+                           #_[canonical={
+                             base=["home venue"]
+                           }]
+                           #[wikidata_id="P115"])
+  #_[canonical=["baseball team"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q13027888"]]
+  #[minimal_projection=["id"]];
+
+  list query animated_film(out id : Entity(org.wikidata:animated_film)
+                           #_[canonical={
+                             base=["name"],
+                             passive_verb=["named", "called"]
+                           }],
+                           out cost : Entity(org.wikidata:p_cost)
+                           #_[canonical={
+                             base=["cost"]
+                           }]
+                           #[wikidata_id="P2130"])
+  #_[canonical=["animated film"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q202866"]]
+  #[minimal_projection=["id"]];
+
+  list query brand(out id : Entity(org.wikidata:brand)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out discoverer_or_inventor : Entity(org.wikidata:p_discoverer_or_inventor)
+                   #_[canonical={
+                     base=["discoverer or inventor"]
+                   }]
+                   #[wikidata_id="P61"],
+                   out occupation : Entity(org.wikidata:p_occupation)
+                   #_[canonical={
+                     base=["occupation"]
+                   }]
+                   #[wikidata_id="P106"])
+  #_[canonical=["brand"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q431289"]]
+  #[minimal_projection=["id"]];
+
+  list query volcano(out id : Entity(org.wikidata:volcano)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out instance_of : Entity(org.wikidata:p_instance_of)
+                     #_[canonical={
+                       base=["instance of"]
+                     }]
+                     #[wikidata_id="P31"],
+                     out country : Entity(org.wikidata:p_country)
+                     #_[canonical={
+                       base=["country"]
+                     }]
+                     #[wikidata_id="P17"])
+  #_[canonical=["volcano"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q8072"]]
+  #[minimal_projection=["id"]];
+
+  list query book(out id : Entity(org.wikidata:book)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out instance_of : Entity(org.wikidata:p_instance_of)
+                  #_[canonical={
+                    base=["instance of"]
+                  }]
+                  #[wikidata_id="P31"],
+                  out author : Entity(org.wikidata:p_author)
+                  #_[canonical={
+                    base=["author"]
+                  }]
+                  #[wikidata_id="P50"])
+  #_[canonical=["book"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q571"]]
+  #[minimal_projection=["id"]];
+
+  list query stadium(out id : Entity(org.wikidata:stadium)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out instance_of : Entity(org.wikidata:p_instance_of)
+                     #_[canonical={
+                       base=["instance of"]
+                     }]
+                     #[wikidata_id="P31"],
+                     out country : Entity(org.wikidata:p_country)
+                     #_[canonical={
+                       base=["country"]
+                     }]
+                     #[wikidata_id="P17"],
+                     out maximum_capacity : Entity(org.wikidata:p_maximum_capacity)
+                     #_[canonical={
+                       base=["maximum capacity"]
+                     }]
+                     #[wikidata_id="P1083"])
+  #_[canonical=["stadium"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q483110"]]
+  #[minimal_projection=["id"]];
+
+  list query public_holiday(out id : Entity(org.wikidata:public_holiday)
+                            #_[canonical={
+                              base=["name"],
+                              passive_verb=["named", "called"]
+                            }],
+                            out day_in_year_for_periodic_occurrence : Entity(org.wikidata:p_day_in_year_for_periodic_occurrence)
+                            #_[canonical={
+                              base=["day in year for periodic occurrence"]
+                            }]
+                            #[wikidata_id="P837"])
+  #_[canonical=["public holiday"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q1197685"]]
+  #[minimal_projection=["id"]];
+
+  list query museum(out id : Entity(org.wikidata:museum)
+                    #_[canonical={
+                      base=["name"],
+                      passive_verb=["named", "called"]
+                    }],
+                    out instance_of : Entity(org.wikidata:p_instance_of)
+                    #_[canonical={
+                      base=["instance of"]
+                    }]
+                    #[wikidata_id="P31"],
+                    out location : Entity(org.wikidata:p_location)
+                    #_[canonical={
+                      base=["location"]
+                    }]
+                    #[wikidata_id="P276"])
+  #_[canonical=["museum"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q33506"]]
+  #[minimal_projection=["id"]];
+
+  list query borough_of_new_york_city(out id : Entity(org.wikidata:borough_of_new_york_city)
+                                      #_[canonical={
+                                        base=["name"],
+                                        passive_verb=["named", "called"]
+                                      }],
+                                      out instance_of : Entity(org.wikidata:p_instance_of)
+                                      #_[canonical={
+                                        base=["instance of"]
+                                      }]
+                                      #[wikidata_id="P31"])
+  #_[canonical=["borough of New York City"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q408804"]]
+  #[minimal_projection=["id"]];
+
+  list query dozen(out id : Entity(org.wikidata:dozen)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out has_part : Entity(org.wikidata:p_has_part)
+                   #_[canonical={
+                     base=["has part"]
+                   }]
+                   #[wikidata_id="P527"])
+  #_[canonical=["dozen"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q605704"]]
+  #[minimal_projection=["id"]];
+
+  list query pilsner(out id : Entity(org.wikidata:pilsner)
+                     #_[canonical={
+                       base=["name"],
+                       passive_verb=["named", "called"]
+                     }],
+                     out manufacturer : Entity(org.wikidata:p_manufacturer)
+                     #_[canonical={
+                       base=["manufacturer"]
+                     }]
+                     #[wikidata_id="P176"],
+                     out headquarters_location : Entity(org.wikidata:p_headquarters_location)
+                     #_[canonical={
+                       base=["headquarters location"]
+                     }]
+                     #[wikidata_id="P159"])
+  #_[canonical=["pilsner"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q152281"]]
+  #[minimal_projection=["id"]];
+
+  list query comics_character(out id : Entity(org.wikidata:comics_character)
+                              #_[canonical={
+                                base=["name"],
+                                passive_verb=["named", "called"]
+                              }],
+                              out said_to_be_the_same_as : Entity(org.wikidata:p_said_to_be_the_same_as)
+                              #_[canonical={
+                                base=["said to be the same as"]
+                              }]
+                              #[wikidata_id="P460"],
+                              out creator : Entity(org.wikidata:p_creator)
+                              #_[canonical={
+                                base=["creator"]
+                              }]
+                              #[wikidata_id="P170"])
+  #_[canonical=["comics character"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q1114461"]]
+  #[minimal_projection=["id"]];
+
+  list query suspension_bridge(out id : Entity(org.wikidata:suspension_bridge)
+                               #_[canonical={
+                                 base=["name"],
+                                 passive_verb=["named", "called"]
+                               }],
+                               out crosses : Entity(org.wikidata:p_crosses)
+                               #_[canonical={
+                                 base=["crosses"]
+                               }]
+                               #[wikidata_id="P177"])
+  #_[canonical=["suspension bridge"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q12570"]]
+  #[minimal_projection=["id"]];
+
+  list query lake(out id : Entity(org.wikidata:lake)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out instance_of : Entity(org.wikidata:p_instance_of)
+                  #_[canonical={
+                    base=["instance of"]
+                  }]
+                  #[wikidata_id="P31"],
+                  out country : Entity(org.wikidata:p_country)
+                  #_[canonical={
+                    base=["country"]
+                  }]
+                  #[wikidata_id="P17"],
+                  out area : Entity(org.wikidata:p_area)
+                  #_[canonical={
+                    base=["area"]
+                  }]
+                  #[wikidata_id="P2046"])
+  #_[canonical=["lake"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q23397"]]
+  #[minimal_projection=["id"]];
+
+  list query cave(out id : Entity(org.wikidata:cave)
+                  #_[canonical={
+                    base=["name"],
+                    passive_verb=["named", "called"]
+                  }],
+                  out instance_of : Entity(org.wikidata:p_instance_of)
+                  #_[canonical={
+                    base=["instance of"]
+                  }]
+                  #[wikidata_id="P31"],
+                  out country : Entity(org.wikidata:p_country)
+                  #_[canonical={
+                    base=["country"]
+                  }]
+                  #[wikidata_id="P17"],
+                  out located_in_the_administrative_territorial_entity : Entity(org.wikidata:p_located_in_the_administrative_territorial_entity)
+                  #_[canonical={
+                    base=["located in the administrative territorial entity"]
+                  }]
+                  #[wikidata_id="P131"])
+  #_[canonical=["cave"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q35509"]]
+  #[minimal_projection=["id"]];
+
+  list query taxon(out id : Entity(org.wikidata:taxon)
+                   #_[canonical={
+                     base=["name"],
+                     passive_verb=["named", "called"]
+                   }],
+                   out parent_taxon : Entity(org.wikidata:p_parent_taxon)
+                   #_[canonical={
+                     base=["parent taxon"]
+                   }]
+                   #[wikidata_id="P171"])
+  #_[canonical=["taxon"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q16521"]]
+  #[minimal_projection=["id"]];
+
+  list query work_of_art(out id : Entity(org.wikidata:work_of_art)
+                         #_[canonical={
+                           base=["name"],
+                           passive_verb=["named", "called"]
+                         }],
+                         out has_part : Entity(org.wikidata:p_has_part)
+                         #_[canonical={
+                           base=["has part"]
+                         }]
+                         #[wikidata_id="P527"],
+                         out location : Entity(org.wikidata:p_location)
+                         #_[canonical={
+                           base=["location"]
+                         }]
+                         #[wikidata_id="P276"])
+  #_[canonical=["work of art"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q838948"]]
+  #[minimal_projection=["id"]];
+
+  list query art_museum(out id : Entity(org.wikidata:art_museum)
+                        #_[canonical={
+                          base=["name"],
+                          passive_verb=["named", "called"]
+                        }],
+                        out instance_of : Entity(org.wikidata:p_instance_of)
+                        #_[canonical={
+                          base=["instance of"]
+                        }]
+                        #[wikidata_id="P31"])
+  #_[canonical=["art museum"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q207694"]]
+  #[minimal_projection=["id"]];
+
+  list query communist_state(out id : Entity(org.wikidata:communist_state)
+                             #_[canonical={
+                               base=["name"],
+                               passive_verb=["named", "called"]
+                             }],
+                             out instance_of : Entity(org.wikidata:p_instance_of)
+                             #_[canonical={
+                               base=["instance of"]
+                             }]
+                             #[wikidata_id="P31"])
+  #_[canonical=["communist state"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q849866"]]
+  #[minimal_projection=["id"]];
+
+  list query battle(out id : Entity(org.wikidata:battle)
+                    #_[canonical={
+                      base=["name"],
+                      passive_verb=["named", "called"]
+                    }],
+                    out start_time : Entity(org.wikidata:p_start_time)
+                    #_[canonical={
+                      base=["start time"]
+                    }]
+                    #[wikidata_id="P580"])
+  #_[canonical=["battle"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q178561"]]
+  #[minimal_projection=["id"]];
+
+  list query sovereign_state(out id : Entity(org.wikidata:sovereign_state)
+                             #_[canonical={
+                               base=["name"],
+                               passive_verb=["named", "called"]
+                             }],
+                             out official_language : Entity(org.wikidata:p_official_language)
+                             #_[canonical={
+                               base=["official language"]
+                             }]
+                             #[wikidata_id="P37"])
+  #_[canonical=["sovereign state"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q3624078"]]
+  #[minimal_projection=["id"]];
+
+  list query organization(out id : Entity(org.wikidata:organization)
+                          #_[canonical={
+                            base=["name"],
+                            passive_verb=["named", "called"]
+                          }],
+                          out instance_of : Entity(org.wikidata:p_instance_of)
+                          #_[canonical={
+                            base=["instance of"]
+                          }]
+                          #[wikidata_id="P31"],
+                          out subclass_of : Entity(org.wikidata:p_subclass_of)
+                          #_[canonical={
+                            base=["subclass of"]
+                          }]
+                          #[wikidata_id="P279"],
+                          out industry : Entity(org.wikidata:p_industry)
+                          #_[canonical={
+                            base=["industry"]
+                          }]
+                          #[wikidata_id="P452"],
+                          out country : Entity(org.wikidata:p_country)
+                          #_[canonical={
+                            base=["country"]
+                          }]
+                          #[wikidata_id="P17"])
+  #_[canonical=["organization"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q43229"]]
+  #[minimal_projection=["id"]];
+
+  list query mountain_range(out id : Entity(org.wikidata:mountain_range)
+                            #_[canonical={
+                              base=["name"],
+                              passive_verb=["named", "called"]
+                            }],
+                            out highest_point : Entity(org.wikidata:p_highest_point)
+                            #_[canonical={
+                              base=["highest point"]
+                            }]
+                            #[wikidata_id="P610"])
+  #_[canonical=["mountain range"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q46831"]]
+  #[minimal_projection=["id"]];
+
+  list query television_series_episode(out id : Entity(org.wikidata:television_series_episode)
+                                       #_[canonical={
+                                         base=["name"],
+                                         passive_verb=["named", "called"]
+                                       }],
+                                       out instance_of : Entity(org.wikidata:p_instance_of)
+                                       #_[canonical={
+                                         base=["instance of"]
+                                       }]
+                                       #[wikidata_id="P31"],
+                                       out part_of : Entity(org.wikidata:p_part_of)
+                                       #_[canonical={
+                                         base=["part of"]
+                                       }]
+                                       #[wikidata_id="P361"])
+  #_[canonical=["television series episode"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q21191270"]]
+  #[minimal_projection=["id"]];
+
+  list query video_game(out id : Entity(org.wikidata:video_game)
+                        #_[canonical={
+                          base=["name"],
+                          passive_verb=["named", "called"]
+                        }],
+                        out instance_of : Entity(org.wikidata:p_instance_of)
+                        #_[canonical={
+                          base=["instance of"]
+                        }]
+                        #[wikidata_id="P31"])
+  #_[canonical=["video game"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q7889"]]
+  #[minimal_projection=["id"]];
+
+  list query historical_period(out id : Entity(org.wikidata:historical_period)
+                               #_[canonical={
+                                 base=["name"],
+                                 passive_verb=["named", "called"]
+                               }],
+                               out dissolved,_abolished_or_demolished_date : Entity(org.wikidata:p_dissolved,_abolished_or_demolished_date)
+                               #_[canonical={
+                                 base=["dissolved, abolished or demolished date"]
+                               }]
+                               #[wikidata_id="P576"])
+  #_[canonical=["historical period"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q11514315"]]
+  #[minimal_projection=["id"]];
+
+  list query political_crisis(out id : Entity(org.wikidata:political_crisis)
+                              #_[canonical={
+                                base=["name"],
+                                passive_verb=["named", "called"]
+                              }],
+                              out end_time : Entity(org.wikidata:p_end_time)
+                              #_[canonical={
+                                base=["end time"]
+                              }]
+                              #[wikidata_id="P582"])
+  #_[canonical=["political crisis"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q3002772"]]
+  #[minimal_projection=["id"]];
+
+  list query amphibious_warfare(out id : Entity(org.wikidata:amphibious_warfare)
+                                #_[canonical={
+                                  base=["name"],
+                                  passive_verb=["named", "called"]
+                                }],
+                                out start_time : Entity(org.wikidata:p_start_time)
+                                #_[canonical={
+                                  base=["start time"]
+                                }]
+                                #[wikidata_id="P580"])
+  #_[canonical=["amphibious warfare"]]
+  #[handle_thingtalk=true]
+  #[wikidata_subject=["Q348120"]]
+  #[minimal_projection=["id"]];
+}
