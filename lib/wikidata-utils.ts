@@ -28,7 +28,7 @@ export default class WikidataUtils {
     /**
      * Obtain results of URL in JSON form (Wikibase API call)
      * @param url 
-     * @returns 
+     * @returns An object of the result
      */
     private async _request(url : string) {
         if (url in this._cache) 
@@ -50,18 +50,42 @@ export default class WikidataUtils {
      * @param propertyId PID of an entity
      * @returns values of the property
      */
-    async getPropertyValue(entityId : string, propertyId : string) {
+    async getPropertyValue(entityId : string, propertyId : string) : Promise<string[]> {
         const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. } `;
         const res = await this._query(sparql);
         return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
     }
 
     /**
-     * Get the Wikidata label for an entity or a property
+     * Get the domain of a given entity: 
+     * if there are multiple domains, pick the one that has the most instances;
+     * we skip this on human (Q5) domain, since the query will timeout 
+     * @param entityId QID of an entity
+     * @returns 
+     */
+    async getDomain(entityId : string) : Promise<string|null> {
+        const domains = await this.getPropertyValue(entityId, 'P31');
+        if (domains.length === 0)
+            return null;
+        if (domains.length === 1)
+            return domains[0];
+        if (domains.includes('Q5'))
+            return 'Q5';
+        
+        const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
+            wd:${entityId} wdt:P31 ?v.
+            ?s wdt:P31 ?v.
+        } GROUP BY ?v ORDER BY DESC(?count)`;
+        const res = await this._query(sparql);
+        return res[0].v.value.slice(ENTITY_PREFIX.length);
+    }
+
+    /**
+     * Get the Wikidata label for an entity or a property   
      * @param id QID or PID
      * @returns natural language label in English
      */
-    async getLabel(id : string) {
+    async getLabel(id : string) : Promise<string> {
         const result = await this._request(this._wdk.getEntities({ 
             ids: [id],
             languages: ['en']

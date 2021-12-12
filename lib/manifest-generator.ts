@@ -117,8 +117,7 @@ class ManifestGenerator {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     private async _getEntityDomain(entityId : string) {
-        const domains = await this._wikidata.getPropertyValue(entityId, 'P31');
-        return domains[0];
+        return this._wikidata.getDomain(entityId);
     }
 
     /**
@@ -160,6 +159,8 @@ class ManifestGenerator {
             if ((triple.subject as IriTerm).termType === 'NamedNode') {
                 const entityId = triple.subject.value.slice(ENTITY_PREFIX.length);
                 const domain = await this._getEntityDomain(entityId);
+                if (!domain)
+                    continue;
                 const domainLabel = await this._wikidata.getLabel(domain);
                 this._domains[domain] = domainLabel;
                 for (const property of extractProperties(triple.predicate)) 
