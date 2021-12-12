@@ -14,12 +14,22 @@ export default class WikidataUtils {
         this._cache = {};
     }
 
+    /**
+     * Obtain results of a SPARQL query against Wikidata SPARQL endpoint
+     * @param sparql a SPARQL query
+     * @returns A list of the results
+     */
     private async _query(sparql : string) {
         console.log(sparql);
         const result = await this._request(`${URL}?query=${encodeURIComponent(sparql)}`);
         return result.results.bindings;
     }
 
+    /**
+     * Obtain results of URL in JSON form (Wikibase API call)
+     * @param url 
+     * @returns 
+     */
     private async _request(url : string) {
         if (url in this._cache) 
             return this._cache[url];
@@ -34,12 +44,23 @@ export default class WikidataUtils {
         }
     }
 
+    /**
+     * Obtain the values of property for a given entity
+     * @param entityId QID of an entity
+     * @param propertyId PID of an entity
+     * @returns values of the property
+     */
     async getPropertyValue(entityId : string, propertyId : string) {
         const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. } `;
         const res = await this._query(sparql);
         return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
     }
 
+    /**
+     * Get the Wikidata label for an entity or a property
+     * @param id QID or PID
+     * @returns natural language label in English
+     */
     async getLabel(id : string) {
         const result = await this._request(this._wdk.getEntities({ 
             ids: [id],

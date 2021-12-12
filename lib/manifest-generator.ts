@@ -23,6 +23,11 @@ interface ManifestGeneratorOptions {
     output : fs.WriteStream
 }
 
+/**
+ * Preprocess one QALD example to extract only useful information for us
+ * @param example An example in QALD
+ * @returns A cleaned example object with id, utterance, and sparql
+ */
 function preprocessExample(example : any) : Example {
     return {
         id: example.id,
@@ -31,6 +36,10 @@ function preprocessExample(example : any) : Example {
     };
 }
 
+/**
+ * Preprocess all QALD train/test examples into a cleaned array
+ * @returns An array of examples
+ */
 function preprocessQALD() : Example[] {
     const questions = [];
     for (const example of trainQuestions.questions) 
@@ -40,6 +49,11 @@ function preprocessQALD() : Example[] {
     return questions;
 }
 
+/**
+ * Given a parsed object returned by sparqljs, extract rdf triples out of it
+ * @param obj any object containing 'triples' field at any depth
+ * @returns a flattened array of triples 
+ */
 function extractTriples(obj : any) : Triple[] {
     const triples : Triple[] = [];
     function extract(obj : any) {
@@ -60,6 +74,11 @@ function extractTriples(obj : any) : Triple[] {
     return triples;
 }
 
+/**
+ * Extract Wikidata properties involved in a predicate 
+ * @param predicate A predicate form sparqljs
+ * @returns a flattened array of Wikidata properties (E.g, [P31, P279, ...]) 
+ */
 function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm) : string[] {
     const properties : string[]= [];
     function extract(predicate : IriTerm|PropertyPath|VariableTerm) {
@@ -79,8 +98,8 @@ class ManifestGenerator {
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
     private _examples : Example[];
-    private _domains : Record<string, string>;
-    private _properties : Record<string, Record<string, string>>;
+    private _domains : Record<string, string>; // Record<domain, domain label>
+    private _properties : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
     private _output : fs.WriteStream;
 
     constructor(options : ManifestGeneratorOptions) {
@@ -92,11 +111,21 @@ class ManifestGenerator {
         this._output = options.output;
     }
 
+    /**
+     * Get the domain of a entity
+     * @param entityId QID of an entity
+     * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
+     */
     private async _getEntityDomain(entityId : string) {
         const domains = await this._wikidata.getPropertyValue(entityId, 'P31');
         return domains[0];
     }
 
+    /**
+     * Add property to domain
+     * @param entityId QID of a domain
+     * @param propertyId PID of a property 
+     */
     private async _updateProperties(entityId : string, propertyId : string) {
         if (!(entityId in this._properties)) 
             this._properties[entityId] = {};
@@ -105,11 +134,19 @@ class ManifestGenerator {
         this._properties[entityId][propertyId] = propertyLabel;
     }
 
+    /**
+     * Process one example in QALD
+     * (1) get all subject, and add their domain into domain list 
+     * (2) make sure all properties used are covered for the domain
+     * @param example an cleaned QALD example
+     */
     private async _processOneExample(example : Example) {
         const parsed = this._parser.parse(example.sparql) as AskQuery;
         const triples = extractTriples(parsed);
 
         const variables : Record<string, string> = {};
+        // if variable appears as a subject of a statement, where to predicate is P31
+        // add the object of this statement into the domain list
         for (const triple of triples) {
             if ((triple.predicate as IriTerm).value === `${PROPERTY_PREFIX}P31` && 
                 (triple.subject as VariableTerm).termType === 'Variable' &&
@@ -135,11 +172,17 @@ class ManifestGenerator {
         }
     }
 
+    /**
+     * Process all examples in QALD
+     */
     private async _processExamples() {
         for (const example of this._examples) 
             await this._processOneExample(example);
     }
 
+    /**
+     * Process all examples in QLAD and then generate/output the manifest
+     */
     async generate() {
         await this._processExamples();
 
