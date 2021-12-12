@@ -18,6 +18,10 @@ interface Cache {
     result : string
 }
 
+function normalizeURL(url : string) {
+    return url.trim().replace(/\s+/g, ' ');
+}
+
 export default class WikidataUtils {
     private _wdk : wikibaseSdk;
     private _cache ! : sqlite3.Database;
@@ -51,7 +55,7 @@ export default class WikidataUtils {
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {
             const sql = `select result from cache where url = ?`;
-            this._cache.get(sql, url, (err : Error|null, rows : any) => {
+            this._cache.get(sql, normalizeURL(url), (err : Error|null, rows : any) => {
                 if (err)
                     reject(err);
                 else
@@ -65,7 +69,7 @@ export default class WikidataUtils {
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {
             const sql = `insert into cache values (?,?)`;
-            this._cache.get(sql, url, result, (err : Error|null, rows : any) => {
+            this._cache.get(sql, normalizeURL(url), result, (err : Error|null, rows : any) => {
                 if (err)
                     reject(err);
                 else 
@@ -80,7 +84,7 @@ export default class WikidataUtils {
      * @returns A list of the results
      */
     private async _query(sparql : string) {
-        const result = await this._request(`${URL}?query=${encodeURIComponent(sparql)}`);
+        const result = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
         return result.results.bindings;
     }
 
@@ -99,6 +103,7 @@ export default class WikidataUtils {
             const parsed = JSON.parse(result);
             return parsed;
         } catch(e) {
+            console.log(`Failed to retrieve result for: ${url}`);
             console.log(e);
             return null;
         }
@@ -111,7 +116,7 @@ export default class WikidataUtils {
      * @returns values of the property
      */
     async getPropertyValue(entityId : string, propertyId : string) : Promise<string[]> {
-        const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. } `;
+        const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. }`;
         const res = await this._query(sparql);
         return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
     }
