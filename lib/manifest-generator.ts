@@ -1,26 +1,3 @@
-/**
- * Generate a manifest from QALD-7 dataset 
- * 
- * Domains:
- *   all domains in QALD-7
- *   option 1:
- *     for each subject, get P31 values, pick the most popular one (by instance count)
- *     and every type extends entity.
- *   option 2: 
- *     for each subject, get P31 values, and then P279 all the way up to entity
- *     (potentially stop at properties with small instance count)
- *     build the entities.json
- *     then add queries with "extends" based on entities.json
- *     issue: how do we distribute properties?
- * 
- * Properties: 
- *   random example for each domain, and extract properties
- * 
- * Values: 
- *   sample 100 values each
- * 
- */
-
 import * as fs from 'fs';
 import * as argparse from 'argparse';
 import { Ast, Type } from 'thingtalk';
@@ -34,7 +11,7 @@ import trainQuestions from '../data/train.json';
 import testQuestions from '../data/test.json';
 
 const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
-const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/'
+const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
 interface Example {
     id : string,
@@ -78,7 +55,7 @@ function extractTriples(obj : any) : Triple[] {
                 }
             }
         }
-    };
+    }
     extract(obj);
     return triples;
 }
@@ -90,9 +67,8 @@ function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm) : stri
             if ((predicate as IriTerm).value.startsWith(PROPERTY_PREFIX)) 
                 properties.push((predicate as IriTerm).value.slice(PROPERTY_PREFIX.length));
         } else {
-            for (const item of (predicate as PropertyPath).items) {
+            for (const item of (predicate as PropertyPath).items) 
                 extract(item);
-            }
         }
     }
     extract(predicate);
@@ -214,7 +190,7 @@ class ManifestGenerator {
         const classDef = new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries
         }, {
-            nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata'}
+            nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' }
         });
 
         this._output.end(classDef.prettyprint());

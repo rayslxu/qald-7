@@ -20,7 +20,7 @@ export default class WikidataUtils {
         return result.results.bindings;
     }
 
-    private async _request(url: string) {
+    private async _request(url : string) {
         if (url in this._cache) 
             return this._cache[url];
         try {
@@ -30,6 +30,7 @@ export default class WikidataUtils {
             return parsed;
         } catch(e) {
             console.log(e);
+            return null;
         }
     }
 
@@ -44,6 +45,8 @@ export default class WikidataUtils {
             ids: [id],
             languages: ['en']
         }));
-        return (Object.values(result.entities)[0] as any).labels.en.value;
+        if (result)
+            return (Object.values(result.entities)[0] as any).labels.en.value;
+        return id;
     }
 }
