@@ -6,6 +6,7 @@ import wikibase from 'wikibase-sdk';
 
 const URL = 'https://query.wikidata.org/sparql';
 const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
+const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
 const SQLITE_SCHEMA = `
 create table cache (
@@ -152,5 +153,59 @@ export default class WikidataUtils {
         if (result)
             return (Object.values(result.entities)[0] as any).labels.en.value;
         return id;
+    }
+
+    /**
+     * Get example entities for the given domain
+     * 
+     * Examples are sorted based on sitelinks.
+     * Order by sitelinks in human domain will lead to timeout, thus handle human
+     * domain specially
+     * 
+     * @param domain QID of the domain
+     * @param limit the maximum number of entities to return
+     * @returns an array of QIDs belongs to the given domain
+     */
+    async getEntitiesByDomain(domain : string, limit = 100) : Promise<string[]> {
+        let sparql;
+        if (domain === 'Q5') {
+            sparql = `SELECT ?v ?sitelinks WHERE {
+                ?v wdt:P31 wd:Q5 ;
+                   wikibase:sitelinks ?sitelinks . 
+                FILTER (?sitelinks > 100) .
+            } LIMIT ${limit}`;
+        } else {
+            sparql = `SELECT ?v WHERE {
+                ?v wdt:P31 wd:${domain} ;
+                   wikibase:sitelinks ?sitelinks .  
+            } ORDER BY DESC(?sitelinks) LIMIT ${limit}`;
+        }
+        const res = await this._query(sparql);
+        return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
+    }
+
+    /**
+     * Get properties for a given domain
+     * 
+     * First get 100 example entities in the domain, and then extract all properties 
+     * they use
+     * 
+     * @param domain QID of the domain
+     * @returns an array of PIDs belongs to the given domain
+     */
+    async getDomainProperties(domain : string) : Promise<string[]> {
+        const properties : Set<string> = new Set();
+        const exampleEntities = await this.getEntitiesByDomain(domain);
+        for (const entity of exampleEntities) {
+            const sparql = `SELECT DISTINCT ?p WHERE {
+                wd:${entity} ?p ?v .
+            } `;
+            const res = await this._query(sparql);
+            res.forEach((r : any) => {
+                if (r.p.value.startsWith(PROPERTY_PREFIX))
+                    properties.add(r.p.value.slice(PROPERTY_PREFIX.length));
+            });
+        }
+        return Array.from(properties);
     }
 }
