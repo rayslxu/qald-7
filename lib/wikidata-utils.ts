@@ -138,7 +138,6 @@ export default class WikidataUtils {
             return 'Q5';
         if (domains.includes('Q16521'))
             return 'Q16521';
-
         
         const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
             wd:${entityId} wdt:P31 ?v.

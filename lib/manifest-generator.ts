@@ -182,11 +182,50 @@ class ManifestGenerator {
     }
 
     /**
+     * Query Wikidata to obtain common properties of a domain
+     * @param domain QID of a domain
+     */
+    private async _processDomain(domain : string, domainLabel : string) {
+        const args = [
+            new Ast.ArgumentDef(
+                null, 
+                Ast.ArgDirection.OUT, 
+                'id',
+                new Type.Entity(`org.wikidata:${snakeCase(domainLabel)}`),
+                { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
+            )
+        ];
+        const properties = await this._wikidata.getDomainProperties(domain);
+        for (const property of properties) {
+            const label = await this._wikidata.getLabel(property);
+            const pname = snakeCase(label);
+            args.push(
+                new Ast.ArgumentDef(
+                    null,
+                    Ast.ArgDirection.OUT,
+                    pname, 
+                    new Type.Entity(`org.wikidata:p_${pname}`),
+                    { 
+                        nl: { canonical: { base: [label] } },
+                        impl: { wikidata_id: new Ast.Value.String(property) } 
+                    }
+                )
+            );
+        }
+        return args;
+    }
+
+    /**
      * Process all examples in QLAD and then generate/output the manifest
      */
     async generate() {
+        console.log('Start processing QALD examples ...');
         await this._processExamples();
+        console.log(`Done processing QALD examples, ${Object.keys(this._domains).length} domains discovered: `);
+        for (const [domain, domainLabel] of Object.entries(this._domains)) 
+            console.log(`${domain}: ${domainLabel}`);
 
+        console.log('Start sampling Wikidata for schema ...');
         const imports = [
             new Ast.MixinImportStmt(null, ['loader'], 'org.thingpedia.v2', []),
             new Ast.MixinImportStmt(null, ['config'], 'org.thingpedia.config.none', [])
@@ -194,18 +233,17 @@ class ManifestGenerator {
         const queries : Record<string, Ast.FunctionDef> = {};
         for (const domain in this._properties) {
             const domainLabel = this._domains[domain];
+            console.log(`Sampling ${domainLabel} domain ...`);
             const fname = snakeCase(domainLabel);
-            const args = [
-                new Ast.ArgumentDef(
-                    null, 
-                    Ast.ArgDirection.OUT, 
-                    'id',
-                    new Type.Entity(`org.wikidata:${fname}`),
-                    { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
-                )
-            ];
+            // get all properties by sampling Wikidata
+            const args = await this._processDomain(domain, domainLabel);
+            const missing = [];
+            // add missing properties needed by QALD if necessary 
             for (const [id, label] of Object.entries(this._properties[domain])) {
                 const pname = snakeCase(label);
+                if (args.some((a) => a.name === pname))
+                    continue;
+                missing.push([id, label]);
                 args.push(
                     new Ast.ArgumentDef(
                         null, 
@@ -219,6 +257,11 @@ class ManifestGenerator {
                     )
                 );
             }
+            console.log(`Done sampling ${domainLabel} domain`);
+            console.log(`In total ${args.length} properties sampled, ${missing.length} not covered`);
+            if (missing.length > 0)
+                console.log(missing.map(([id, label]) => `${label} (${id})`).join(', '));
+
             const functionDef = new Ast.FunctionDef(null, 'query', null, fname, [], {
                 is_list: true, 
                 is_monitorable: false
@@ -231,6 +274,8 @@ class ManifestGenerator {
             });
             queries[fname] = functionDef;
         }
+
+        console.log('Start writing device manifest ...');
         const classDef = new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries
         }, {
@@ -239,6 +284,7 @@ class ManifestGenerator {
 
         this._output.end(classDef.prettyprint());
         await waitFinish(this._output);
+        console.log('Done.');
     }
 }
 
