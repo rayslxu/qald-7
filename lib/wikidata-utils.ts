@@ -124,7 +124,7 @@ export default class WikidataUtils {
     /**
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
-     * we skip this on human (Q5) domain, since the query will timeout 
+     * we skip this on human (Q5) and taxon (Q16521) domain, since the query will timeout 
      * @param entityId QID of an entity
      * @returns 
      */
@@ -136,6 +136,9 @@ export default class WikidataUtils {
             return domains[0];
         if (domains.includes('Q5'))
             return 'Q5';
+        if (domains.includes('Q16521'))
+            return 'Q16521';
+
         
         const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
             wd:${entityId} wdt:P31 ?v.
@@ -164,8 +167,8 @@ export default class WikidataUtils {
      * Get example entities for the given domain
      * 
      * Examples are sorted based on sitelinks.
-     * Order by sitelinks in human domain will lead to timeout, thus handle human
-     * domain specially
+     * Order by sitelinks in human (Q5) and taxon (Q16521) domain will lead to timeout, 
+     * thus handle these two domains specially
      * 
      * @param domain QID of the domain
      * @param limit the maximum number of entities to return
@@ -173,9 +176,9 @@ export default class WikidataUtils {
      */
     async getEntitiesByDomain(domain : string, limit = 100) : Promise<string[]> {
         let sparql;
-        if (domain === 'Q5') {
+        if (['Q16521', 'Q5'].includes(domain)) {
             sparql = `SELECT ?v ?sitelinks WHERE {
-                ?v wdt:P31 wd:Q5 ;
+                ?v wdt:P31 wd:${domain} ;
                    wikibase:sitelinks ?sitelinks . 
                 FILTER (?sitelinks > 100) .
             } LIMIT ${limit}`;
