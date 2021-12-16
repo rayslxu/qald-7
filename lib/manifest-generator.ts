@@ -246,7 +246,7 @@ class ManifestGenerator {
             // add missing properties needed by QALD if necessary 
             for (const [id, label] of Object.entries(this._properties[domain])) {
                 const pname = snakeCase(label);
-                if (args.some((a) => a.name === pname))
+                if (args.some((a) => a.name === pname) || id === 'P31')
                     continue;
                 missing.push([id, label]);
                 args.push(
