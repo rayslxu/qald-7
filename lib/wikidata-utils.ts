@@ -198,18 +198,22 @@ export default class WikidataUtils {
      * they use
      * 
      * @param domain QID of the domain
+     * @param includeNonEntityProperties include properties whose values are not Wikidata entities 
      * @returns an array of PIDs belongs to the given domain
      */
-    async getDomainProperties(domain : string) : Promise<string[]> {
+    async getDomainProperties(domain : string, includeNonEntityProperties = false) : Promise<string[]> {
         const properties : Set<string> = new Set();
         const exampleEntities = await this.getEntitiesByDomain(domain);
+        const entityOnlyFilter = `FILTER(STRSTARTS(STR(?v), "${ENTITY_PREFIX}")) .`;
         for (const entity of exampleEntities) {
             const sparql = `SELECT DISTINCT ?p WHERE {
                 wd:${entity} ?p ?v .
+                FILTER(STRSTARTS(STR(?p), "${PROPERTY_PREFIX}")) . 
+                ${includeNonEntityProperties ? '' : entityOnlyFilter }
             } `;
             const res = await this._query(sparql);
             res.forEach((r : any) => {
-                if (r.p.value.startsWith(PROPERTY_PREFIX))
+                if (r.p.value !== PROPERTY_PREFIX + 'P31')
                     properties.add(r.p.value.slice(PROPERTY_PREFIX.length));
             });
         }

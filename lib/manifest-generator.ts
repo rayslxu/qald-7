@@ -20,7 +20,8 @@ interface Example {
 }
 
 interface ManifestGeneratorOptions {
-    output : fs.WriteStream
+    output : fs.WriteStream,
+    include_non_entity_properties : boolean
 }
 
 /**
@@ -102,6 +103,8 @@ class ManifestGenerator {
     private _properties : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
     private _output : fs.WriteStream;
 
+    private _includeNonEntityProperties : boolean;
+
     constructor(options : ManifestGeneratorOptions) {
         this._wikidata = new WikidataUtils();
         this._parser = new Parser();
@@ -109,6 +112,8 @@ class ManifestGenerator {
         this._domains = {};
         this._properties = {};
         this._output = options.output;
+
+        this._includeNonEntityProperties = options.include_non_entity_properties;
     }
 
     /**
@@ -195,7 +200,7 @@ class ManifestGenerator {
                 { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
             )
         ];
-        const properties = await this._wikidata.getDomainProperties(domain);
+        const properties = await this._wikidata.getDomainProperties(domain, this._includeNonEntityProperties);
         for (const property of properties) {
             const label = await this._wikidata.getLabel(property);
             const pname = snakeCase(label);
@@ -296,6 +301,11 @@ async function main() {
     parser.add_argument('-o', '--output', {
         required: true,
         type: fs.createWriteStream
+    });
+    parser.add_argument('--include-non-entity-properties', {
+        required: false,
+        default: false,
+        type: Boolean
     });
     const args = parser.parse_args();
 
