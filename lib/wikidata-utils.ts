@@ -155,7 +155,8 @@ export default class WikidataUtils {
     async getLabel(id : string) : Promise<string> {
         const result = await this._request(this._wdk.getEntities({ 
             ids: [id],
-            languages: ['en']
+            languages: ['en'],
+            props: ['labels']
         }));
         if (result)
             return (Object.values(result.entities)[0] as any).labels.en.value;
