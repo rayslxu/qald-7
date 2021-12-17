@@ -5,8 +5,8 @@ import { wikibaseSdk } from 'wikibase-sdk';
 import wikibase from 'wikibase-sdk';
 
 const URL = 'https://query.wikidata.org/sparql';
-const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
-const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
+export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
+export const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
 const SQLITE_SCHEMA = `
 create table cache (

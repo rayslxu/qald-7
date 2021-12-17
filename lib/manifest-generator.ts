@@ -1,106 +1,26 @@
 import * as fs from 'fs';
 import * as argparse from 'argparse';
 import { Ast, Type } from 'thingtalk';
-import { 
-    Parser, 
-    SparqlParser, AskQuery, Triple, IriTerm, VariableTerm, PropertyPath 
-} from 'sparqljs';
-import { snakeCase, waitFinish } from './utils';
-import WikidataUtils from './wikidata-utils';
-import trainQuestions from '../data/train.json';
-import testQuestions from '../data/test.json';
-
-const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
-const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
-
-interface Example {
-    id : string,
-    utterance : string,
-    sparql : string
-}
+import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
+import { extractProperties, extractTriples } from './utils/sparqljs';
+import { Example, preprocessQALD } from './utils/qald';
+import { snakeCase, waitFinish, idArgument } from './utils/misc';
+import WikidataUtils from './utils/wikidata';
+import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
 interface ManifestGeneratorOptions {
     output : fs.WriteStream,
     include_non_entity_properties : boolean
 }
 
-/**
- * Preprocess one QALD example to extract only useful information for us
- * @param example An example in QALD
- * @returns A cleaned example object with id, utterance, and sparql
- */
-function preprocessExample(example : any) : Example {
-    return {
-        id: example.id,
-        utterance: example.question[0].string,
-        sparql: example.query.sparql
-    };
-}
-
-/**
- * Preprocess all QALD train/test examples into a cleaned array
- * @returns An array of examples
- */
-function preprocessQALD() : Example[] {
-    const questions = [];
-    for (const example of trainQuestions.questions) 
-        questions.push(preprocessExample(example));
-    for (const example of testQuestions.questions) 
-        questions.push(preprocessExample(example));
-    return questions;
-}
-
-/**
- * Given a parsed object returned by sparqljs, extract rdf triples out of it
- * @param obj any object containing 'triples' field at any depth
- * @returns a flattened array of triples 
- */
-function extractTriples(obj : any) : Triple[] {
-    const triples : Triple[] = [];
-    function extract(obj : any) {
-        if (obj instanceof Object) {
-            for (const [key, value] of Object.entries(obj)) {
-                if (key === 'triples') {
-                    const flattened = (value as any[]).flat(Infinity);
-                    for (const triple of flattened)
-                        triples.push(triple); 
-
-                } else {
-                    extract(value);
-                }
-            }
-        }
-    }
-    extract(obj);
-    return triples;
-}
-
-/**
- * Extract Wikidata properties involved in a predicate 
- * @param predicate A predicate form sparqljs
- * @returns a flattened array of Wikidata properties (E.g, [P31, P279, ...]) 
- */
-function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm) : string[] {
-    const properties : string[]= [];
-    function extract(predicate : IriTerm|PropertyPath|VariableTerm) {
-        if ((predicate as IriTerm).termType === 'NamedNode') {
-            if ((predicate as IriTerm).value.startsWith(PROPERTY_PREFIX)) 
-                properties.push((predicate as IriTerm).value.slice(PROPERTY_PREFIX.length));
-        } else {
-            for (const item of (predicate as PropertyPath).items) 
-                extract(item);
-        }
-    }
-    extract(predicate);
-    return properties;
-}
 
 class ManifestGenerator {
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
     private _examples : Example[];
-    private _domains : Record<string, string>; // Record<domain, domain label>
-    private _properties : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
+    private _domainLabels : Record<string, string>; // Record<domain, domain label>
+    private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
+    private _properties : Record<string, Ast.ArgumentDef>;
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
@@ -109,7 +29,8 @@ class ManifestGenerator {
         this._wikidata = new WikidataUtils();
         this._parser = new Parser();
         this._examples = preprocessQALD();
-        this._domains = {};
+        this._domainLabels = {};
+        this._propertyLabelsByDomain = {};
         this._properties = {};
         this._output = options.output;
 
@@ -131,11 +52,11 @@ class ManifestGenerator {
      * @param propertyId PID of a property 
      */
     private async _updateProperties(entityId : string, propertyId : string) {
-        if (!(entityId in this._properties)) 
-            this._properties[entityId] = {};
+        if (!(entityId in this._propertyLabelsByDomain)) 
+            this._propertyLabelsByDomain[entityId] = {};
         
         const propertyLabel = await this._wikidata.getLabel(propertyId);
-        this._properties[entityId][propertyId] = propertyLabel;
+        this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel;
     }
 
     /**
@@ -157,7 +78,7 @@ class ManifestGenerator {
                 (triple.object as IriTerm).termType === 'NamedNode') {
                 const domain = triple.object.value.slice(ENTITY_PREFIX.length);
                 variables[triple.subject.value] = domain;
-                this._domains[domain] = await this._wikidata.getLabel(domain);
+                this._domainLabels[domain] = await this._wikidata.getLabel(domain);
             }
         }
         for (const triple of triples) {
@@ -167,7 +88,7 @@ class ManifestGenerator {
                 if (!domain)
                     continue;
                 const domainLabel = await this._wikidata.getLabel(domain);
-                this._domains[domain] = domainLabel;
+                this._domainLabels[domain] = domainLabel;
                 for (const property of extractProperties(triple.predicate)) 
                     await this._updateProperties(domain, property);
             } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
@@ -186,38 +107,82 @@ class ManifestGenerator {
             await this._processOneExample(example);
     }
 
+
     /**
      * Query Wikidata to obtain common properties of a domain
      * @param domain QID of a domain
+     * @param entityType snake cased label of the domain
      */
-    private async _processDomain(domain : string, domainLabel : string) {
-        const args = [
-            new Ast.ArgumentDef(
-                null, 
-                Ast.ArgDirection.OUT, 
-                'id',
-                new Type.Entity(`org.wikidata:${snakeCase(domainLabel)}`),
-                { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
-            )
-        ];
+    private async _processDomainProperties(domain : string, entityType : string) {
+        const args = [idArgument(snakeCase(entityType))];
         const properties = await this._wikidata.getDomainProperties(domain, this._includeNonEntityProperties);
         for (const property of properties) {
             const label = await this._wikidata.getLabel(property);
             const pname = snakeCase(label);
-            args.push(
-                new Ast.ArgumentDef(
-                    null,
-                    Ast.ArgDirection.OUT,
-                    pname, 
-                    new Type.Entity(`org.wikidata:p_${pname}`),
-                    { 
-                        nl: { canonical: { base: [label] } },
-                        impl: { wikidata_id: new Ast.Value.String(property) } 
-                    }
-                )
+            const argumentDef = new Ast.ArgumentDef(
+                null,
+                Ast.ArgDirection.OUT,
+                pname, 
+                new Type.Entity(`org.wikidata:p_${pname}`),
+                { 
+                    nl: { canonical: { base: [label] } },
+                    impl: { wikidata_id: new Ast.Value.String(property) } 
+                }
             );
+            args.push(argumentDef);
+            if (!(label in this._properties))
+                this._properties[label] = argumentDef;
         }
         return args;
+    }
+
+    /**
+     * Get a thingtalk query for a domain
+     * @param domain QID of a domain
+     * @returns A function definition of this domain
+     */
+    private async _processDomain(domain : string) : Promise<[string, Ast.FunctionDef]> {
+        const domainLabel = this._domainLabels[domain];
+        console.log(`Sampling ${domainLabel} domain ...`);
+        const fname = snakeCase(domainLabel);
+        // get all properties by sampling Wikidata
+        const args = await this._processDomainProperties(domain, fname);
+        const missing = [];
+        // add missing properties needed by QALD if necessary 
+        for (const [id, label] of Object.entries(this._propertyLabelsByDomain[domain])) {
+            const pname = snakeCase(label);
+            if (args.some((a) => a.name === pname) || id === 'P31')
+                continue;
+            missing.push([id, label]);
+            const argumentDef = new Ast.ArgumentDef(
+                null, 
+                Ast.ArgDirection.OUT, 
+                pname,
+                new Type.Entity(`org.wikidata:p_${pname}`) ,
+                {
+                    nl: { canonical: { base: [label] } },
+                    impl: { wikidata_id: new Ast.Value.String(id) }
+                }
+            );
+            args.push(argumentDef);
+            this._properties[label] = argumentDef;
+        }
+        console.log(`Done sampling ${domainLabel} domain`);
+        console.log(`In total ${args.length} properties sampled, ${missing.length} not covered`);
+        if (missing.length > 0)
+            console.log(missing.map(([id, label]) => `${label} (${id})`).join(', '));
+
+        const functionDef = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
+            is_list: true, 
+            is_monitorable: false
+        }, args, {
+            nl: { canonical: [domainLabel] },
+            impl : {
+                handle_thingtalk: new Ast.Value.Boolean(true),
+                wikidata_subject: new Ast.Value.Array([new Ast.Value.String(domain)])
+            }
+        });
+        return [fname, functionDef];
     }
 
     /**
@@ -226,8 +191,8 @@ class ManifestGenerator {
     async generate() {
         console.log('Start processing QALD examples ...');
         await this._processExamples();
-        console.log(`Done processing QALD examples, ${Object.keys(this._domains).length} domains discovered: `);
-        for (const [domain, domainLabel] of Object.entries(this._domains)) 
+        console.log(`Done processing QALD examples, ${Object.keys(this._domainLabels).length} domains discovered: `);
+        for (const [domain, domainLabel] of Object.entries(this._domainLabels)) 
             console.log(`${domain}: ${domainLabel}`);
 
         console.log('Start sampling Wikidata for schema ...');
@@ -236,55 +201,24 @@ class ManifestGenerator {
             new Ast.MixinImportStmt(null, ['config'], 'org.thingpedia.config.none', [])
         ];
         const queries : Record<string, Ast.FunctionDef> = {};
-        for (const domain in this._properties) {
-            const domainLabel = this._domains[domain];
-            console.log(`Sampling ${domainLabel} domain ...`);
-            const fname = snakeCase(domainLabel);
-            // get all properties by sampling Wikidata
-            const args = await this._processDomain(domain, domainLabel);
-            const missing = [];
-            // add missing properties needed by QALD if necessary 
-            for (const [id, label] of Object.entries(this._properties[domain])) {
-                const pname = snakeCase(label);
-                if (args.some((a) => a.name === pname) || id === 'P31')
-                    continue;
-                missing.push([id, label]);
-                args.push(
-                    new Ast.ArgumentDef(
-                        null, 
-                        Ast.ArgDirection.OUT, 
-                        pname,
-                        new Type.Entity(`org.wikidata:p_${pname}`) ,
-                        {
-                            nl: { canonical: { base: [label] } },
-                            impl: { wikidata_id: new Ast.Value.String(id) }
-                        }
-                    )
-                );
-            }
-            console.log(`Done sampling ${domainLabel} domain`);
-            console.log(`In total ${args.length} properties sampled, ${missing.length} not covered`);
-            if (missing.length > 0)
-                console.log(missing.map(([id, label]) => `${label} (${id})`).join(', '));
-
-            const functionDef = new Ast.FunctionDef(null, 'query', null, fname, [], {
-                is_list: true, 
-                is_monitorable: false
-            }, args, {
-                nl: { canonical: [domainLabel] },
-                impl : {
-                    handle_thingtalk: new Ast.Value.Boolean(true),
-                    wikidata_subject: new Ast.Value.Array([new Ast.Value.String(domain)])
-                }
-            });
+        for (const domain in this._propertyLabelsByDomain) {
+            const [fname, functionDef] = await this._processDomain(domain);
             queries[fname] = functionDef;
         }
+        queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
+            is_list: true,
+            is_monitorable: false
+        }, [idArgument('entity'), ...Object.values(this._properties)], {});
 
         console.log('Start writing device manifest ...');
+        const whitelist =  new Ast.Value.Array(
+            Object.keys(queries).filter((qname) => qname !== 'entity').map((qname) => new Ast.Value.String(qname))
+        );
         const classDef = new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries
         }, {
-            nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' }
+            nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' },
+            impl: { whitelist }
         });
 
         this._output.end(classDef.prettyprint());
