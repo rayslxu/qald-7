@@ -152,15 +152,18 @@ export default class WikidataUtils {
      * @param id QID or PID
      * @returns natural language label in English
      */
-    async getLabel(id : string) : Promise<string> {
+    async getLabel(id : string) : Promise<string|null> {
         const result = await this._request(this._wdk.getEntities({ 
             ids: [id],
             languages: ['en'],
             props: ['labels']
         }));
-        if (result)
+        try {
             return (Object.values(result.entities)[0] as any).labels.en.value;
-        return id;
+        } catch(e) {
+            console.log(`Failed to retrieve label for ${id}`);
+            return null;
+        }
     }
 
     /**
@@ -219,5 +222,39 @@ export default class WikidataUtils {
             });
         }
         return Array.from(properties);
+    }
+
+    /**
+     * Get properties and their values for a given domain
+     * 
+     * First get 100 example entities in the domain, and then extract all properties 
+     * they use and their values
+     * 
+     * @param domain QID of the domain
+     * @param includeNonEntityProperties include properties whose values are not Wikidata entities 
+     * @returns an object where key is property PID, values are either an array of string/entity objects, or a type 
+     */
+    async getDomainPropertiesAndValues(domain : string, includeNonEntityProperties = false) : Promise<Record<string, any>> {
+        const properties : Record<string, string[]> = {};
+        const exampleEntities = await this.getEntitiesByDomain(domain);
+        const entityOnlyFilter = `FILTER(STRSTARTS(STR(?v), "${ENTITY_PREFIX}")) .`;
+        for (const entity of exampleEntities) {
+            const sparql = `SELECT DISTINCT ?p ?v WHERE {
+                wd:${entity} ?p ?v .
+                FILTER(STRSTARTS(STR(?p), "${PROPERTY_PREFIX}")) . 
+                ${includeNonEntityProperties ? '' : entityOnlyFilter }
+            } `;
+            const res = await this._query(sparql);
+            res.forEach((r : any) => {
+                if (!r.v.value.startsWith(ENTITY_PREFIX) || r.p.value === PROPERTY_PREFIX + 'P31')
+                    return;
+                const property = r.p.value.slice(PROPERTY_PREFIX.length);
+                const value = r.v.value.slice(ENTITY_PREFIX.length); 
+                if (!(property in properties))
+                    properties[property] = [];
+                properties[property].push(value);
+            });
+        }
+        return properties;
     }
 }

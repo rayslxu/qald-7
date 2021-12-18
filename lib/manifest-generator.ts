@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as argparse from 'argparse';
 import { Ast, Type } from 'thingtalk';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
@@ -13,7 +14,6 @@ interface ManifestGeneratorOptions {
     include_non_entity_properties : boolean
 }
 
-
 class ManifestGenerator {
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
@@ -21,6 +21,7 @@ class ManifestGenerator {
     private _domainLabels : Record<string, string>; // Record<domain, domain label>
     private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
     private _properties : Record<string, Ast.ArgumentDef>;
+    private _propertyValues : Record<string, Record<string, string>>;
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
@@ -32,6 +33,7 @@ class ManifestGenerator {
         this._domainLabels = {};
         this._propertyLabelsByDomain = {};
         this._properties = {};
+        this._propertyValues = {};
         this._output = options.output;
 
         this._includeNonEntityProperties = options.include_non_entity_properties;
@@ -56,7 +58,7 @@ class ManifestGenerator {
             this._propertyLabelsByDomain[entityId] = {};
         
         const propertyLabel = await this._wikidata.getLabel(propertyId);
-        this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel;
+        this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel ?? propertyId;
     }
 
     /**
@@ -78,7 +80,7 @@ class ManifestGenerator {
                 (triple.object as IriTerm).termType === 'NamedNode') {
                 const domain = triple.object.value.slice(ENTITY_PREFIX.length);
                 variables[triple.subject.value] = domain;
-                this._domainLabels[domain] = await this._wikidata.getLabel(domain);
+                this._domainLabels[domain] = await this._wikidata.getLabel(domain) ?? domain;
             }
         }
         for (const triple of triples) {
@@ -88,7 +90,7 @@ class ManifestGenerator {
                 if (!domain)
                     continue;
                 const domainLabel = await this._wikidata.getLabel(domain);
-                this._domainLabels[domain] = domainLabel;
+                this._domainLabels[domain] = domainLabel || domain;
                 for (const property of extractProperties(triple.predicate)) 
                     await this._updateProperties(domain, property);
             } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
@@ -115,9 +117,9 @@ class ManifestGenerator {
      */
     private async _processDomainProperties(domain : string, entityType : string) {
         const args = [idArgument(snakeCase(entityType))];
-        const properties = await this._wikidata.getDomainProperties(domain, this._includeNonEntityProperties);
-        for (const property of properties) {
-            const label = await this._wikidata.getLabel(property);
+        const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
+        for (const property in propertyValues) {
+            const label = (await this._wikidata.getLabel(property)) ?? property;
             const pname = snakeCase(label);
             const argumentDef = new Ast.ArgumentDef(
                 null,
@@ -132,6 +134,17 @@ class ManifestGenerator {
             args.push(argumentDef);
             if (!(label in this._properties))
                 this._properties[label] = argumentDef;
+            const values = propertyValues[property];
+            // TODO: separate property values by domain
+            if (values.length > 0) {
+                if (!(label in this._propertyValues))
+                    this._propertyValues[label] = {};
+                for (const value of values) {
+                    if (value in this._propertyValues[label])
+                        continue;
+                    this._propertyValues[label][value] = (await this._wikidata.getLabel(value)) ?? property;
+                }
+            }
         }
         return args;
     }
@@ -186,16 +199,10 @@ class ManifestGenerator {
     }
 
     /**
-     * Process all examples in QLAD and then generate/output the manifest
+     * Generate the manifest 
+     * @returns the class definition 
      */
-    async generate() {
-        console.log('Start processing QALD examples ...');
-        await this._processExamples();
-        console.log(`Done processing QALD examples, ${Object.keys(this._domainLabels).length} domains discovered: `);
-        for (const [domain, domainLabel] of Object.entries(this._domainLabels)) 
-            console.log(`${domain}: ${domainLabel}`);
-
-        console.log('Start sampling Wikidata for schema ...');
+    async _generateManifest() : Promise<Ast.ClassDef> {
         const imports = [
             new Ast.MixinImportStmt(null, ['loader'], 'org.thingpedia.v2', []),
             new Ast.MixinImportStmt(null, ['config'], 'org.thingpedia.config.none', [])
@@ -214,16 +221,56 @@ class ManifestGenerator {
         const whitelist =  new Ast.Value.Array(
             Object.keys(queries).filter((qname) => qname !== 'entity').map((qname) => new Ast.Value.String(qname))
         );
-        const classDef = new Ast.ClassDef(null, 'org.wikidata', null, {
+        return new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries
         }, {
             nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' },
             impl: { whitelist }
         });
+    }
 
+    /**
+     * Output the parameter datasets 
+     */
+    async _outputParameterDatasets() {
+        const dir = path.dirname(this._output.path as string);
+        const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
+        for (const [property, values] of Object.entries(this._propertyValues)) {
+            const pname = snakeCase(property);
+            index.write(`entity\ten-US\torg.wikdiata:${pname}\tparameter-datasets/${pname}.tsv\n`);
+            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${pname}.json`);
+            const data : Record<string, any> = { result: "ok", data: [] };
+            for (const [value, display] of Object.entries(values)) {
+                // TODO: replace toLowerCase to tokenize
+                if (display)
+                    data.data.push({ value : value, name: display, canonical: display.toLowerCase() });
+            }
+            paramDataset.end(JSON.stringify(data, undefined, 2));
+            await waitFinish(paramDataset);
+        }
+        index.end();
+        await waitFinish(index);
+    }
+
+    /**
+     * Process all examples in QALD and then generate/output the manifest and parameter datasets
+     */
+    async generate() {
+        console.log('Start processing QALD examples ...');
+        await this._processExamples();
+        console.log(`Done processing QALD examples, ${Object.keys(this._domainLabels).length} domains discovered: `);
+        for (const [domain, domainLabel] of Object.entries(this._domainLabels)) 
+            console.log(`${domain}: ${domainLabel}`);
+
+        console.log('Start sampling Wikidata for schema ...');
+        const classDef = await this._generateManifest();
         this._output.end(classDef.prettyprint());
         await waitFinish(this._output);
+
+        console.log('Start generating parameter datasets ...');
+        await this._outputParameterDatasets();
         console.log('Done.');
+        
     }
 }
 

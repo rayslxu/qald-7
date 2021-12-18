@@ -30,5 +30,5 @@ export function preprocessQALD() : Example[] {
         questions.push(preprocessExample(example));
     for (const example of testQuestions.questions) 
         questions.push(preprocessExample(example));
-    return questions;
+    return questions.slice(0, 1);
 }
