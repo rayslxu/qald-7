@@ -5,7 +5,7 @@ import { Ast, Type } from 'thingtalk';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
-import { snakeCase, waitFinish, idArgument } from './utils/misc';
+import { cleanName, waitFinish, idArgument } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
@@ -116,11 +116,11 @@ class ManifestGenerator {
      * @param entityType snake cased label of the domain
      */
     private async _processDomainProperties(domain : string, entityType : string) {
-        const args = [idArgument(snakeCase(entityType))];
+        const args = [idArgument(cleanName(entityType))];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         for (const property in propertyValues) {
             const label = (await this._wikidata.getLabel(property)) ?? property;
-            const pname = snakeCase(label);
+            const pname = cleanName(label);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
@@ -157,13 +157,13 @@ class ManifestGenerator {
     private async _processDomain(domain : string) : Promise<[string, Ast.FunctionDef]> {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
-        const fname = snakeCase(domainLabel);
+        const fname = cleanName(domainLabel);
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
         // add missing properties needed by QALD if necessary 
         for (const [id, label] of Object.entries(this._propertyLabelsByDomain[domain])) {
-            const pname = snakeCase(label);
+            const pname = cleanName(label);
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
             missing.push([id, label]);
@@ -236,7 +236,7 @@ class ManifestGenerator {
         const dir = path.dirname(this._output.path as string);
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
         for (const [property, values] of Object.entries(this._propertyValues)) {
-            const pname = snakeCase(property);
+            const pname = cleanName(property);
             index.write(`entity\ten-US\torg.wikdiata:${pname}\tparameter-datasets/${pname}.tsv\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };

@@ -2,7 +2,16 @@
 import { Ast, Type } from 'thingtalk';
 
 export function snakeCase(v : string) {
-    return v.replace(/[() _-]+/g, '_').toLowerCase();
+    return v.trim().replace(/[() _-]+/g, '_').toLowerCase();
+}
+
+export function cleanName(v : string) {
+    v = snakeCase(v);
+    // remove accents
+    v = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // replace any special tokens to underscore
+    v = v.replace(/[^1-9a-zA-Z]/g, '_').replace(/__/g, '_');
+    return v;
 }
 
 export function waitFinish(stream : NodeJS.WritableStream) : Promise<void> {
