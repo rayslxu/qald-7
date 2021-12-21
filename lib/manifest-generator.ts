@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as argparse from 'argparse';
 import { Ast, Type } from 'thingtalk';
+import { I18n } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
@@ -17,6 +18,7 @@ interface ManifestGeneratorOptions {
 class ManifestGenerator {
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
+    private _tokenizer : I18n.BaseTokenizer;
     private _examples : Example[];
     private _domainLabels : Record<string, string>; // Record<domain, domain label>
     private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
@@ -29,6 +31,7 @@ class ManifestGenerator {
     constructor(options : ManifestGeneratorOptions) {
         this._wikidata = new WikidataUtils();
         this._parser = new Parser();
+        this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD();
         this._domainLabels = {};
         this._propertyLabelsByDomain = {};
@@ -241,9 +244,10 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                // TODO: replace toLowerCase to tokenize
-                if (display)
-                    data.data.push({ value : value, name: display, canonical: display.toLowerCase() });
+                if (display) {
+                    const canonical = this._tokenizer.tokenize(display).rawTokens.join(' ');
+                    data.data.push({ value : value, name: display, canonical });
+                }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);

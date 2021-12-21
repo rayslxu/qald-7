@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "argparse": "^2.0.1",
+    "genie-toolkit": "^0.9.0-alpha.1",
     "sparqljs": "^3.5.1",
     "sqlite3": "^5.0.2",
     "thingpedia": "^2.10.0-alpha.6",
