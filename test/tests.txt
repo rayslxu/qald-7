@@ -1,0 +1,6 @@
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+}
+TT: 
+@org.wikidata.art_museum()
