@@ -1,7 +1,8 @@
 {
   "name": "qald-7",
   "scripts": {
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./lib "
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./lib ",
+    "build": "tsc --build" 
   },
   "dependencies": {
     "JSONStream": "^1.3.5",
