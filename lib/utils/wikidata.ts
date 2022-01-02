@@ -9,19 +9,26 @@ export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
 export const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
 const SQLITE_SCHEMA = `
-create table cache (
-    url text not null,
-    result text not null
-);`;
+create table http_requests (
+    url text primary key,
+    result text
+);
 
-interface Cache {
-    result : string
+create table labels (
+    id varchar(16) primary key,
+    label text
+);
+`;
+
+interface Constraint {
+    key : string,
+    value : string
 }
 
 function normalizeURL(url : string) {
     return url.trim().replace(/\s+/g, ' ');
 }
-
+ 
 export default class WikidataUtils {
     private _wdk : wikibaseSdk;
     private _cache ! : sqlite3.Database;
@@ -40,22 +47,24 @@ export default class WikidataUtils {
         const db = new sqlite3.Database(filename, sqlite3.OPEN_CREATE|sqlite3.OPEN_READWRITE);
         db.serialize(() => {
             if (!fs.existsSync(filename)) 
-                db.run(SQLITE_SCHEMA);
+                db.exec(SQLITE_SCHEMA);
         });
         this._cache = db;
     }
 
     /**
      * Get cache 
-     * @param url the url of the request
+     * @param table the name of the table
+     * @param field the filed of projection
+     * @param constraint the constraint to apply to the retrieval
      * @returns undefined if not found, otherwise in the format of { result : string }
      */
-    private async _getCache(url : string) : Promise<Cache|undefined> {
+    private async _getCache(table : string, field : string, constraint : Constraint) : Promise<any> {
         if (!this._cacheLoaded) 
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {
-            const sql = `select result from cache where url = ?`;
-            this._cache.get(sql, normalizeURL(url), (err : Error|null, rows : any) => {
+            const sql = `select ${field} from ${table} where ${constraint.key} = ?`;
+            this._cache.get(sql, constraint.value, (err : Error|null, rows : any) => {
                 if (err)
                     reject(err);
                 else
@@ -64,12 +73,19 @@ export default class WikidataUtils {
         });
     }
 
-    private async _setCache(url : string, result : string) {
+    /**
+     * Set cache
+     * @param table the name of the table
+     * @param values all the values to add to the table
+     * @returns undefined
+     */
+    private async _setCache(table : string, ...values : string[]) {
         if (!this._cacheLoaded) 
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {
-            const sql = `insert into cache values (?,?)`;
-            this._cache.get(sql, normalizeURL(url), result, (err : Error|null, rows : any) => {
+            const placeholders = values.map(() => '?').join(',');
+            const sql = `insert into ${table} values (${placeholders})`; 
+            this._cache.get(sql, ...values, (err : Error|null, rows : any) => {
                 if (err)
                     reject(err);
                 else 
@@ -91,15 +107,19 @@ export default class WikidataUtils {
     /**
      * Obtain results of URL in JSON form (Wikibase API call)
      * @param url 
+     * @param caching enable caching for the request or not
      * @returns An object of the result
      */
-    private async _request(url : string) {
-        const cached = await this._getCache(url);
-        if (cached) 
-            return JSON.parse(cached.result);
+    private async _request(url : string, caching = true) {
+        if (caching) {
+            const cached = await this._getCache('http_requests', 'result', { key: 'url', value : url });
+            if (cached) 
+                return JSON.parse(cached.result);
+        }
         try {
             const result = await Tp.Helpers.Http.get(url, { accept: 'application/json' });
-            await this._setCache(url, result);
+            if (caching)
+                await this._setCache('http_requests', url, result);
             const parsed = JSON.parse(result);
             return parsed;
         } catch(e) {
@@ -164,6 +184,40 @@ export default class WikidataUtils {
             console.log(`Failed to retrieve label for ${id}`);
             return null;
         }
+    }
+
+    /**
+     * Get the wikidata label for a list of entities/properties. 
+     * The API allows up to 50 entities/properties at a time. 
+     * @param qids a list of QIDs or PIDs
+     * @returns A map from id to label
+     */
+    async getLabelsByBatch(...ids : string[]) : Promise<Record<string, string|null>> {
+        const result : Record<string, string|null> = {};
+        const uncached = [];
+        for (const id of ids) {
+            const cached = await this._getCache('labels', 'label', { key : 'id', value : id });
+            if (cached) 
+                result[id] = cached.label;
+            else    
+                uncached.push(id);
+        }
+        const uniqueUncached = [...new Set(uncached)];
+        for (let i = 0; i < uniqueUncached.length; i += 50) {
+            const batch = uniqueUncached.slice(i, i + 50);
+            const raw = await this._request(this._wdk.getEntities({
+                ids : batch,
+                languages: ['en'],
+                props: ['labels']
+            }));
+            for (const [qid, entity] of Object.entries(raw.entities) as any) {
+                if (qid !== entity.id) // some entities are simply a redirect of another entity, drop those 
+                    continue;
+                result[qid] = entity.labels?.en?.value;
+                await this._setCache('labels', qid, entity.labels?.en?.value ?? null);
+            }
+        }
+        return result;
     }
 
     /**

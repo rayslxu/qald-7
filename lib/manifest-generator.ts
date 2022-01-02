@@ -121,8 +121,10 @@ class ManifestGenerator {
     private async _processDomainProperties(domain : string, entityType : string) {
         const args = [idArgument(cleanName(entityType))];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
+        const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
+        const valueLabels = await this._wikidata.getLabelsByBatch(...Object.values(propertyValues).flat());
         for (const property in propertyValues) {
-            const label = (await this._wikidata.getLabel(property)) ?? property;
+            const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
             const argumentDef = new Ast.ArgumentDef(
                 null,
@@ -145,7 +147,7 @@ class ManifestGenerator {
                 for (const value of values) {
                     if (value in this._propertyValues[label])
                         continue;
-                    this._propertyValues[label][value] = (await this._wikidata.getLabel(value)) ?? property;
+                    this._propertyValues[label][value] = valueLabels[value] ?? value;
                 }
             }
         }
