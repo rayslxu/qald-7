@@ -9,6 +9,8 @@ export function cleanName(v : string) {
     v = snakeCase(v);
     // remove accents
     v = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // replace u.s. to us
+    v = v.replace('u.s.', 'us');
     // replace any special tokens to underscore
     v = v.replace(/[^1-9a-zA-Z]/g, '_').replace(/__/g, '_');
     return v;
