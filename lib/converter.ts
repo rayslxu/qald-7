@@ -1,7 +1,9 @@
 import * as fs from 'fs';
+import { promises as pfs } from 'fs';
 import assert from 'assert';
 import JSONStream from 'JSONStream';
-import { Ast } from 'thingtalk';
+import { Ast, Type } from 'thingtalk';
+import * as ThingTalk from 'thingtalk';
 import { SelectQuery, Parser, SparqlParser } from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish } from './utils/misc';
@@ -17,12 +19,48 @@ function baseQuery(domain : string) {
     );
 }
 
-class SPARQLToThingTalkConverter {
+class WikiSchema {
+    private _tableMap : Record<string, string>;
+    private _propertyMap : Record<string, string>;
+    private _propertyTypeMap : Record<string, Type>;
+
+    constructor(schema : Ast.ClassDef) {
+        this._tableMap = {};
+        this._propertyMap = {};
+        this._propertyTypeMap = {};
+        for (const [qname, query] of Object.entries(schema.queries)) {
+            const qid = (query.getImplementationAnnotation('wikidata_subject') as Ast.StringValue).value;
+            this._tableMap[qid] = qname;
+            for (const arg of query.iterateArguments()) {
+                const pid = (arg.getImplementationAnnotation('wikidata_id') as Ast.StringValue).value;
+                this._propertyMap[pid] = arg.name;
+                this._propertyTypeMap[pid] = arg.type;
+            }
+        }
+    }
+
+    getTable(qid : string) : string {
+        return this._tableMap[qid];
+    }
+
+    getProperty(pid : string) : string {
+        return this._propertyMap[pid];
+    }
+
+    getPropertyType(pid : string) : Type {
+        return this._propertyTypeMap[pid];
+    }
+}
+
+
+export default class SPARQLToThingTalkConverter {
+    private _schema : WikiSchema;
     private _parser : SparqlParser;
     private _wikidata : WikidataUtils;
     private _filters : Record<string, Ast.BooleanExpression[]>;
 
-    constructor() {
+    constructor(classDef : Ast.ClassDef) {
+        this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
         this._wikidata = new WikidataUtils();
 
@@ -41,7 +79,7 @@ class SPARQLToThingTalkConverter {
         console.log(property, value);
         property = property.slice(PROPERTY_PREFIX.length);
         value = value.slice(ENTITY_PREFIX.length);
-        const propertyLabel = await this._wikidata.getLabel(property);
+        const propertyLabel = this._schema.getProperty(property);
         const valueLabel = await this._wikidata.getLabel(value);
         console.log(propertyLabel, valueLabel);
         return new AtomBooleanExpression(
@@ -138,6 +176,20 @@ async function main() {
         add_help : true,
         description : "A tool to convert QALD-7 SPARQL to ThingTalk"
     });
+    parser.add_argument('-l', '--locale', {
+        required: false,
+        default: 'en-US',
+        help: `BGP 47 locale tag of the language to evaluate (defaults to 'en-US', English)`
+    });
+    parser.add_argument('--timezone', {
+        required: false,
+        default: undefined,
+        help: `Timezone to use to interpret dates and times (defaults to the current timezone).`
+    });
+    parser.add_argument('--manifest', {
+        required: true,
+        help: 'Path to ThingTalk file containing class definitions.'
+    });
     parser.add_argument('-i', '--input', {
         required: true,
         type: fs.createReadStream
@@ -148,7 +200,11 @@ async function main() {
     });
     const args = parser.parse_args();
 
-    const converter = new SPARQLToThingTalkConverter();
+    const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
+    const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
+    assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
+    const classDef = library.classes[0];
+    const converter = new SPARQLToThingTalkConverter(classDef);
 
     const pipeline = args.input.pipe(JSONStream.parse('questions.*'));
     pipeline.on('data', async (item : any) => {
@@ -160,4 +216,5 @@ async function main() {
     
 }
 
-main();
+if (require.main === module)
+    main();
