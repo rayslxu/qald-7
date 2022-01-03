@@ -1,6 +1,18 @@
+Utterance: show me all museums
 SPARQL: 
 SELECT DISTINCT ?uri WHERE { 
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
 }
 TT: 
-@org.wikidata.art_museum()
+@org.wikidata . art_museum ( ) ;
+
+====
+Utterance: show me museums named after louvre palace
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>;
+         <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
+}
+TT: 
+@org.wikidata . art_museum ( ) filter contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ( " louvre palace " ) ) ;
+
