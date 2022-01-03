@@ -220,7 +220,12 @@ class ManifestGenerator {
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
             is_monitorable: false
-        }, [idArgument('entity'), ...Object.values(this._properties)], {});
+        }, [idArgument('entity'), ...Object.values(this._properties)], {
+            impl : {
+                handle_thingtalk: new Ast.Value.Boolean(true),
+                wikidata_subject: new Ast.Value.Array([new Ast.Value.String('Q35120')])
+            }
+        });
 
         console.log('Start writing device manifest ...');
         const whitelist =  new Ast.Value.Array(
