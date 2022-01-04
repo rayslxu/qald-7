@@ -130,7 +130,7 @@ class ManifestGenerator {
                 null,
                 Ast.ArgDirection.OUT,
                 pname, 
-                new Type.Entity(`org.wikidata:p_${pname}`),
+                new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`)),
                 { 
                     nl: { canonical: { base: [label] } },
                     impl: { wikidata_id: new Ast.Value.String(property) } 
@@ -176,7 +176,7 @@ class ManifestGenerator {
                 null, 
                 Ast.ArgDirection.OUT, 
                 pname,
-                new Type.Entity(`org.wikidata:p_${pname}`) ,
+                new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`)),
                 {
                     nl: { canonical: { base: [label] } },
                     impl: { wikidata_id: new Ast.Value.String(id) }
