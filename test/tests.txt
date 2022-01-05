@@ -1,4 +1,5 @@
 Utterance: show me all museums
+Keywords: 
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
@@ -8,6 +9,7 @@ TT:
 
 ====
 Utterance: show me museums named after louvre palace
+Keywords: louvre palace
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>;
@@ -18,6 +20,7 @@ TT:
 
 ====
 Utterance: show me the owner of museums named after louvre palace
+Keywords: louvre palace
 SPARQL: 
 SELECT DISTINCT ?y WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>;
@@ -29,9 +32,11 @@ TT:
 
 ====
 Utterance: Who was the doctoral supervisor of Albert Einstein
+Keywords: doctoral supervisor, Albert Einstein
 SPARQL: 
 SELECT DISTINCT ?uri WHERE { 
     <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?uri
 }
 TT:
 [ doctoral_advisor ] of @org.wikidata . entity ( ) filter id == " Q937 " ^^org.wikidata:entity ( " albert einstein " ) ;
+

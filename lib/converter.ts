@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { promises as pfs } from 'fs';
 import assert from 'assert';
 import JSONStream from 'JSONStream';
+import { closest } from 'fastest-levenshtein';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
 import { SelectQuery, Parser, SparqlParser } from 'sparqljs';
@@ -10,6 +11,7 @@ import { waitFinish } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX } from './utils/wikidata';
 import { AtomBooleanExpression } from 'thingtalk/dist/ast';
+import { I18n } from 'genie-toolkit';
 
 /**
  * A shortcut for quickly creating a basic query
@@ -101,13 +103,17 @@ export default class SPARQLToThingTalkConverter {
     private _schema : WikiSchema;
     private _parser : SparqlParser;
     private _wikidata : WikidataUtils;
+    private _tokenizer : I18n.BaseTokenizer;
+    private _keywords : string[];
     private _tables : Record<string, Table>;
 
     constructor(classDef : Ast.ClassDef) {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
         this._wikidata = new WikidataUtils();
+        this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
+        this._keywords = [];
     } 
 
     /**
@@ -115,7 +121,7 @@ export default class SPARQLToThingTalkConverter {
      * @param subject the subject, a variable in SPARQL
      * @param filter a filter to add to the subject
      */
-    _addFilter(subject : string, filter : Ast.BooleanExpression) {
+    private _addFilter(subject : string, filter : Ast.BooleanExpression) {
         if (!(subject in this._tables))
             this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
         this._tables[subject].filters.push(filter);
@@ -126,7 +132,7 @@ export default class SPARQLToThingTalkConverter {
      * @param subject the subject, either a variable, or an entity
      * @param projection a projection to add to the subject
      */
-    _addProjection(subject : string, projection : Projection) {
+    private _addProjection(subject : string, projection : Projection) {
         if (!(subject in this._tables))
             this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
         this._tables[subject].projections.push(projection);
@@ -137,7 +143,7 @@ export default class SPARQLToThingTalkConverter {
      * @param subject the subject, either a variable or an entity
      * @param domain the QID of the domain
      */
-    _setDomain(subject : string, domain : string) {
+    private _setDomain(subject : string, domain : string) {
         if (!(subject in this._tables))
             this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
         this._tables[subject].domain = this._schema.getTable(domain);
@@ -149,15 +155,17 @@ export default class SPARQLToThingTalkConverter {
      * @param propertyType the ThingTalk type of the property
      * @returns a ThingTalk value
      */
-    async _toThingTalkValue(value : any, propertyType : Type) : Promise<Ast.Value> {
+    private async _toThingTalkValue(value : any, propertyType : Type) : Promise<Ast.Value> {
         let valueType = propertyType;
         while (valueType instanceof Type.Array)
             valueType = valueType.elem as Type;
         if (valueType instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
             value = value.slice(ENTITY_PREFIX.length);
-            // TODO: extract display from utterance
-            return new Ast.Value.Entity(value, valueType.type, await this._wikidata.getLabel(value)); 
+            const wikidataLabel = await this._wikidata.getLabel(value);
+            assert(wikidataLabel);
+            const display = closest(wikidataLabel, this._keywords);
+            return new Ast.Value.Entity(value, valueType.type, display); 
         }
 
         throw new Error('Unsupported value type: ' + valueType);
@@ -170,7 +178,7 @@ export default class SPARQLToThingTalkConverter {
      * @param operator operator, by default will be == or contains depending on the property type
      * @returns a ThingTalk filter: "$property = $value"
      */
-    async _atomFilter(property : string, value : string, operator ?: string) : Promise<Ast.AtomBooleanExpression> {
+    private async _atomFilter(property : string, value : string, operator ?: string) : Promise<Ast.AtomBooleanExpression> {
         let propertyLabel, propertyType;
         if (property === 'id') {
             propertyLabel = property;
@@ -194,7 +202,7 @@ export default class SPARQLToThingTalkConverter {
      * @param triples RDF Triples derived from SPARQL
      * @returns a map from subjects to their ThingTalk filters converted from the triples
      */
-    async _convertTriples(triples : any[]) : Promise<Record<string, Ast.BooleanExpression>> {
+    private async _convertTriples(triples : any[]) : Promise<Record<string, Ast.BooleanExpression>> {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
             // if subject is an entity, create an id filter first
@@ -232,7 +240,7 @@ export default class SPARQLToThingTalkConverter {
      * Parse a union where clause
      * @param where a where clause
      */
-    async _parseUnion(where : any)  {
+    private async _parseUnion(where : any)  {
         let existedSubject;
         const operands = [];
         for (const pattern of where.patterns) {
@@ -253,7 +261,7 @@ export default class SPARQLToThingTalkConverter {
      * Parse a basic triple where clause
      * @param where a where clause
      */
-    async _parseBasic(where : any) {
+    private async _parseBasic(where : any) {
         const filtersBySubject = await this._convertTriples(where.triples);
         for (const [subject, filter] of Object.entries(filtersBySubject)) 
             this._addFilter(subject, filter);  
@@ -263,7 +271,7 @@ export default class SPARQLToThingTalkConverter {
      * Parse a where clause
      * @param where a where clause
      */
-    async _parseWhereClause(where : any) {
+    private async _parseWhereClause(where : any) {
         if (where.type === 'bgp') 
             await this._parseBasic(where);
         else if (where.type === 'union') 
@@ -275,17 +283,19 @@ export default class SPARQLToThingTalkConverter {
     /**
      * reset tables used to track the conversion
      */
-    _reset() {
+    private _reset(keywords : string[]) {
         this._tables = {};
+        this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
     }
 
     /**
      * Convert SPARQL into ThingTalk
      * @param sparql a string of SPARQL query 
+     * @param keywords a list of keywords in the utterance including the mentioned entities 
      * @returns A ThingTalk Program
      */
-    async convert(sparql : string) : Promise<Ast.Program> {
-        this._reset();
+    async convert(sparql : string, keywords : string[]) : Promise<Ast.Program> {
+        this._reset(keywords);
         const parsed = this._parser.parse(sparql) as SelectQuery;
         if (parsed.where) {
             for (const clause of parsed.where) 
@@ -360,7 +370,7 @@ async function main() {
 
     const pipeline = args.input.pipe(JSONStream.parse('questions.*'));
     pipeline.on('data', async (item : any) => {
-        const thingtalk = await converter.convert(item.query.sparql);
+        const thingtalk = await converter.convert(item.query.sparql, item.query.keywords.split(', '));
         args.output.write(`${item.id}\t${item.question[0].string}\t${thingtalk.prettyprint()}`);
     });
     await waitFinish(pipeline);

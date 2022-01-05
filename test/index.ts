@@ -16,11 +16,12 @@ async function main() {
     const tests = fs.readFileSync('./test/tests.txt').toString('utf-8').split('====');
 
     for (let i = 0; i < tests.length; i++) {
-        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('SPARQL:')).trim();
+        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('Keywords:')).trim();
+        const keywords = tests[i].slice(tests[i].indexOf('Keywords:') + 'Keywords:'.length, tests[i].indexOf('SPARQL:')).trim();
         const sparql = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length, tests[i].indexOf('TT:')).trim();
         const expected = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length).trim();     
         const preprocessed = tokenizer.tokenize(utterance).tokens.join(' ');
-        const converted = await converter.convert(sparql);
+        const converted = await converter.convert(sparql, keywords.split(', '));
         const thingtalk = ThingTalkUtils.serializePrediction(
             converted, 
             preprocessed,
