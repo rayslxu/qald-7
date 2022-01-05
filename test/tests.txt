@@ -40,3 +40,12 @@ SELECT DISTINCT ?uri WHERE {
 TT:
 [ doctoral_advisor ] of @org.wikidata . entity ( ) filter id == " Q937 " ^^org.wikidata:entity ( " albert einstein " ) ;
 
+====
+Utterance: Did Kaurismäki ever win the Grand Prix at Cannes?
+Keywords: Kaurismäki, winner, Grand Prix at Cannes
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804> . 
+}
+TT: 
+[ contains ( award_received , " Q844804 " ^^org.wikidata:p_award_received ( " grand prix at cannes " ) ) ] of @org.wikidata . entity ( ) filter id == " Q276186 " ^^org.wikidata:entity ( " kaurismäki " ) ;

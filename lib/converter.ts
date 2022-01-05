@@ -96,7 +96,8 @@ interface Projection {
 interface Table {
     domain : string,
     projections : Projection[],
-    filters : Ast.BooleanExpression[]
+    filters : Ast.BooleanExpression[],
+    verifications : Ast.BooleanExpression[]
 }
 
 export default class SPARQLToThingTalkConverter {
@@ -117,13 +118,21 @@ export default class SPARQLToThingTalkConverter {
     } 
 
     /**
+     * Initialize a table (in ThingTalk) for a subject (in SPARQL)
+     * @param subject the subject of the table, either a variable, or a Wikidata entity
+     */
+    private _initTable(subject : string) {
+        if (!(subject in this._tables))
+            this._tables[subject] = { domain: 'entity', projections: [], filters: [], verifications: [] };
+    }
+
+    /**
      * Add a filter to a able
      * @param subject the subject, a variable in SPARQL
      * @param filter a filter to add to the subject
      */
     private _addFilter(subject : string, filter : Ast.BooleanExpression) {
-        if (!(subject in this._tables))
-            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._initTable(subject);
         this._tables[subject].filters.push(filter);
     }
 
@@ -133,9 +142,18 @@ export default class SPARQLToThingTalkConverter {
      * @param projection a projection to add to the subject
      */
     private _addProjection(subject : string, projection : Projection) {
-        if (!(subject in this._tables))
-            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._initTable(subject);
         this._tables[subject].projections.push(projection);
+    }
+
+    /**
+     * Add a verification (boolean question) to a table
+     * @param subject the subject, either a variable, or an entity
+     * @param verification a verification to add to the subject
+     */
+    private _addVerification(subject : string, verification : Ast.BooleanExpression) {
+        this._initTable(subject);
+        this._tables[subject].verifications.push(verification);
     }
 
     /**
@@ -144,8 +162,7 @@ export default class SPARQLToThingTalkConverter {
      * @param domain the QID of the domain
      */
     private _setDomain(subject : string, domain : string) {
-        if (!(subject in this._tables))
-            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._initTable(subject);
         this._tables[subject].domain = this._schema.getTable(domain);
     }
      
@@ -205,29 +222,35 @@ export default class SPARQLToThingTalkConverter {
     private async _convertTriples(triples : any[]) : Promise<Record<string, Ast.BooleanExpression>> {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
+            const subject = triple.subject.value;
+            const predicate = triple.predicate.value;
+            const object = triple.object.value;
+
             // if subject is an entity, create an id filter first
-            if (triple.subject.termType === 'NamedNode' && triple.subject.value.startsWith(ENTITY_PREFIX)) {
-                const subject = triple.subject.value;
+            if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) 
                 this._addFilter(subject, await this._atomFilter('id', subject));
-            }
+
             // if subject is an variable and object is an entity, create a regular filter
             if (triple.subject.termType === 'Variable' && triple.object.termType === 'NamedNode') { 
-                const subject = triple.subject.value;
                 // for P31 triple, update the domain of the variable, do not add filter
-                if (triple.predicate.termType === 'NamedNode' && triple.predicate.value === `${PROPERTY_PREFIX}P31`) {
-                    this._setDomain(subject, triple.object.value.slice(ENTITY_PREFIX.length));
+                if (triple.predicate.termType === 'NamedNode' && predicate === `${PROPERTY_PREFIX}P31`) {
+                    this._setDomain(subject, object.slice(ENTITY_PREFIX.length));
                     continue;
                 }
                 if (!(subject in filtersBySubject))
                     filtersBySubject[subject] = [];
-                filtersBySubject[subject].push(await this._atomFilter(triple.predicate.value, triple.object.value));
+                filtersBySubject[subject].push(await this._atomFilter(predicate, object));
             } 
+
             // if object is an variable, create a projection
             if (triple.object.termType === 'Variable') {
-                const subject = triple.subject.value;
-                const predicate = this._schema.getProperty(triple.predicate.value.slice(PROPERTY_PREFIX.length));
-                this._addProjection(subject, { variable: triple.object.value, property: predicate });
+                const property = this._schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
+                this._addProjection(subject, { variable: object, property });
             }
+
+            // if both subject and object are entities, create a "verification", for boolean question
+            if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
+                this._addVerification(subject, await this._atomFilter(predicate, object));
             
         }
         const converted : Record<string, Ast.BooleanExpression> = {};
@@ -303,13 +326,19 @@ export default class SPARQLToThingTalkConverter {
         }
         const queries : Ast.Expression[] = [];
         const variables = [];
-        for (const variable of parsed.variables) {
+        for (const variable of parsed.variables ?? []) {
             if ('value' in variable && variable.value !== '*')
                 variables.push(variable.value);
             else 
                 throw new Error(`Unsupported variable type: ${variable}`);
         }
         for (const [subject, Table] of Object.entries(this._tables)) {
+            // handle filters
+            let table : Ast.Expression = baseQuery(Table.domain);
+            if (Table.filters.length > 0)
+                table = new Ast.FilterExpression(null, table, new Ast.BooleanExpression.And(null, Table.filters), null);
+
+            // handle projections and verifications
             const projections = [];
             if (variables.includes(subject))
                 projections.push('id');
@@ -317,13 +346,16 @@ export default class SPARQLToThingTalkConverter {
                 if (variables.includes(projection.variable))
                     projections.push(projection.property);
             }
-            if (projections.length === 0)
-                continue;
-            let table : Ast.Expression = baseQuery(Table.domain);
-            if (Table.filters.length > 0)
-                table = new Ast.FilterExpression(null, table, new Ast.BooleanExpression.And(null, Table.filters), null);
-            if (!(projections.length === 1 && projections[0] === 'id'))
-                table = new Ast.ProjectionExpression(null, table, projections, [], [], null);
+            if (Table.verifications.length > 0) {
+                assert(projections.length === 0);
+                const verification = Table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, Table.verifications) : Table.verifications[0];
+                table = new Ast.BooleanQuestionExpression(null, table, verification, null);
+            } else {
+                if (projections.length === 0)
+                    continue;
+                if (!(projections.length === 1 && projections[0] === 'id'))
+                    table = new Ast.ProjectionExpression(null, table, projections, [], [], null);
+            }
             queries.push(table);  
         } 
         if (queries.length === 1)

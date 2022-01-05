@@ -29,7 +29,7 @@ async function main() {
             { locale: 'en', timezone: undefined, includeEntityValue :true }
         ).join(' ');
 
-        assert.strictEqual(expected, thingtalk);
+        assert.strictEqual(thingtalk, expected);
     }
 }
 
