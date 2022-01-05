@@ -86,32 +86,61 @@ class WikiSchema {
     }
 }
 
+interface Projection {
+    property : string, 
+    variable : string
+}
+
+interface Table {
+    domain : string,
+    projections : Projection[],
+    filters : Ast.BooleanExpression[]
+}
 
 export default class SPARQLToThingTalkConverter {
     private _schema : WikiSchema;
     private _parser : SparqlParser;
     private _wikidata : WikidataUtils;
-    private _filters : Record<string, Ast.BooleanExpression[]>;
-    private _variables : Record<string, string>; // domain of a variable
+    private _tables : Record<string, Table>;
 
     constructor(classDef : Ast.ClassDef) {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
         this._wikidata = new WikidataUtils();
-
-        this._filters = {};
-        this._variables = {};
+        this._tables = {};
     } 
 
     /**
-     * Add a filter
+     * Add a filter to a able
      * @param subject the subject, a variable in SPARQL
      * @param filter a filter to add to the subject
      */
     _addFilter(subject : string, filter : Ast.BooleanExpression) {
-        if (!(subject in this._filters))
-            this._filters[subject] = [];
-        this._filters[subject].push(filter);
+        if (!(subject in this._tables))
+            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._tables[subject].filters.push(filter);
+    }
+
+    /**
+     * Add a projection to a table
+     * @param subject the subject, either a variable, or an entity
+     * @param projection a projection to add to the subject
+     */
+    _addProjection(subject : string, projection : Projection) {
+        if (!(subject in this._tables))
+            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._tables[subject].projections.push(projection);
+    }
+
+    /**
+     * Set the domain for a table
+     * @param subject the subject, either a variable or an entity
+     * @param domain the QID of the domain
+     */
+    _setDomain(subject : string, domain : string) {
+        if (!(subject in this._tables))
+            this._tables[subject] = { domain: 'entity', projections: [], filters: [] };
+        this._tables[subject].domain = this._schema.getTable(domain);
     }
      
     /**
@@ -124,27 +153,37 @@ export default class SPARQLToThingTalkConverter {
         let valueType = propertyType;
         while (valueType instanceof Type.Array)
             valueType = valueType.elem as Type;
-        if (valueType instanceof Type.Entity)
-            return new Ast.Value.Entity(value, valueType.type, await this._wikidata.getLabel(value)); // TODO: extract display from utterance
+        if (valueType instanceof Type.Entity) {
+            assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
+            value = value.slice(ENTITY_PREFIX.length);
+            // TODO: extract display from utterance
+            return new Ast.Value.Entity(value, valueType.type, await this._wikidata.getLabel(value)); 
+        }
 
         throw new Error('Unsupported value type: ' + valueType);
     }
 
     /**
      * Creat an atom filter 
-     * @param property the predicate derived from SPARQL
+     * @param property the predicate derived from SPARQL ('id' or a wikidata entity)
      * @param value the value derived from SPARQL
+     * @param operator operator, by default will be == or contains depending on the property type
      * @returns a ThingTalk filter: "$property = $value"
      */
-    async _atomFilter(property : string, value : string) : Promise<Ast.AtomBooleanExpression> {
-        property = property.slice(PROPERTY_PREFIX.length);
-        value = value.slice(ENTITY_PREFIX.length);
-        const propertyLabel = this._schema.getProperty(property);
-        const propertyType = this._schema.getPropertyType(property);
+    async _atomFilter(property : string, value : string, operator ?: string) : Promise<Ast.AtomBooleanExpression> {
+        let propertyLabel, propertyType;
+        if (property === 'id') {
+            propertyLabel = property;
+            propertyType = new Type.Entity('org.wikidata:entity');
+        } else {
+            property = property.slice(PROPERTY_PREFIX.length);
+            propertyLabel = this._schema.getProperty(property);
+            propertyType = this._schema.getPropertyType(property);
+        }
         return new AtomBooleanExpression(
             null,
-            propertyLabel ?? property,
-            'contains',
+            propertyLabel,
+            operator ?? (propertyType instanceof Type.Array ? 'contains' : '=='),
             await this._toThingTalkValue(value, propertyType),
             null
         );
@@ -158,17 +197,30 @@ export default class SPARQLToThingTalkConverter {
     async _convertTriples(triples : any[]) : Promise<Record<string, Ast.BooleanExpression>> {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
-            if (triple.subject.termType === 'Variable') { 
+            // if subject is an entity, create an id filter first
+            if (triple.subject.termType === 'NamedNode' && triple.subject.value.startsWith(ENTITY_PREFIX)) {
+                const subject = triple.subject.value;
+                this._addFilter(subject, await this._atomFilter('id', subject));
+            }
+            // if subject is an variable and object is an entity, create a regular filter
+            if (triple.subject.termType === 'Variable' && triple.object.termType === 'NamedNode') { 
                 const subject = triple.subject.value;
                 // for P31 triple, update the domain of the variable, do not add filter
                 if (triple.predicate.termType === 'NamedNode' && triple.predicate.value === `${PROPERTY_PREFIX}P31`) {
-                    this._variables[subject] = triple.object.value.slice(ENTITY_PREFIX.length);
+                    this._setDomain(subject, triple.object.value.slice(ENTITY_PREFIX.length));
                     continue;
                 }
                 if (!(subject in filtersBySubject))
                     filtersBySubject[subject] = [];
                 filtersBySubject[subject].push(await this._atomFilter(triple.predicate.value, triple.object.value));
+            } 
+            // if object is an variable, create a projection
+            if (triple.object.termType === 'Variable') {
+                const subject = triple.subject.value;
+                const predicate = this._schema.getProperty(triple.predicate.value.slice(PROPERTY_PREFIX.length));
+                this._addProjection(subject, { variable: triple.object.value, property: predicate });
             }
+            
         }
         const converted : Record<string, Ast.BooleanExpression> = {};
         for (const [subject, filters] of Object.entries(filtersBySubject)) 
@@ -221,11 +273,10 @@ export default class SPARQLToThingTalkConverter {
     }
     
     /**
-     * reset members used to track the conversion
+     * reset tables used to track the conversion
      */
     _reset() {
-        this._variables = {};
-        this._filters = {};
+        this._tables = {};
     }
 
     /**
@@ -240,29 +291,33 @@ export default class SPARQLToThingTalkConverter {
             for (const clause of parsed.where) 
                 await this._parseWhereClause(clause);
         }
-        const tables : Ast.Expression[] = [];
+        const queries : Ast.Expression[] = [];
+        const variables = [];
         for (const variable of parsed.variables) {
-            if ('value' in variable && variable.value !== '*') {
-                const domain = this._variables[variable.value];
-                const table = domain ? this._schema.getTable(domain) : 'entity';
-                if (table === 'entity' && !((variable.value as string) in this._filters))
-                    throw new Error(`Not supported yet: ${variable.value}, ${JSON.stringify(this._filters, undefined, 2)}`);
-                if (!(variable.value in this._filters)) {
-                    tables.push(baseQuery(table));
-                } else {
-                    tables.push(new Ast.FilterExpression(
-                        null, 
-                        baseQuery(table),
-                        new Ast.BooleanExpression.And(null, this._filters[variable.value]),
-                        null)
-                    );
-                }
-                continue;
-            }
-            throw new Error(`Not supported yet: ${variable}`);
+            if ('value' in variable && variable.value !== '*')
+                variables.push(variable.value);
+            else 
+                throw new Error(`Unsupported variable type: ${variable}`);
         }
-        if (tables.length === 1)
-            return makeProgram(tables[0]); 
+        for (const [subject, Table] of Object.entries(this._tables)) {
+            const projections = [];
+            if (variables.includes(subject))
+                projections.push('id');
+            for (const projection of Table.projections) {
+                if (variables.includes(projection.variable))
+                    projections.push(projection.property);
+            }
+            if (projections.length === 0)
+                continue;
+            let table : Ast.Expression = baseQuery(Table.domain);
+            if (Table.filters.length > 0)
+                table = new Ast.FilterExpression(null, table, new Ast.BooleanExpression.And(null, Table.filters), null);
+            if (!(projections.length === 1 && projections[0] === 'id'))
+                table = new Ast.ProjectionExpression(null, table, projections, [], [], null);
+            queries.push(table);  
+        } 
+        if (queries.length === 1)
+            return makeProgram(queries[0]); 
 
         throw Error(`Not supported by ThingTalk: ${sparql}`);
     }
