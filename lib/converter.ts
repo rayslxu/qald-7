@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { promises as pfs } from 'fs';
 import assert from 'assert';
+import * as stream from 'stream';
 import JSONStream from 'JSONStream';
 import { closest } from 'fastest-levenshtein';
 import { Ast, Type } from 'thingtalk';
@@ -392,6 +393,10 @@ async function main() {
         required: true,
         type: fs.createWriteStream
     });
+    parser.add_argument('-d', '--drop', {
+        required: false,
+        type: fs.createWriteStream
+    });
     const args = parser.parse_args();
 
     const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
@@ -400,14 +405,21 @@ async function main() {
     const classDef = library.classes[0];
     const converter = new SPARQLToThingTalkConverter(classDef);
 
-    const pipeline = args.input.pipe(JSONStream.parse('questions.*'));
-    pipeline.on('data', async (item : any) => {
-        const thingtalk = await converter.convert(item.query.sparql, item.query.keywords.split(', '));
-        args.output.write(`${item.id}\t${item.question[0].string}\t${thingtalk.prettyprint()}`);
-    });
+    const pipeline = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
+    for await (const item of pipeline) {
+        try {
+            const thingtalk = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
+            args.output.write(`${item.id}\t${item.question[0].string}\t${thingtalk.prettyprint()}\n`);
+        } catch(e) {
+            console.log(`Example ${item.id} failed`);
+            if (args.drop) 
+                args.drop.write(`${item.id}: ${item.query.sparql}\n`);
+        }
+    }
     await waitFinish(pipeline);
     await waitFinish(args.output);
-    
+    if (args.drop)
+        await waitFinish(args.drop);
 }
 
 if (require.main === module)
