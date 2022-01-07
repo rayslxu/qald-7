@@ -11,7 +11,6 @@ import * as argparse from 'argparse';
 import { waitFinish } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX } from './utils/wikidata';
-import { AtomBooleanExpression } from 'thingtalk/dist/ast';
 import { I18n } from 'genie-toolkit';
 
 /**
@@ -206,12 +205,23 @@ export default class SPARQLToThingTalkConverter {
             propertyLabel = this._schema.getProperty(property);
             propertyType = this._schema.getPropertyType(property);
         }
-        return new AtomBooleanExpression(
+        return new Ast.AtomBooleanExpression(
             null,
             propertyLabel,
             operator ?? (propertyType instanceof Type.Array ? 'contains' : '=='),
             await this._toThingTalkValue(value, propertyType),
             null
+        );
+    }
+
+    private _aggregateFilter(aggregation : string, operands : string[], operator : string, value : number) {
+        if (operator === '>' || operator === '<') 
+            operator = operator + '=';
+        return new Ast.ComputeBooleanExpression(
+            null,
+            new Ast.ComputationValue(aggregation, operands.map((op) => new Ast.Value.VarRef(op))),
+            operator, 
+            new Ast.Value.Number(value)
         );
     }
 
@@ -303,6 +313,26 @@ export default class SPARQLToThingTalkConverter {
         else 
             throw new Error(`Unsupported filter ${JSON.stringify(where, undefined, 2)}`);
     }
+
+    private async _parseHavingClause(having : any, group : any) {
+        assert(group.expression && group.expression.termType === 'Variable');
+        const subject = group.expression.value;
+        if (!(subject in this._tables)) 
+            throw new Error('Unsupported group by operation on object');
+        if (having.type === 'operation') {
+            assert(having.args.length === 2);
+            const [lhs, rhs] = having.args;
+            assert(lhs.type === 'aggregate' && !lhs.distinct && lhs.aggregation === 'count' && lhs.expression.termType === 'Variable');
+            const variable = lhs.expression.value;
+            const projection = this._tables[subject].projections.find((proj) => proj.variable === variable);
+            if (!projection)
+                throw new Error(`Can't find matching variable for the having clause`);
+            assert(rhs.termType === 'Literal' && !isNaN(rhs.value));
+            this._addFilter(subject, this._aggregateFilter('count', [projection.property], having.operator, parseFloat(rhs.value)));
+        } else {
+            throw new Error(`Unsupported having clause ${JSON.stringify(having, undefined, 2)}`);
+        }
+    }
     
     /**
      * reset tables used to track the conversion
@@ -324,6 +354,11 @@ export default class SPARQLToThingTalkConverter {
         if (parsed.where) {
             for (const clause of parsed.where) 
                 await this._parseWhereClause(clause);
+        }
+        if (parsed.having && parsed.group) {
+            assert(parsed.group.length === 1);
+            for (const clause of parsed.having) 
+                await this._parseHavingClause(clause, parsed.group[0]);
         }
         const queries : Ast.Expression[] = [];
         const variables = [];
@@ -359,10 +394,11 @@ export default class SPARQLToThingTalkConverter {
             }
             queries.push(table);  
         } 
+        
         if (queries.length === 1)
             return makeProgram(queries[0]); 
 
-        throw Error(`Not supported by ThingTalk: ${sparql}`);
+        throw new Error(`Not supported by ThingTalk: ${sparql}`);
     }
 }
 
