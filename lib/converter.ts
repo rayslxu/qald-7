@@ -368,31 +368,47 @@ export default class SPARQLToThingTalkConverter {
             else 
                 throw new Error(`Unsupported variable type: ${variable}`);
         }
-        for (const [subject, Table] of Object.entries(this._tables)) {
+        for (const [subject, table] of Object.entries(this._tables)) {
             // handle filters
-            let table : Ast.Expression = baseQuery(Table.domain);
-            if (Table.filters.length > 0)
-                table = new Ast.FilterExpression(null, table, new Ast.BooleanExpression.And(null, Table.filters), null);
+            let query : Ast.Expression = baseQuery(table.domain);
+            if (table.filters.length > 0)
+                query = new Ast.FilterExpression(null, query, new Ast.BooleanExpression.And(null, table.filters), null);
 
             // handle projections and verifications
             const projections = [];
             if (variables.includes(subject))
                 projections.push('id');
-            for (const projection of Table.projections) {
+            for (const projection of table.projections) {
                 if (variables.includes(projection.variable))
                     projections.push(projection.property);
             }
-            if (Table.verifications.length > 0) {
+            if (table.verifications.length > 0) {
                 assert(projections.length === 0);
-                const verification = Table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, Table.verifications) : Table.verifications[0];
-                table = new Ast.BooleanQuestionExpression(null, table, verification, null);
+                const verification = table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, table.verifications) : table.verifications[0];
+                query = new Ast.BooleanQuestionExpression(null, query, verification, null);
             } else {
                 if (projections.length === 0)
                     continue;
                 if (!(projections.length === 1 && projections[0] === 'id'))
-                    table = new Ast.ProjectionExpression(null, table, projections, [], [], null);
+                    query = new Ast.ProjectionExpression(null, query, projections, [], [], null);
             }
-            queries.push(table);  
+
+            // handle sorting
+            if (parsed.order) {
+                assert(parsed.order.length === 1);
+                const expression = parsed.order[0].expression;
+                assert('termType' in expression && expression.termType === 'Variable');
+                const projection = table.projections.find((proj) => proj.variable === expression.value);
+                if (projection) {
+                    const property = new Ast.Value.VarRef(projection.property);
+                    const direction = parsed.order[0].descending ? 'desc' : 'asc';
+                    query = new Ast.SortExpression(null, query, property, direction, null);
+                    if (parsed.limit)
+                        query = new Ast.IndexExpression(null, query, [new Ast.Value.Number(parsed.limit)], null);
+                }
+            }
+
+            queries.push(query);  
         } 
         
         if (queries.length === 1)
