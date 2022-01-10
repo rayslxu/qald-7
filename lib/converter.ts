@@ -6,11 +6,11 @@ import JSONStream from 'JSONStream';
 import { closest } from 'fastest-levenshtein';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
-import { SelectQuery, Parser, SparqlParser } from 'sparqljs';
+import { SelectQuery, Parser, SparqlParser, AskQuery } from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
-import { ENTITY_PREFIX, PROPERTY_PREFIX } from './utils/wikidata';
+import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
 import { I18n } from 'genie-toolkit';
 
 /**
@@ -46,7 +46,6 @@ function elemType(type : Type) : Type {
         type = type.elem as Type;
     return type;
 }
-
  
 /**
  * A class to retrieve schema information from the schema
@@ -190,9 +189,11 @@ export default class SPARQLToThingTalkConverter {
             assert(wikidataLabel);
             const display = closest(wikidataLabel, this._keywords);
             return new Ast.Value.Entity(value, type.type, display); 
-        } else if (type === Type.Number) {
+        } 
+        if (type === Type.Number)
             return new Ast.Value.Number(parseFloat(value));
-        }
+        if (type === Type.String) 
+            return new Ast.Value.String(value);
 
         throw new Error('Unsupported value type: ' + type);
     }
@@ -273,8 +274,19 @@ export default class SPARQLToThingTalkConverter {
 
             // if object is an variable, create a projection
             if (triple.object.termType === 'Variable') {
-                const property = this._schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
-                this._addProjection(subject, { variable: object, property });
+                // if predicate is label, add a new projection with suffix "Label" for the property
+                if (predicate === LABEL) {
+                    for (const [subj, table] of Object.entries(this._tables)) {
+                        const projection = table.projections.find((proj) => proj.variable === subject);
+                        if (projection) {
+                            this._addProjection(subj, { variable : object, property : projection.property + 'Label' });
+                            break;
+                        }
+                    }
+                } else {
+                    const property = this._schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
+                    this._addProjection(subject, { variable: object, property });
+                }
             }
 
             // if both subject and object are entities, create a "verification", for boolean question
@@ -312,8 +324,9 @@ export default class SPARQLToThingTalkConverter {
     /**
      * Parse a filter clause
      * @param filter a filter clause
+     * @param isVerification if it's a verification question or not
      */
-    private async _parseFilter(filter : any) {
+    private async _parseFilter(filter : any, isVerification : boolean) {
         const expression = filter.expression;
         assert(filter.type === 'filter' && expression.args.length === 2);
         const [lhs, rhs] = expression.args;
@@ -322,7 +335,22 @@ export default class SPARQLToThingTalkConverter {
             const projection = table.projections.find((proj) => proj.variable === lhs.value);
             if (!projection)
                 continue;
-            this._addFilter(subject, await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number));
+            
+            let booleanExpression;
+            if (projection.property.endsWith('Label')) {
+                assert(expression.operator === 'regex');
+                const property = projection.property.slice(0, -'Label'.length);
+                const propertyType = this._schema.getPropertyType(property);
+                const operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
+                booleanExpression = await this._atomFilter(property, rhs.value, operator, Type.String);
+            } else {
+                booleanExpression = await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number);
+            }
+            
+            if (isVerification)
+                this._addVerification(subject, booleanExpression);
+            else 
+                this._addFilter(subject, booleanExpression);
         }
     }
 
@@ -339,14 +367,15 @@ export default class SPARQLToThingTalkConverter {
     /**
      * Parse a where clause
      * @param where a where clause
+     * @param isVerification if it's a verification question or not
      */
-    private async _parseWhereClause(where : any) {
+    private async _parseWhereClause(where : any, isVerification : boolean) {
         if (where.type === 'bgp') 
             await this._parseBasic(where);
         else if (where.type === 'union') 
             await this._parseUnion(where);
         else if (where.type === 'filter')
-            await this._parseFilter(where);
+            await this._parseFilter(where, isVerification);
         else 
             throw new Error(`Unsupported filter ${JSON.stringify(where)}`);
     }
@@ -387,23 +416,25 @@ export default class SPARQLToThingTalkConverter {
      */
     async convert(sparql : string, keywords : string[]) : Promise<Ast.Program> {
         this._reset(keywords);
-        const parsed = this._parser.parse(sparql) as SelectQuery;
+        const parsed = this._parser.parse(sparql) as SelectQuery|AskQuery;
         if (parsed.where) {
             for (const clause of parsed.where) 
-                await this._parseWhereClause(clause);
+                await this._parseWhereClause(clause, parsed.queryType === 'ASK');
         }
-        if (parsed.having && parsed.group) {
-            assert(parsed.group.length === 1);
-            for (const clause of parsed.having) 
-                await this._parseHavingClause(clause, parsed.group[0]);
+        if ('having' in parsed && 'group' in parsed) {
+            assert(parsed.group!.length === 1);
+            for (const clause of parsed.having ?? []) 
+                await this._parseHavingClause(clause, parsed.group![0]);
         }
         const queries : Ast.Expression[] = [];
         const variables = [];
-        for (const variable of parsed.variables ?? []) {
-            if ('value' in variable && variable.value !== '*')
-                variables.push(variable.value);
-            else 
-                throw new Error(`Unsupported variable type: ${variable}`);
+        if ('variables' in parsed) {
+            for (const variable of parsed.variables ?? []) {
+                if ('value' in variable && variable.value !== '*')
+                    variables.push(variable.value);
+                else 
+                    throw new Error(`Unsupported variable type: ${variable}`);
+            }
         }
         for (const [subject, table] of Object.entries(this._tables)) {
             // handle filters
@@ -431,14 +462,14 @@ export default class SPARQLToThingTalkConverter {
             }
 
             // handle sorting
-            if (parsed.order) {
-                assert(parsed.order.length === 1);
-                const expression = parsed.order[0].expression;
+            if ('order' in parsed) {
+                assert(parsed.order!.length === 1);
+                const expression = parsed.order![0].expression;
                 assert('termType' in expression && expression.termType === 'Variable');
                 const projection = table.projections.find((proj) => proj.variable === expression.value);
                 if (projection) {
                     const property = new Ast.Value.VarRef(projection.property);
-                    const direction = parsed.order[0].descending ? 'desc' : 'asc';
+                    const direction = parsed.order![0].descending ? 'desc' : 'asc';
                     query = new Ast.SortExpression(null, query, property, direction, null);
                     if (parsed.limit)
                         query = new Ast.IndexExpression(null, query, [new Ast.Value.Number(parsed.limit)], null);

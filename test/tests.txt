@@ -85,3 +85,27 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 @org.wikidata . city ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q1408 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " new jersey " ) ) && population >= 10000 ;
+
+====
+Utterance: Whose wife is called Mary?
+Keywords: wife, called, Mary
+SPARQL: 
+SELECT DISTINCT ?uri { 
+    ?uri <http://www.wikidata.org/prop/direct/P26> ?spouse .  
+    ?spouse <http://www.w3.org/2000/01/rdf-schema#label> ?name .  
+    FILTER(regex(?name,'Mary')) 
+}
+TT: 
+@org.wikidata . entity ( ) filter contains~ ( spouse , " mary " ) ;
+
+====
+Utterance: Was the wife of president Lincoln called Mary?
+Keywords: Lincoln, president, wife, called, Mary   
+SPARQL: 
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q91> <http://www.wikidata.org/prop/direct/P26> ?spouse .  
+    ?spouse <http://www.w3.org/2000/01/rdf-schema#label> ?name .  
+    FILTER(regex(?name,'Mary')) 
+}
+TT: 
+[ contains~ ( spouse , " mary " ) ] of @org.wikidata . entity ( ) filter id == " Q91 " ^^org.wikidata:entity ( " lincoln " ) ;

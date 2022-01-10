@@ -7,6 +7,7 @@ import wikibase from 'wikibase-sdk';
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
 export const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
+export const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
 
 const SQLITE_SCHEMA = `
 create table http_requests (
