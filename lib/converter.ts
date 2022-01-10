@@ -37,6 +37,16 @@ function makeProgram(expression : Ast.Expression) {
     return new Ast.Program(null, [], [], [new Ast.ExpressionStatement(null, expression)]);
 }
 
+/**
+ * Get the element type of a ThingTalk type
+ * @param type a ThingTalk type
+ */
+function elemType(type : Type) : Type {
+    while (type instanceof Type.Array)
+        type = type.elem as Type;
+    return type;
+}
+
  
 /**
  * A class to retrieve schema information from the schema
@@ -58,7 +68,7 @@ class WikiSchema {
                     continue;
                 const pid = arg.getImplementationAnnotation('wikidata_id') as string;
                 this._propertyMap[pid] = arg.name;
-                this._propertyTypeMap[pid] = arg.type;
+                this._propertyTypeMap[arg.name] = arg.type;
             }
         }
     }
@@ -80,11 +90,11 @@ class WikiSchema {
     }
 
     /**
-     * @param pid PID of a property
+     * @param property the name of the property
      * @returns the entity type of the property 
      */
-    getPropertyType(pid : string) : Type {
-        return this._propertyTypeMap[pid];
+    getPropertyType(property : string) : Type {
+        return this._propertyTypeMap[property];
     }
 }
 
@@ -169,47 +179,53 @@ export default class SPARQLToThingTalkConverter {
     /**
      * Convert a value in SPARQL into a ThingTalk value
      * @param value a value in the SPARQL triple
-     * @param propertyType the ThingTalk type of the property
+     * @param type the ThingTalk type of the value
      * @returns a ThingTalk value
      */
-    private async _toThingTalkValue(value : any, propertyType : Type) : Promise<Ast.Value> {
-        let valueType = propertyType;
-        while (valueType instanceof Type.Array)
-            valueType = valueType.elem as Type;
-        if (valueType instanceof Type.Entity) {
+    private async _toThingTalkValue(value : any, type : Type) : Promise<Ast.Value> {
+        if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
             value = value.slice(ENTITY_PREFIX.length);
             const wikidataLabel = await this._wikidata.getLabel(value);
             assert(wikidataLabel);
             const display = closest(wikidataLabel, this._keywords);
-            return new Ast.Value.Entity(value, valueType.type, display); 
+            return new Ast.Value.Entity(value, type.type, display); 
+        } else if (type === Type.Number) {
+            return new Ast.Value.Number(parseFloat(value));
         }
 
-        throw new Error('Unsupported value type: ' + valueType);
+        throw new Error('Unsupported value type: ' + type);
     }
 
     /**
      * Creat an atom filter 
-     * @param property the predicate derived from SPARQL ('id' or a wikidata entity)
+     * @param property the predicate derived from SPARQL (either a name or a Wikidata property)
      * @param value the value derived from SPARQL
      * @param operator operator, by default will be == or contains depending on the property type
+     * @param valueType the type of the value
      * @returns a ThingTalk filter: "$property = $value"
      */
-    private async _atomFilter(property : string, value : string, operator ?: string) : Promise<Ast.AtomBooleanExpression> {
+    private async _atomFilter(property : string, value : any, operator ?: string, valueType ?: Type) : Promise<Ast.AtomBooleanExpression> {
         let propertyLabel, propertyType;
         if (property === 'id') {
             propertyLabel = property;
             propertyType = new Type.Entity('org.wikidata:entity');
         } else {
-            property = property.slice(PROPERTY_PREFIX.length);
-            propertyLabel = this._schema.getProperty(property);
-            propertyType = this._schema.getPropertyType(property);
+            if (property.startsWith(PROPERTY_PREFIX)) {
+                property = property.slice(PROPERTY_PREFIX.length);
+                propertyLabel = this._schema.getProperty(property);
+            } else {
+                propertyLabel = property;
+            }
+            propertyType = this._schema.getPropertyType(propertyLabel);
         }
+        if (operator === '>' || operator === '<') 
+            operator = operator + '=';
         return new Ast.AtomBooleanExpression(
             null,
             propertyLabel,
             operator ?? (propertyType instanceof Type.Array ? 'contains' : '=='),
-            await this._toThingTalkValue(value, propertyType),
+            await this._toThingTalkValue(value, valueType ?? elemType(propertyType)),
             null
         );
     }
@@ -236,6 +252,8 @@ export default class SPARQLToThingTalkConverter {
             const subject = triple.subject.value;
             const predicate = triple.predicate.value;
             const object = triple.object.value;
+            if (!subject || !predicate || !object)
+                throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
 
             // if subject is an entity, create an id filter first
             if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) 
@@ -292,6 +310,23 @@ export default class SPARQLToThingTalkConverter {
     }
 
     /**
+     * Parse a filter clause
+     * @param filter a filter clause
+     */
+    private async _parseFilter(filter : any) {
+        const expression = filter.expression;
+        assert(filter.type === 'filter' && expression.args.length === 2);
+        const [lhs, rhs] = expression.args;
+        assert(lhs.termType === 'Variable' && rhs.termType === 'Literal');
+        for (const [subject, table] of Object.entries(this._tables)) {
+            const projection = table.projections.find((proj) => proj.variable === lhs.value);
+            if (!projection)
+                continue;
+            this._addFilter(subject, await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number));
+        }
+    }
+
+    /**
      * Parse a basic triple where clause
      * @param where a where clause
      */
@@ -310,8 +345,10 @@ export default class SPARQLToThingTalkConverter {
             await this._parseBasic(where);
         else if (where.type === 'union') 
             await this._parseUnion(where);
+        else if (where.type === 'filter')
+            await this._parseFilter(where);
         else 
-            throw new Error(`Unsupported filter ${JSON.stringify(where, undefined, 2)}`);
+            throw new Error(`Unsupported filter ${JSON.stringify(where)}`);
     }
 
     private async _parseHavingClause(having : any, group : any) {
@@ -330,7 +367,7 @@ export default class SPARQLToThingTalkConverter {
             assert(rhs.termType === 'Literal' && !isNaN(rhs.value));
             this._addFilter(subject, this._aggregateFilter('count', [projection.property], having.operator, parseFloat(rhs.value)));
         } else {
-            throw new Error(`Unsupported having clause ${JSON.stringify(having, undefined, 2)}`);
+            throw new Error(`Unsupported having clause ${JSON.stringify(having)}`);
         }
     }
     
