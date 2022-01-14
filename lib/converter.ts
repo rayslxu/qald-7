@@ -11,6 +11,7 @@ import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
 import { I18n } from 'genie-toolkit';
+import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
 
 /**
  * A shortcut for quickly creating a basic query
@@ -184,6 +185,8 @@ export default class SPARQLToThingTalkConverter {
         if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
             value = value.slice(ENTITY_PREFIX.length);
+            if (ENTITY_SPAN_OVERRIDE[value]) 
+                return new Ast.Value.Entity(value, type.type, ENTITY_SPAN_OVERRIDE[value]);
             const wikidataLabel = await this._wikidata.getLabel(value);
             assert(wikidataLabel);
             const display = closest(wikidataLabel, this._keywords);

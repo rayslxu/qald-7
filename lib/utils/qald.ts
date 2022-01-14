@@ -32,3 +32,13 @@ export function preprocessQALD() : Example[] {
         questions.push(preprocessExample(example));
     return questions;
 }
+
+
+/**
+ * In some examples of QALD-7, an entity span is splitted into multiple keywords,
+ * manually override them to recover 
+ */
+export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
+    "Q5274359" : "the first season of the HBO television series The Sopranos".toLowerCase(),
+    "Q4970706" : "federal chancellors of germany"
+};
