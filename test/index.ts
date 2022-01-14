@@ -15,7 +15,10 @@ async function main() {
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
     const tests = fs.readFileSync('./test/tests.txt').toString('utf-8').split('====');
 
-    for (let i = 0; i < tests.length; i++) {
+    const index = parseInt(process.argv[2]);
+    const start = index ? (index > 0 ? index - 1 : tests.length + index) : 0;
+    for (let i = Math.max(start, 0); i < tests.length; i++) {
+        console.log(`Running test ${i + 1} ...` );
         const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('Keywords:')).trim();
         const keywords = tests[i].slice(tests[i].indexOf('Keywords:') + 'Keywords:'.length, tests[i].indexOf('SPARQL:')).trim();
         const sparql = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length, tests[i].indexOf('TT:')).trim();
