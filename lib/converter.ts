@@ -431,13 +431,20 @@ export default class SPARQLToThingTalkConverter {
                 await this._parseHavingClause(clause, parsed.group![0]);
         }
         const queries : Ast.Expression[] = [];
-        const variables = [];
+        const variables : string[] = [];
+        const aggregation : Record<string, string> = {};
         if ('variables' in parsed) {
             for (const variable of parsed.variables ?? []) {
-                if ('value' in variable && variable.value !== '*')
+                if ('value' in variable && variable.value !== '*') {
                     variables.push(variable.value);
-                else 
+                } else if ('expression' in variable && 'type' in variable.expression && variable.expression.type === 'aggregate') {
+                    assert(variable.expression.aggregation === 'count');
+                    const expression = variable.expression.expression;
+                    assert('termType' in expression && expression.termType === 'Variable' );
+                    aggregation.count = expression.value;
+                } else {
                     throw new Error(`Unsupported variable type: ${variable}`);
+                }
             }
         }
         for (const [subject, table] of Object.entries(this._tables)) {
@@ -445,6 +452,15 @@ export default class SPARQLToThingTalkConverter {
             let query : Ast.Expression = baseQuery(table.domain);
             if (table.filters.length > 0)
                 query = new Ast.FilterExpression(null, query, new Ast.BooleanExpression.And(null, table.filters), null);
+
+            // handle aggregation count
+            // if there is a count aggregation, projection/verification/sorting makes no sense
+            // finish this table and continue
+            if (aggregation.count && aggregation.count === subject) {
+                query = new Ast.AggregationExpression(null, query, '*', 'count', null);
+                queries.push(query);  
+                continue;
+            }
 
             // handle projections and verifications
             const projections = [];
