@@ -537,7 +537,7 @@ async function main() {
         } catch(e) {
             console.log(`Example ${item.id} failed`);
             if (args.drop) 
-                args.drop.write(`${item.id}: ${item.query.sparql}\n`);
+                args.drop.write(`${item.id}\t${item.question[0].string}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
         }
     }
     await waitFinish(pipeline);
