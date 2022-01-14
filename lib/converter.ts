@@ -3,12 +3,11 @@ import { promises as pfs } from 'fs';
 import assert from 'assert';
 import * as stream from 'stream';
 import JSONStream from 'JSONStream';
-import { closest } from 'fastest-levenshtein';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
 import { SelectQuery, Parser, SparqlParser, AskQuery } from 'sparqljs';
 import * as argparse from 'argparse';
-import { waitFinish } from './utils/misc';
+import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
 import { I18n } from 'genie-toolkit';
@@ -188,6 +187,8 @@ export default class SPARQLToThingTalkConverter {
             const wikidataLabel = await this._wikidata.getLabel(value);
             assert(wikidataLabel);
             const display = closest(wikidataLabel, this._keywords);
+            if (!display)
+                throw new Error(`Failed find matching span for entity ${value} : ${wikidataLabel} among ${this._keywords}`);
             return new Ast.Value.Entity(value, type.type, display); 
         } 
         if (type === Type.Number)
