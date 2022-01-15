@@ -132,3 +132,13 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 @org.wikidata . entity ( ) filter contains ( occupation , " Q10800557 " ^^org.wikidata:p_occupation ( " actors " ) ) && contains ( place_of_birth , " Q183 " ^^org.wikidata:p_place_of_birth ( " germany " ) ) ;
+
+====
+Utterance: Give me the birthdays of all actors of the television show Charmed.
+Keywords: television show, Charmed, actor, birthday
+SPARQL: 
+SELECT DISTINCT ?date WHERE { 
+    <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?date .
+}
+TT: 
+[ date_of_birth ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ cast_member ] of @org.wikidata . entity ( ) filter id == " Q162371 " ^^org.wikidata:entity ( " charmed " ) ) ) ;
