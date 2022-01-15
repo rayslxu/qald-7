@@ -5,7 +5,16 @@ import * as stream from 'stream';
 import JSONStream from 'JSONStream';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
-import { SelectQuery, Parser, SparqlParser, AskQuery, UnionPattern, Triple } from 'sparqljs';
+import { 
+    SelectQuery, 
+    Parser, 
+    SparqlParser, 
+    AskQuery, 
+    UnionPattern, 
+    Triple,
+    IriTerm,
+    PropertyPath
+} from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
@@ -48,8 +57,10 @@ function elemType(type : Type) : Type {
 }
 
 /**
- * A few special cases for union clause
+ * Handle a few special cases for union clause
  * case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
+ * @param predicate A predicate
+ * @returns a parsed triple for the special cases, and false if not matched 
  */
 function parseSpecialUnion(union : UnionPattern) : Triple|false {
     const SPECIAL_PREDICATE = [
@@ -83,6 +94,25 @@ function parseSpecialUnion(union : UnionPattern) : Triple|false {
         return false;
     
     return first;
+}
+
+/**
+ * Get property in predicate with some special cases handling
+ * case 1: P131+ ==> P131
+ * @param predicate A predicate
+ * @returns the property in the predicate
+ */
+function extractPredicate(predicate : IriTerm | PropertyPath) : string|null {
+    if ('value' in predicate)
+        return predicate.value;
+    if (predicate.type === 'path' && predicate.pathType === '+') {
+        if (predicate.items.length !== 1)
+            return null;
+        const p = predicate.items[0];
+        if ('value' in p && p.value === `${PROPERTY_PREFIX}P131`)
+            return p.value;
+    } 
+    return null;
 }
  
 /**
@@ -293,8 +323,9 @@ export default class SPARQLToThingTalkConverter {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
             const subject = triple.subject.value;
-            const predicate = triple.predicate.value;
+            const predicate = extractPredicate(triple.predicate);
             const object = triple.object.value;
+
             if (!subject || !predicate || !object)
                 throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
 

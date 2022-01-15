@@ -79,7 +79,7 @@ Keywords: New Jersey, city, inhabitants, more than 10000
 SPARQL:
 SELECT DISTINCT ?uri WHERE { 
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . 
-    ?uri <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1408> . 
+    ?uri <http://www.wikidata.org/prop/direct/P131>+ <http://www.wikidata.org/entity/Q1408> . 
     ?uri <http://www.wikidata.org/prop/direct/P1082> ?population . 
     FILTER(?population > 10000) 
 }
