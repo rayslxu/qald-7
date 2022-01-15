@@ -40,5 +40,6 @@ export function preprocessQALD() : Example[] {
  */
 export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
     "Q5274359" : "the first season of the HBO television series The Sopranos".toLowerCase(),
-    "Q4970706" : "federal chancellors of germany"
+    "Q4970706" : "federal chancellors of germany",
+    "Q10800557" : "actors"
 };

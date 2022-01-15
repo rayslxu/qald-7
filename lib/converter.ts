@@ -5,7 +5,7 @@ import * as stream from 'stream';
 import JSONStream from 'JSONStream';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
-import { SelectQuery, Parser, SparqlParser, AskQuery } from 'sparqljs';
+import { SelectQuery, Parser, SparqlParser, AskQuery, UnionPattern, Triple } from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
@@ -45,6 +45,44 @@ function elemType(type : Type) : Type {
     while (type instanceof Type.Array)
         type = type.elem as Type;
     return type;
+}
+
+/**
+ * A few special cases for union clause
+ * case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
+ */
+function parseSpecialUnion(union : UnionPattern) : Triple|false {
+    const SPECIAL_PREDICATE = [
+        'P17' // country
+    ];
+    if (union.patterns.length !== 2)
+        return false;
+    if (union.patterns[0].type !== 'bgp' || union.patterns[1].type !== 'bgp')
+        return false;
+    if (union.patterns[0].triples.length !== 1 || union.patterns[1].triples.length !== 1)
+        return false;
+    const first = union.patterns[0].triples[0];
+    const second = union.patterns[1].triples[0];
+    if (!(first.subject.value && first.subject.value === second.subject.value))
+        return false;
+    if (!(first.object.value && first.object.value === second.object.value))
+        return false;
+    if (!('termType' in first.predicate && first.predicate.termType === 'NamedNode'))
+        return false;
+    if (!('type' in second.predicate && second.predicate.type === 'path' && second.predicate.pathType === '/'))
+        return false;
+    if (second.predicate.items.length !== 2)
+        return false;
+    if (!('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' ))
+        return false;
+    if (!('termType' in second.predicate.items[1] && second.predicate.items[1].termType === 'NamedNode' ))
+        return false;
+    if (second.predicate.items[0].value !== first.predicate.value)
+        return false;
+    if (!SPECIAL_PREDICATE.includes(second.predicate.items[1].value.slice(PROPERTY_PREFIX.length)))
+        return false;
+    
+    return first;
 }
  
 /**
@@ -309,6 +347,11 @@ export default class SPARQLToThingTalkConverter {
      * @param where a where clause
      */
     private async _parseUnion(where : any)  {
+        const triple = parseSpecialUnion(where);
+        if (triple) {
+            await this._parseBasic( { triples: [triple] });
+            return;
+        }
         let existedSubject;
         const operands = [];
         for (const pattern of where.patterns) {
