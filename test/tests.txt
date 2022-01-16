@@ -142,3 +142,14 @@ SELECT DISTINCT ?date WHERE {
 }
 TT: 
 [ date_of_birth ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ cast_member ] of @org.wikidata . entity ( ) filter id == " Q162371 " ^^org.wikidata:entity ( " charmed " ) ) ) ;
+
+====
+Utterance: Does the Isar flow into a lake?
+Keywords: Isar, flow, lake
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q106588> <http://www.wikidata.org/prop/direct/P403> ?uri . 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>  . 
+}
+TT:
+[ contains ( mouth_of_the_watercourse , any ( @org.wikidata . lake ( ) ) ) ] of @org.wikidata . entity ( ) filter id == " Q106588 " ^^org.wikidata:entity ( " isar " ) ;

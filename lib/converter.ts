@@ -70,6 +70,18 @@ function makeSubqueryProgram(main : Ast.Expression, subquery : Ast.BooleanExpres
 }
 
 /**
+ * A shortcut for creating a program with subquery verification
+ * @param main the main query
+ * @param subqueries the boolean expressions to verify
+ */
+function makeSubqueryVerificationProgram(main : Ast.Expression, subqueries : Ast.BooleanExpression[]) {
+    assert(subqueries.length > 0);
+    const verification = subqueries.length === 1 ? subqueries[0] : new Ast.AndBooleanExpression(null, subqueries);
+    const expression = new Ast.BooleanQuestionExpression(null, main, verification, null);
+    return new Ast.Program(null, [], [], [new Ast.ExpressionStatement(null, expression)]);
+}
+
+/**
  * Get the element type of a ThingTalk type
  * @param type a ThingTalk type
  */
@@ -595,11 +607,13 @@ export default class SPARQLToThingTalkConverter {
                 if (variables.includes(projection.variable) || Object.keys(this._tables).includes(projection.variable))
                     projections.push(projection.property);
             }
-            if (table.verifications.length > 0) {
+            if (parsed.queryType === 'ASK' && table.verifications.length > 0) {
                 assert(projections.length === 0);
                 const verification = table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, table.verifications) : table.verifications[0];
                 query = new Ast.BooleanQuestionExpression(null, query, verification, null);
-            } else {
+            } else if (parsed.queryType === 'SELECT') {
+                // if it's not a verification question, and there is no projection/verification 
+                // for a table, skip the table - it's a helper table to generate filter
                 if (projections.length === 0)
                     continue;
                 if (!(projections.length === 1 && projections[0] === 'id'))
@@ -626,7 +640,7 @@ export default class SPARQLToThingTalkConverter {
         
         if (Object.values(queries).length === 1)
             return makeProgram(Object.values(queries)[0]); 
-        if (Object.values(queries).length === 2) {
+        if (Object.values(queries).length === 2 && parsed.queryType === 'SELECT') {
             let [[mainSubject, main], [subquerySubject, subquery]] = Object.entries(queries);
             // the query without any projection in SPARQL variables should be the subquery
             // swap if necessary
@@ -664,6 +678,28 @@ export default class SPARQLToThingTalkConverter {
             }
             
             return makeSubqueryProgram(main, subqueryFilter);
+        }
+        if (Object.values(queries).length >= 2 && parsed.queryType === 'ASK') {
+            const mainSubject = Object.keys(queries).find((subject) => subject.startsWith(ENTITY_PREFIX));
+            if (!mainSubject)
+                throw new Error('No main function found');
+            const main = queries[mainSubject];
+            const subqueries = [];
+            for (const [subject, query] of Object.entries(queries)) {
+                if (subject === mainSubject)
+                    continue;
+                const proj = this._tables[mainSubject].projections.find((proj) => proj.variable === subject);
+                if (!proj)
+                    throw new Error(`No supported verification question: ${sparql}`);
+                subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
+                    null,
+                    new Ast.Value.VarRef(proj.property),
+                    this._schema.getPropertyType(proj.property) instanceof Type.Array ? 'contains' : '==',
+                    query, 
+                    null
+                ));
+            }
+            return makeSubqueryVerificationProgram(main, subqueries);
         }
 
         throw new Error(`Not supported by ThingTalk: ${sparql}`);
