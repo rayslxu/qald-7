@@ -638,8 +638,12 @@ export default class SPARQLToThingTalkConverter {
             queries[subject] = query;  
         } 
         
-        if (Object.values(queries).length === 1)
+        if (Object.values(queries).length === 1) {
+            const query = Object.values(queries)[0];
+            if (parsed.queryType === 'ASK' && !(query instanceof Ast.BooleanQuestionExpression))
+                throw new Error(`Unsupported command: verification question on if the result is empty or not: ${sparql}`);
             return makeProgram(Object.values(queries)[0]); 
+        }
         if (Object.values(queries).length === 2 && parsed.queryType === 'SELECT') {
             let [[mainSubject, main], [subquerySubject, subquery]] = Object.entries(queries);
             // the query without any projection in SPARQL variables should be the subquery
