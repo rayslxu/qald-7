@@ -3,6 +3,7 @@ import { promises as pfs } from 'fs';
 import assert from 'assert';
 import * as stream from 'stream';
 import JSONStream from 'JSONStream';
+import { stringify as csvstringify } from 'csv-stringify';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
 import { 
@@ -738,7 +739,7 @@ async function main() {
         type: fs.createWriteStream
     });
     parser.add_argument('-d', '--drop', {
-        required: false,
+        required: true,
         type: fs.createWriteStream
     });
     const args = parser.parse_args();
@@ -749,21 +750,23 @@ async function main() {
     const classDef = library.classes[0];
     const converter = new SPARQLToThingTalkConverter(classDef);
 
-    const pipeline = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
-    for await (const item of pipeline) {
+    const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
+    const output = csvstringify({ header: false, delimiter: '\t' });
+    output.pipe(args.output);
+    const dropped = csvstringify({ header: false, delimiter: '\t' }); 
+    dropped.pipe(args.drop);
+    for await (const item of input) {
         try {
             const thingtalk = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
-            args.output.write(`${item.id}\t${item.question[0].string}\t${thingtalk.prettyprint()}\n`);
+            output.write([item.id, item.question[0].string, thingtalk.prettyprint()]);
         } catch(e) {
             console.log(`Example ${item.id} failed`);
-            if (args.drop) 
-                args.drop.write(`${item.id}\t${item.question[0].string}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
+            dropped.write([item.id, item.question[0].string, item.query.sparql, (e as Error).message.replace(/\s+/g, ' ')]);
         }
     }
-    await waitFinish(pipeline);
-    await waitFinish(args.output);
-    if (args.drop)
-        await waitFinish(args.drop);
+    await waitFinish(input);
+    await waitFinish(output);
+    await waitFinish(dropped);
 }
 
 if (require.main === module)
