@@ -10,6 +10,14 @@ import { cleanName, waitFinish, idArgument } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
+interface Entity {
+    type : string;
+    name : string;
+    is_well_known : boolean;
+    has_ner_support : boolean;
+    subtype_of : string[]|null;
+}
+
 interface ManifestGeneratorOptions {
     output : fs.WriteStream,
     include_non_entity_properties : boolean
@@ -20,6 +28,7 @@ class ManifestGenerator {
     private _parser : SparqlParser;
     private _tokenizer : I18n.BaseTokenizer;
     private _examples : Example[];
+    private _entities : Record<string, Entity>;
     private _domainLabels : Record<string, string>; // Record<domain, domain label>
     private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
     private _properties : Record<string, Ast.ArgumentDef>;
@@ -34,6 +43,7 @@ class ManifestGenerator {
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD();
         this._domainLabels = {};
+        this._entities = {};
         this._propertyLabelsByDomain = {};
         this._properties = {};
         this._propertyValues = {};
@@ -62,6 +72,23 @@ class ManifestGenerator {
         
         const propertyLabel = await this._wikidata.getLabel(propertyId);
         this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel ?? propertyId;
+    }
+
+    /**
+     * Add an entity to entities.json
+     * @param type the entity type 
+     * @param name the name of the entity
+     */
+    private _addEntity(type : string, name : string) {
+        if (!(type in this._entities)) {
+            this._entities[type] = {
+                type: `org.wikidata:${type}`,
+                name, 
+                is_well_known: false,
+                has_ner_support: true,
+                subtype_of : ['org.wikidata:entity']
+            };
+        }
     }
 
     /**
@@ -137,6 +164,7 @@ class ManifestGenerator {
                 }
             );
             args.push(argumentDef);
+            this._addEntity(`p_${pname}`, label);
             if (!(label in this._properties))
                 this._properties[label] = argumentDef;
             const values = propertyValues[property];
@@ -163,6 +191,7 @@ class ManifestGenerator {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
+        this._addEntity(fname, domainLabel);
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
@@ -186,6 +215,7 @@ class ManifestGenerator {
                 }
             );
             args.push(argumentDef);
+            this._addEntity(`p_${pname}`, label);
             this._properties[label] = argumentDef;
         }
         console.log(`Done sampling ${domainLabel} domain`);
@@ -229,6 +259,7 @@ class ManifestGenerator {
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String('Q35120')])
             }
         });
+        this._addEntity('entity', 'Entity');
 
         console.log('Start writing device manifest ...');
         const whitelist =  new Ast.Value.Array(
@@ -267,6 +298,18 @@ class ManifestGenerator {
     }
 
     /**
+     * Output entities.json
+     */
+    async _outputEntities() {
+        const dir = path.dirname(this._output.path as string);
+        const output = fs.createWriteStream(dir + '/entities.json');
+        const data = { result: "ok", data: Object.values(this._entities) };
+        output.end(JSON.stringify(data, undefined, 2));
+        await waitFinish(output);
+    }
+
+
+    /**
      * Process all examples in QALD and then generate/output the manifest and parameter datasets
      */
     async generate() {
@@ -282,6 +325,7 @@ class ManifestGenerator {
         await waitFinish(this._output);
 
         console.log('Start generating parameter datasets ...');
+        await this._outputEntities();
         await this._outputParameterDatasets();
         console.log('Done.');
         
