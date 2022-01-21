@@ -11,12 +11,11 @@ export function removeAccent(v : string) {
 }
 
 export function cleanName(v : string) {
-    // replace u.s. to us
-    v = v.replace(/u\.s\./g, 'us');
     // replace '(s)' to simply 's'
     v = v.replace(/\(s\)/g, 's');
-    
     v = snakeCase(v);
+    // replace u.s. to us
+    v = v.replace(/u\.s\./g, 'us');
     // remove accents
     v = removeAccent(v);
     // replace any special tokens to underscore
