@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as argparse from 'argparse';
 import { Ast, Type } from 'thingtalk';
-import { I18n } from 'genie-toolkit';
+import { I18n, genBaseCanonical } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
@@ -172,13 +172,16 @@ class ManifestGenerator {
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
             missing.push([id, label]);
+            const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
+            const baseCanonical = {};
+            genBaseCanonical(baseCanonical, pname, ptype, null);
             const argumentDef = new Ast.ArgumentDef(
                 null, 
                 Ast.ArgDirection.OUT, 
                 pname,
-                new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`)),
+                ptype,
                 {
-                    nl: { canonical: { base: [label] } },
+                    nl: { canonical:  baseCanonical },
                     impl: { wikidata_id: new Ast.Value.String(id) }
                 }
             );
