@@ -808,26 +808,31 @@ class @org.wikidata
                                   #[wikidata_id="P3091"],
                                   out country : Array(Entity(org.wikidata:p_country))
                                   #_[canonical={
-                                    base=["country"]
+                                    default="property",
+                                    base=["countries"]
                                   }]
                                   #[wikidata_id="P17"],
                                   out date_of_death : Array(Entity(org.wikidata:p_date_of_death))
                                   #_[canonical={
-                                    base=["date of death"]
+                                    default="property",
+                                    base=["date of deaths"]
                                   }]
                                   #[wikidata_id="P570"],
                                   out discoverer_or_inventor : Array(Entity(org.wikidata:p_discoverer_or_inventor))
                                   #_[canonical={
-                                    base=["discoverer or inventor"]
+                                    default="property",
+                                    base=["discoverer or inventors"]
                                   }]
                                   #[wikidata_id="P61"],
                                   out located_in_the_administrative_territorial_entity : Array(Entity(org.wikidata:p_located_in_the_administrative_territorial_entity))
                                   #_[canonical={
-                                    base=["located in the administrative territorial entity"]
+                                    default="preposition",
+                                    preposition=["located in the administrative territorial entity"]
                                   }]
                                   #[wikidata_id="P131"],
                                   out official_website : Array(Entity(org.wikidata:p_official_website))
                                   #_[canonical={
+                                    default="property",
                                     base=["official website"]
                                   }]
                                   #[wikidata_id="P856"])
@@ -1086,7 +1091,7 @@ class @org.wikidata
                                                 base=["described by source"]
                                               }]
                                               #[wikidata_id="P1343"],
-                                              out crew_member_s_ : Array(Entity(org.wikidata:p_crew_member_s_))
+                                              out crew_members : Array(Entity(org.wikidata:p_crew_members))
                                               #_[canonical={
                                                 base=["crew member(s)"]
                                               }]
@@ -1518,7 +1523,8 @@ class @org.wikidata
                                      #[wikidata_id="P37"],
                                      out elevation_above_sea_level : Array(Entity(org.wikidata:p_elevation_above_sea_level))
                                      #_[canonical={
-                                       base=["elevation above sea level"]
+                                       default="property",
+                                       base=["elevation above sea levels"]
                                      }]
                                      #[wikidata_id="P2044"])
   #_[canonical=["mountain"]]
@@ -1756,7 +1762,7 @@ class @org.wikidata
                                        base=["category for members of a team"]
                                      }]
                                      #[wikidata_id="P6112"],
-                                     out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                     out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                      #_[canonical={
                                        base=["official color(s)"]
                                      }]
@@ -2093,6 +2099,7 @@ class @org.wikidata
                                      #[wikidata_id="P106"],
                                      out employees : Array(Entity(org.wikidata:p_employees))
                                      #_[canonical={
+                                       default="property",
                                        base=["employees"]
                                      }]
                                      #[wikidata_id="P1128"])
@@ -2908,16 +2915,19 @@ class @org.wikidata
                                             #[wikidata_id="P1366"],
                                             out population : Array(Entity(org.wikidata:p_population))
                                             #_[canonical={
-                                              base=["population"]
+                                              default="property",
+                                              base=["populations"]
                                             }]
                                             #[wikidata_id="P1082"],
                                             out place_of_birth : Array(Entity(org.wikidata:p_place_of_birth))
                                             #_[canonical={
-                                              base=["place of birth"]
+                                              default="property",
+                                              base=["place of births"]
                                             }]
                                             #[wikidata_id="P19"],
                                             out lyrics_by : Array(Entity(org.wikidata:p_lyrics_by))
                                             #_[canonical={
+                                              default="property",
                                               base=["lyrics by"]
                                             }]
                                             #[wikidata_id="P676"])
@@ -3118,7 +3128,8 @@ class @org.wikidata
                                     #[wikidata_id="P170"],
                                     out point_in_time : Array(Entity(org.wikidata:p_point_in_time))
                                     #_[canonical={
-                                      base=["point in time"]
+                                      default="property",
+                                      base=["points in time"]
                                     }]
                                     #[wikidata_id="P585"])
   #_[canonical=["protest"]]
@@ -4013,7 +4024,8 @@ class @org.wikidata
                                               #[wikidata_id="P264"],
                                               out date_of_birth : Array(Entity(org.wikidata:p_date_of_birth))
                                               #_[canonical={
-                                                base=["date of birth"]
+                                                default="property",
+                                                base=["date of births"]
                                               }]
                                               #[wikidata_id="P569"])
   #_[canonical=["television series"]]
@@ -4593,7 +4605,8 @@ class @org.wikidata
                                     #[wikidata_id="P1366"],
                                     out area : Array(Entity(org.wikidata:p_area))
                                     #_[canonical={
-                                      base=["area"]
+                                      default="property",
+                                      base=["areas"]
                                     }]
                                     #[wikidata_id="P2046"])
   #_[canonical=["country"]]
@@ -4771,7 +4784,7 @@ class @org.wikidata
                                        base=["category for the view of the item"]
                                      }]
                                      #[wikidata_id="P8989"],
-                                     out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                     out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                      #_[canonical={
                                        base=["official color(s)"]
                                      }]
@@ -6058,7 +6071,8 @@ class @org.wikidata
                                     #[wikidata_id="P9929"],
                                     out member_of_political_party : Array(Entity(org.wikidata:p_member_of_political_party))
                                     #_[canonical={
-                                      base=["member of political party"]
+                                      default="property",
+                                      base=["member of political parties"]
                                     }]
                                     #[wikidata_id="P102"])
   #_[canonical=["capital"]]
@@ -7401,7 +7415,7 @@ class @org.wikidata
                                                         base=["competition class"]
                                                       }]
                                                       #[wikidata_id="P2094"],
-                                                      out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                                      out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                                       #_[canonical={
                                                         base=["official color(s)"]
                                                       }]
@@ -7538,7 +7552,8 @@ class @org.wikidata
                                                       #[wikidata_id="P822"],
                                                       out maximum_capacity : Array(Entity(org.wikidata:p_maximum_capacity))
                                                       #_[canonical={
-                                                        base=["maximum capacity"]
+                                                        default="property",
+                                                        base=["maximum capacities"]
                                                       }]
                                                       #[wikidata_id="P1083"])
   #_[canonical=["association football club"]]
@@ -8553,7 +8568,8 @@ class @org.wikidata
                                  #[wikidata_id="P1383"],
                                  out population : Array(Entity(org.wikidata:p_population))
                                  #_[canonical={
-                                   base=["population"]
+                                   default="property",
+                                   base=["populations"]
                                  }]
                                  #[wikidata_id="P1082"])
   #_[canonical=["city"]]
@@ -8778,7 +8794,8 @@ class @org.wikidata
                                   #[wikidata_id="P1299"],
                                   out length : Array(Entity(org.wikidata:p_length))
                                   #_[canonical={
-                                    base=["length"]
+                                    default="property",
+                                    base=["lengths"]
                                   }]
                                   #[wikidata_id="P2043"])
   #_[canonical=["river"]]
@@ -9293,7 +9310,8 @@ class @org.wikidata
                                   #[wikidata_id="P6104"],
                                   out publication_date : Array(Entity(org.wikidata:p_publication_date))
                                   #_[canonical={
-                                    base=["publication date"]
+                                    default="property",
+                                    base=["publication dates"]
                                   }]
                                   #[wikidata_id="P577"])
   #_[canonical=["album"]]
@@ -9503,6 +9521,7 @@ class @org.wikidata
                                                #[wikidata_id="P749"],
                                                out start_time : Array(Entity(org.wikidata:p_start_time))
                                                #_[canonical={
+                                                 default="property",
                                                  base=["start time"]
                                                }]
                                                #[wikidata_id="P580"])
@@ -9666,7 +9685,7 @@ class @org.wikidata
                                             base=["sponsor"]
                                           }]
                                           #[wikidata_id="P859"],
-                                          out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                          out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                           #_[canonical={
                                             base=["official color(s)"]
                                           }]
@@ -10843,7 +10862,8 @@ class @org.wikidata
                                           #[wikidata_id="P449"],
                                           out cost : Array(Entity(org.wikidata:p_cost))
                                           #_[canonical={
-                                            base=["cost"]
+                                            default="property",
+                                            base=["costs"]
                                           }]
                                           #[wikidata_id="P2130"])
   #_[canonical=["animated film"]]
@@ -11131,7 +11151,7 @@ class @org.wikidata
                                     base=["parent organization"]
                                   }]
                                   #[wikidata_id="P749"],
-                                  out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                  out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                   #_[canonical={
                                     base=["official color(s)"]
                                   }]
@@ -11333,7 +11353,8 @@ class @org.wikidata
                                   #[wikidata_id="P641"],
                                   out occupation : Array(Entity(org.wikidata:p_occupation))
                                   #_[canonical={
-                                    base=["occupation"]
+                                    default="property",
+                                    base=["occupations"]
                                   }]
                                   #[wikidata_id="P106"])
   #_[canonical=["brand"]]
@@ -12048,7 +12069,8 @@ class @org.wikidata
                                     #[wikidata_id="P166"],
                                     out maximum_capacity : Array(Entity(org.wikidata:p_maximum_capacity))
                                     #_[canonical={
-                                      base=["maximum capacity"]
+                                      default="property",
+                                      base=["maximum capacities"]
                                     }]
                                     #[wikidata_id="P1083"])
   #_[canonical=["stadium"]]
@@ -14048,7 +14070,8 @@ class @org.wikidata
                                  #[wikidata_id="P4688"],
                                  out area : Array(Entity(org.wikidata:p_area))
                                  #_[canonical={
-                                   base=["area"]
+                                   default="property",
+                                   base=["areas"]
                                  }]
                                  #[wikidata_id="P2046"])
   #_[canonical=["lake"]]
@@ -16798,7 +16821,8 @@ class @org.wikidata
                                                           #[wikidata_id="P276"],
                                                           out local_dialing_code : Array(Entity(org.wikidata:p_local_dialing_code))
                                                           #_[canonical={
-                                                            base=["local dialing code"]
+                                                            default="property",
+                                                            base=["local dialing codes"]
                                                           }]
                                                           #[wikidata_id="P473"])
   #_[canonical=["urban municipality of Germany"]]
@@ -16978,6 +17002,7 @@ class @org.wikidata
                                    #[wikidata_id="P5008"],
                                    out start_time : Array(Entity(org.wikidata:p_start_time))
                                    #_[canonical={
+                                     default="property",
                                      base=["start time"]
                                    }]
                                    #[wikidata_id="P580"])
@@ -17516,7 +17541,7 @@ class @org.wikidata
                                            base=["secretary general"]
                                          }]
                                          #[wikidata_id="P3975"],
-                                         out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                                         out official_colors : Array(Entity(org.wikidata:p_official_colors))
                                          #_[canonical={
                                            base=["official color(s)"]
                                          }]
@@ -19363,7 +19388,8 @@ class @org.wikidata
                                               #[wikidata_id="P610"],
                                               out dissolved_abolished_or_demolished_date : Array(Entity(org.wikidata:p_dissolved_abolished_or_demolished_date))
                                               #_[canonical={
-                                                base=["dissolved, abolished or demolished date"]
+                                                default="preposition",
+                                                preposition=["dissolved abolished or demolished dates"]
                                               }]
                                               #[wikidata_id="P576"])
   #_[canonical=["historical period"]]
@@ -19468,6 +19494,7 @@ class @org.wikidata
                                              #[wikidata_id="P921"],
                                              out end_time : Array(Entity(org.wikidata:p_end_time))
                                              #_[canonical={
+                                               default="property",
                                                base=["end time"]
                                              }]
                                              #[wikidata_id="P582"])
@@ -19573,6 +19600,7 @@ class @org.wikidata
                                               #[wikidata_id="P1542"],
                                               out start_time : Array(Entity(org.wikidata:p_start_time))
                                               #_[canonical={
+                                                default="property",
                                                 base=["start time"]
                                               }]
                                               #[wikidata_id="P580"])
@@ -19598,7 +19626,8 @@ class @org.wikidata
                     #[wikidata_id="P26"],
                     out place_of_birth : Array(Entity(org.wikidata:p_place_of_birth))
                     #_[canonical={
-                      base=["place of birth"]
+                      default="property",
+                      base=["place of births"]
                     }]
                     #[wikidata_id="P19"],
                     out sex_or_gender : Array(Entity(org.wikidata:p_sex_or_gender))
@@ -19633,12 +19662,14 @@ class @org.wikidata
                     #[wikidata_id="P103"],
                     out occupation : Array(Entity(org.wikidata:p_occupation))
                     #_[canonical={
-                      base=["occupation"]
+                      default="property",
+                      base=["occupations"]
                     }]
                     #[wikidata_id="P106"],
                     out member_of_political_party : Array(Entity(org.wikidata:p_member_of_political_party))
                     #_[canonical={
-                      base=["member of political party"]
+                      default="property",
+                      base=["member of political parties"]
                     }]
                     #[wikidata_id="P102"],
                     out country_of_citizenship : Array(Entity(org.wikidata:p_country_of_citizenship))
@@ -20383,26 +20414,31 @@ class @org.wikidata
                     #[wikidata_id="P3091"],
                     out country : Array(Entity(org.wikidata:p_country))
                     #_[canonical={
-                      base=["country"]
+                      default="property",
+                      base=["countries"]
                     }]
                     #[wikidata_id="P17"],
                     out date_of_death : Array(Entity(org.wikidata:p_date_of_death))
                     #_[canonical={
-                      base=["date of death"]
+                      default="property",
+                      base=["date of deaths"]
                     }]
                     #[wikidata_id="P570"],
                     out discoverer_or_inventor : Array(Entity(org.wikidata:p_discoverer_or_inventor))
                     #_[canonical={
-                      base=["discoverer or inventor"]
+                      default="property",
+                      base=["discoverer or inventors"]
                     }]
                     #[wikidata_id="P61"],
                     out located_in_the_administrative_territorial_entity : Array(Entity(org.wikidata:p_located_in_the_administrative_territorial_entity))
                     #_[canonical={
-                      base=["located in the administrative territorial entity"]
+                      default="preposition",
+                      preposition=["located in the administrative territorial entity"]
                     }]
                     #[wikidata_id="P131"],
                     out official_website : Array(Entity(org.wikidata:p_official_website))
                     #_[canonical={
+                      default="property",
                       base=["official website"]
                     }]
                     #[wikidata_id="P856"],
@@ -20428,6 +20464,7 @@ class @org.wikidata
                     #[wikidata_id="P407"],
                     out lyrics_by : Array(Entity(org.wikidata:p_lyrics_by))
                     #_[canonical={
+                      default="property",
                       base=["lyrics by"]
                     }]
                     #[wikidata_id="P676"],
@@ -20551,7 +20588,7 @@ class @org.wikidata
                       base=["location"]
                     }]
                     #[wikidata_id="P276"],
-                    out crew_member_s_ : Array(Entity(org.wikidata:p_crew_member_s_))
+                    out crew_members : Array(Entity(org.wikidata:p_crew_members))
                     #_[canonical={
                       base=["crew member(s)"]
                     }]
@@ -20843,7 +20880,8 @@ class @org.wikidata
                     #[wikidata_id="P37"],
                     out elevation_above_sea_level : Array(Entity(org.wikidata:p_elevation_above_sea_level))
                     #_[canonical={
-                      base=["elevation above sea level"]
+                      default="property",
+                      base=["elevation above sea levels"]
                     }]
                     #[wikidata_id="P2044"],
                     out headquarters_location : Array(Entity(org.wikidata:p_headquarters_location))
@@ -20946,7 +20984,7 @@ class @org.wikidata
                       base=["category for members of a team"]
                     }]
                     #[wikidata_id="P6112"],
-                    out official_color_s_ : Array(Entity(org.wikidata:p_official_color_s_))
+                    out official_colors : Array(Entity(org.wikidata:p_official_colors))
                     #_[canonical={
                       base=["official color(s)"]
                     }]
@@ -21133,6 +21171,7 @@ class @org.wikidata
                     #[wikidata_id="P178"],
                     out employees : Array(Entity(org.wikidata:p_employees))
                     #_[canonical={
+                      default="property",
                       base=["employees"]
                     }]
                     #[wikidata_id="P1128"],
@@ -21433,7 +21472,8 @@ class @org.wikidata
                     #[wikidata_id="P1269"],
                     out population : Array(Entity(org.wikidata:p_population))
                     #_[canonical={
-                      base=["population"]
+                      default="property",
+                      base=["populations"]
                     }]
                     #[wikidata_id="P1082"],
                     out in_opposition_to : Array(Entity(org.wikidata:p_in_opposition_to))
@@ -21473,7 +21513,8 @@ class @org.wikidata
                     #[wikidata_id="P1891"],
                     out point_in_time : Array(Entity(org.wikidata:p_point_in_time))
                     #_[canonical={
-                      base=["point in time"]
+                      default="property",
+                      base=["points in time"]
                     }]
                     #[wikidata_id="P585"],
                     out publisher : Array(Entity(org.wikidata:p_publisher))
@@ -21793,12 +21834,14 @@ class @org.wikidata
                     #[wikidata_id="P2747"],
                     out date_of_birth : Array(Entity(org.wikidata:p_date_of_birth))
                     #_[canonical={
-                      base=["date of birth"]
+                      default="property",
+                      base=["date of births"]
                     }]
                     #[wikidata_id="P569"],
                     out area : Array(Entity(org.wikidata:p_area))
                     #_[canonical={
-                      base=["area"]
+                      default="property",
+                      base=["areas"]
                     }]
                     #[wikidata_id="P2046"],
                     out exclave_of : Array(Entity(org.wikidata:p_exclave_of))
@@ -22138,7 +22181,8 @@ class @org.wikidata
                     #[wikidata_id="P2094"],
                     out maximum_capacity : Array(Entity(org.wikidata:p_maximum_capacity))
                     #_[canonical={
-                      base=["maximum capacity"]
+                      default="property",
+                      base=["maximum capacities"]
                     }]
                     #[wikidata_id="P1083"],
                     out main_building_contractor : Array(Entity(org.wikidata:p_main_building_contractor))
@@ -22283,7 +22327,8 @@ class @org.wikidata
                     #[wikidata_id="P3871"],
                     out length : Array(Entity(org.wikidata:p_length))
                     #_[canonical={
-                      base=["length"]
+                      default="property",
+                      base=["lengths"]
                     }]
                     #[wikidata_id="P2043"],
                     out asteroid_spectral_type : Array(Entity(org.wikidata:p_asteroid_spectral_type))
@@ -22343,7 +22388,8 @@ class @org.wikidata
                     #[wikidata_id="P1389"],
                     out publication_date : Array(Entity(org.wikidata:p_publication_date))
                     #_[canonical={
-                      base=["publication date"]
+                      default="property",
+                      base=["publication dates"]
                     }]
                     #[wikidata_id="P577"],
                     out order_of_battle : Array(Entity(org.wikidata:p_order_of_battle))
@@ -22378,6 +22424,7 @@ class @org.wikidata
                     #[wikidata_id="P4791"],
                     out start_time : Array(Entity(org.wikidata:p_start_time))
                     #_[canonical={
+                      default="property",
                       base=["start time"]
                     }]
                     #[wikidata_id="P580"],
@@ -22413,7 +22460,8 @@ class @org.wikidata
                     #[wikidata_id="P7936"],
                     out cost : Array(Entity(org.wikidata:p_cost))
                     #_[canonical={
-                      base=["cost"]
+                      default="property",
+                      base=["costs"]
                     }]
                     #[wikidata_id="P2130"],
                     out readable_file_format : Array(Entity(org.wikidata:p_readable_file_format))
@@ -22823,7 +22871,8 @@ class @org.wikidata
                     #[wikidata_id="P3842"],
                     out local_dialing_code : Array(Entity(org.wikidata:p_local_dialing_code))
                     #_[canonical={
-                      base=["local dialing code"]
+                      default="property",
+                      base=["local dialing codes"]
                     }]
                     #[wikidata_id="P473"],
                     out attested_in : Array(Entity(org.wikidata:p_attested_in))
@@ -23008,11 +23057,13 @@ class @org.wikidata
                     #[wikidata_id="P1534"],
                     out dissolved_abolished_or_demolished_date : Array(Entity(org.wikidata:p_dissolved_abolished_or_demolished_date))
                     #_[canonical={
-                      base=["dissolved, abolished or demolished date"]
+                      default="preposition",
+                      preposition=["dissolved abolished or demolished dates"]
                     }]
                     #[wikidata_id="P576"],
                     out end_time : Array(Entity(org.wikidata:p_end_time))
                     #_[canonical={
+                      default="property",
                       base=["end time"]
                     }]
                     #[wikidata_id="P582"])
