@@ -222,10 +222,10 @@ export default class SPARQLToThingTalkConverter {
     private _tables : Record<string, Table>;
     private _variableCounter : number;
 
-    constructor(classDef : Ast.ClassDef) {
+    constructor(classDef : Ast.ClassDef, cache : string) {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
-        this._wikidata = new WikidataUtils();
+        this._wikidata = new WikidataUtils(cache);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
         this._keywords = [];
@@ -730,6 +730,10 @@ async function main() {
         required: true,
         help: 'Path to ThingTalk file containing class definitions.'
     });
+    parser.add_argument('--cache', {
+        required: false,
+        default: 'wikidata_cached.sqlite'
+    });
     parser.add_argument('-i', '--input', {
         required: true,
         type: fs.createReadStream
@@ -748,7 +752,7 @@ async function main() {
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
     assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new SPARQLToThingTalkConverter(classDef);
+    const converter = new SPARQLToThingTalkConverter(classDef, args.cache);
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
     const output = csvstringify({ header: false, delimiter: '\t' });

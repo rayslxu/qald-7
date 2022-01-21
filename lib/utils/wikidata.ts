@@ -32,10 +32,12 @@ function normalizeURL(url : string) {
  
 export default class WikidataUtils {
     private _wdk : wikibaseSdk;
+    private _cachePath : string;
     private _cache ! : sqlite3.Database;
     private _cacheLoaded : boolean;
 
-    constructor() {
+    constructor(cachePath : string) {
+        this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
         this._cacheLoaded = false;
     }
@@ -44,10 +46,9 @@ export default class WikidataUtils {
      * Load or create sqlite database for caching
      */
     private async _loadOrCreateSqliteCache() {
-        const filename = 'wikidata_cache.sqlite';
-        const db = new sqlite3.Database(filename, sqlite3.OPEN_CREATE|sqlite3.OPEN_READWRITE);
+        const db = new sqlite3.Database(this._cachePath, sqlite3.OPEN_CREATE|sqlite3.OPEN_READWRITE);
         db.serialize(() => {
-            if (!fs.existsSync(filename)) 
+            if (!fs.existsSync(this._cachePath)) 
                 db.exec(SQLITE_SCHEMA);
         });
         this._cache = db;

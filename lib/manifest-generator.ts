@@ -19,6 +19,7 @@ interface Entity {
 }
 
 interface ManifestGeneratorOptions {
+    cache : string,
     output : fs.WriteStream,
     include_non_entity_properties : boolean
 }
@@ -38,7 +39,7 @@ class ManifestGenerator {
     private _includeNonEntityProperties : boolean;
 
     constructor(options : ManifestGeneratorOptions) {
-        this._wikidata = new WikidataUtils();
+        this._wikidata = new WikidataUtils(options.cache);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD();
@@ -340,6 +341,10 @@ async function main() {
     parser.add_argument('-o', '--output', {
         required: true,
         type: fs.createWriteStream
+    });
+    parser.add_argument('--cache', {
+        required: false,
+        default: 'wikidata_cached.sqlite'
     });
     parser.add_argument('--include-non-entity-properties', {
         required: false,
