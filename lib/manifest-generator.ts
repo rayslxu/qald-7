@@ -250,7 +250,7 @@ class ManifestGenerator {
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
         for (const [property, values] of Object.entries(this._propertyValues)) {
             const pname = cleanName(property);
-            index.write(`entity\ten-US\torg.wikdiata:${pname}\tparameter-datasets/${pname}.tsv\n`);
+            index.write(`entity\ten-US\torg.wikdiata:${pname}\tparameter-datasets/${pname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
