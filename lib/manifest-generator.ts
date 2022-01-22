@@ -87,7 +87,7 @@ class ManifestGenerator {
                 name, 
                 is_well_known: false,
                 has_ner_support: true,
-                subtype_of : ['org.wikidata:entity']
+                subtype_of : type === 'entity' ? null : ['org.wikidata:entity']
             };
         }
     }
