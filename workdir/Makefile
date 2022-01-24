@@ -50,11 +50,10 @@ paraphrasing_flags ?= \
 	--val_batch_size 4000
 custom_train_nlu_flags ?=
 
+cache ?= ../wikidata_cache.sqlite
+
 .PHONY: clean train
 .SECONDARY:
-
-wikidata_cache.sqlite: 
-	ln -s ../wikidata_cache.sqlite $@
 
 models/paraphraser-bart-large-speedup-megabatch-5m:
 	mkdir -p models
@@ -64,9 +63,9 @@ models/paraphraser-bart-large-speedup-megabatch-5m:
 emptydataset.tt:
 	echo 'dataset @empty {}' > $@
 
-manifest-base.tt: wikidata_cache.sqlite 
+manifest-base.tt: 
 	mkdir -p parameter-datasets
-	node ${qald7dir}/dist/lib/manifest-generator.js -o $@
+	node $(qald7dir)/dist/lib/manifest-generator.js --cache $(cache) -o $@
 
 constants.tsv: manifest-base.tt
 	$(genie) sample-constants -o $@ --thingpedia manifest-base.tt --parameter-datasets parameter-datasets.tsv 
@@ -86,10 +85,10 @@ synthetic.tsv : $(foreach v,1 2 3,synthetic-d6-$(v).tsv) synthetic-d$(maxdepth).
 	cat $^ > $@
 
 fewshot.tsv : manifest.tt
-	node ${qald7dir}/dist/lib/converter.js --manifest manifest.tt -i ${qald7dir}/data/train.json -o $@
+	node $(qald7dir)/dist/lib/converter.js --manifest manifest.tt -i $(qald7dir)/data/train.json --cache $(cache) -o $@
 
 test.tsv : manifest.tt
-	node ${qald7dir}/dist/lib/converter.js --manifest manifest.tt -i ${qald7dir}/data/train.json -o $@
+	node $(qald7dir)/dist/lib/converter.js --manifest manifest.tt -i $(qald7dir)/data/test.json --cache $(cache) -o $@
 
 everything.tsv: synthetic.tsv $(if $(findstring true,$(fewshot)),fewshot.tsv,)
 	$(genie) augment \
@@ -135,4 +134,4 @@ train: $(datadir)
 	  $(custom_train_nlu_flags)
 
 clean:
-	rm -rf datadir synthetic* data.json entities.json parameter-datasets* manifest.tt manifest-base.tt augmented.tsv constants.tsv
+	rm -rf datadir emptydataset.tt synthetic* data.json entities.json parameter-datasets* manifest.tt manifest-base.tt augmented.tsv constants.tsv
