@@ -344,7 +344,7 @@ async function main() {
     });
     parser.add_argument('--cache', {
         required: false,
-        default: 'wikidata_cached.sqlite'
+        default: 'wikidata_cache.sqlite'
     });
     parser.add_argument('--include-non-entity-properties', {
         required: false,
