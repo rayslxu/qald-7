@@ -3,7 +3,6 @@ import { promises as pfs } from 'fs';
 import assert from 'assert';
 import * as stream from 'stream';
 import JSONStream from 'JSONStream';
-import { stringify as csvstringify } from 'csv-stringify';
 import { Ast, Type } from 'thingtalk';
 import * as ThingTalk from 'thingtalk';
 import { 
@@ -20,7 +19,7 @@ import * as argparse from 'argparse';
 import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
-import { I18n } from 'genie-toolkit';
+import { I18n, DatasetStringifier } from 'genie-toolkit';
 import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
 
 /**
@@ -743,7 +742,7 @@ async function main() {
         type: fs.createWriteStream
     });
     parser.add_argument('-d', '--drop', {
-        required: true,
+        required: false,
         type: fs.createWriteStream
     });
     const args = parser.parse_args();
@@ -753,24 +752,26 @@ async function main() {
     assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
     const converter = new SPARQLToThingTalkConverter(classDef, args.cache);
+    const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
-    const output = csvstringify({ header: false, delimiter: '\t' });
+    const output = new DatasetStringifier();
     output.pipe(args.output);
-    const dropped = csvstringify({ header: false, delimiter: '\t' }); 
-    dropped.pipe(args.drop);
     for await (const item of input) {
+        const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
             const thingtalk = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
-            output.write([item.id, item.question[0].string, thingtalk.prettyprint()]);
+            output.write({ id: item.id, preprocessed, target_code: thingtalk.prettyprint() });
         } catch(e) {
             console.log(`Example ${item.id} failed`);
-            dropped.write([item.id, item.question[0].string, item.query.sparql, (e as Error).message.replace(/\s+/g, ' ')]);
+            if (args.drop)
+                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}`);
         }
     }
     await waitFinish(input);
     await waitFinish(output);
-    await waitFinish(dropped);
+    if (args.drop)
+        await waitFinish(args.drop);
 }
 
 if (require.main === module)

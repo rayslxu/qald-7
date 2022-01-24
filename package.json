@@ -8,7 +8,6 @@
   "dependencies": {
     "JSONStream": "^1.3.5",
     "argparse": "^2.0.1",
-    "csv-stringify": "^6.0.5",
     "en-stemmer": "^1.0.3",
     "genie-toolkit": "github:stanford-oval/genie-toolkit#wip/qald-7",
     "sparqljs": "^3.5.1",
