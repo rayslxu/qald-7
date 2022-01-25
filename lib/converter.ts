@@ -19,7 +19,7 @@ import * as argparse from 'argparse';
 import { waitFinish, closest } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
-import { I18n, DatasetStringifier } from 'genie-toolkit';
+import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
 
 /**
@@ -760,8 +760,14 @@ async function main() {
     for await (const item of input) {
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            const thingtalk = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
-            output.write({ id: item.id, preprocessed, target_code: thingtalk.prettyprint() });
+            const program = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
+            const target_code = ThingTalkUtils.serializePrediction(
+                program, 
+                preprocessed,
+                EntityUtils.makeDummyEntities(preprocessed),
+                { locale: 'en', timezone: undefined, includeEntityValue :true }
+            ).join(' ');
+            output.write({ id: item.id, preprocessed, target_code });
         } catch(e) {
             console.log(`Example ${item.id} failed`);
             if (args.drop)
