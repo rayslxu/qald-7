@@ -2,7 +2,7 @@
   "name": "qald-7",
   "scripts": {
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./lib ",
-    "build": "tsc --build",
+    "prepare": "tsc --build",
     "test": "node dist/test/index.js"
   },
   "dependencies": {
