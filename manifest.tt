@@ -20414,8 +20414,7 @@ class @org.wikidata
                     #[wikidata_id="P3091"],
                     out country : Array(Entity(org.wikidata:p_country))
                     #_[canonical={
-                      default="property",
-                      base=["countries"]
+                      base=["country"]
                     }]
                     #[wikidata_id="P17"],
                     out date_of_death : Array(Entity(org.wikidata:p_date_of_death))
@@ -20426,14 +20425,12 @@ class @org.wikidata
                     #[wikidata_id="P570"],
                     out discoverer_or_inventor : Array(Entity(org.wikidata:p_discoverer_or_inventor))
                     #_[canonical={
-                      default="property",
-                      base=["discoverer or inventors"]
+                      base=["discoverer or inventor"]
                     }]
                     #[wikidata_id="P61"],
                     out located_in_the_administrative_territorial_entity : Array(Entity(org.wikidata:p_located_in_the_administrative_territorial_entity))
                     #_[canonical={
-                      default="preposition",
-                      preposition=["located in the administrative territorial entity"]
+                      base=["located in the administrative territorial entity"]
                     }]
                     #[wikidata_id="P131"],
                     out official_website : Array(Entity(org.wikidata:p_official_website))
@@ -20613,6 +20610,11 @@ class @org.wikidata
                       base=["operator"]
                     }]
                     #[wikidata_id="P137"],
+                    out country : Array(Entity(org.wikidata:p_country))
+                    #_[canonical={
+                      base=["country"]
+                    }]
+                    #[wikidata_id="P17"],
                     out type_of_orbit : Array(Entity(org.wikidata:p_type_of_orbit))
                     #_[canonical={
                       base=["type of orbit"]
@@ -20658,6 +20660,11 @@ class @org.wikidata
                       base=["destination point"]
                     }]
                     #[wikidata_id="P1444"],
+                    out located_in_the_administrative_territorial_entity : Array(Entity(org.wikidata:p_located_in_the_administrative_territorial_entity))
+                    #_[canonical={
+                      base=["located in the administrative territorial entity"]
+                    }]
+                    #[wikidata_id="P131"],
                     out continent : Array(Entity(org.wikidata:p_continent))
                     #_[canonical={
                       base=["continent"]
@@ -21415,6 +21422,11 @@ class @org.wikidata
                       base=["territory claimed by"]
                     }]
                     #[wikidata_id="P1336"],
+                    out discoverer_or_inventor : Array(Entity(org.wikidata:p_discoverer_or_inventor))
+                    #_[canonical={
+                      base=["discoverer or inventor"]
+                    }]
+                    #[wikidata_id="P61"],
                     out visitor_centre : Array(Entity(org.wikidata:p_visitor_centre))
                     #_[canonical={
                       base=["visitor centre"]
@@ -21476,6 +21488,18 @@ class @org.wikidata
                       base=["populations"]
                     }]
                     #[wikidata_id="P1082"],
+                    out place_of_birth : Array(Entity(org.wikidata:p_place_of_birth))
+                    #_[canonical={
+                      default="property",
+                      base=["place of births"]
+                    }]
+                    #[wikidata_id="P19"],
+                    out lyrics_by : Array(Entity(org.wikidata:p_lyrics_by))
+                    #_[canonical={
+                      default="property",
+                      base=["lyrics by"]
+                    }]
+                    #[wikidata_id="P676"],
                     out in_opposition_to : Array(Entity(org.wikidata:p_in_opposition_to))
                     #_[canonical={
                       base=["in opposition to"]
@@ -21959,6 +21983,12 @@ class @org.wikidata
                       base=["architect"]
                     }]
                     #[wikidata_id="P84"],
+                    out member_of_political_party : Array(Entity(org.wikidata:p_member_of_political_party))
+                    #_[canonical={
+                      default="property",
+                      base=["member of political parties"]
+                    }]
+                    #[wikidata_id="P102"],
                     out narrative_role : Array(Entity(org.wikidata:p_narrative_role))
                     #_[canonical={
                       base=["narrative role"]
@@ -22499,6 +22529,12 @@ class @org.wikidata
                       base=["GPU"]
                     }]
                     #[wikidata_id="P2560"],
+                    out occupation : Array(Entity(org.wikidata:p_occupation))
+                    #_[canonical={
+                      default="property",
+                      base=["occupations"]
+                    }]
+                    #[wikidata_id="P106"],
                     out located_on_astronomical_body : Array(Entity(org.wikidata:p_located_on_astronomical_body))
                     #_[canonical={
                       base=["located on astronomical body"]

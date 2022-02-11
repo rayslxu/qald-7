@@ -30,10 +30,21 @@ class ManifestGenerator {
     private _tokenizer : I18n.BaseTokenizer;
     private _examples : Example[];
     private _entities : Record<string, Entity>;
-    private _domainLabels : Record<string, string>; // Record<domain, domain label>
-    private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<domain, Record<PID, property label>
-    private _properties : Record<string, Ast.ArgumentDef>;
-    private _propertyValues : Record<string, Record<string, string>>;
+    private _domainLabels : Record<string, string>; // Record<QID, domain label>
+    private _domainSamples : Record<string, Record<string, string|null>>; // Record<QID, entities> 
+    private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<QID, Record<PID, property label>>
+    /**
+     * @member _properties: an object with PID as key, and argument definition as value, 
+     * to record all properties in different functions, so we can add them 
+     * to generic `entity` function all together. 
+     */
+    private _properties : Record<string, Ast.ArgumentDef>; // Record<PID, argument definition>
+    /**
+     * @member _propertyValues: an object to store parameter values, used for generating
+     * parameter datasets. Since the paths of parameter datasets is based on the property name, 
+     * we use that as the key instead of PID 
+     */
+    private _propertyValues : Record<string, Record<string, string>>; // Record<property name, Record<QID, value label>>
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
@@ -44,6 +55,7 @@ class ManifestGenerator {
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD();
         this._domainLabels = {};
+        this._domainSamples = {};
         this._entities = {};
         this._propertyLabelsByDomain = {};
         this._properties = {};
@@ -166,17 +178,17 @@ class ManifestGenerator {
             );
             args.push(argumentDef);
             this._addEntity(`p_${pname}`, label);
-            if (!(label in this._properties))
-                this._properties[label] = argumentDef;
+            if (!(property in this._properties))
+                this._properties[property] = argumentDef;
             const values = propertyValues[property];
             // TODO: separate property values by domain
             if (values.length > 0) {
-                if (!(label in this._propertyValues))
-                    this._propertyValues[label] = {};
+                if (!(pname in this._propertyValues))
+                    this._propertyValues[pname] = {};
                 for (const value of values) {
-                    if (value in this._propertyValues[label])
+                    if (value in this._propertyValues[pname])
                         continue;
-                    this._propertyValues[label][value] = valueLabels[value] ?? value;
+                    this._propertyValues[pname][value] = valueLabels[value] ?? value;
                 }
             }
         }
@@ -193,6 +205,10 @@ class ManifestGenerator {
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
         this._addEntity(fname, domainLabel);
+        const samples = await this._wikidata.getEntitiesByDomain(domain); 
+        const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
+        this._domainSamples[fname] = sampleLabels;
+        
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
@@ -280,10 +296,22 @@ class ManifestGenerator {
     async _outputParameterDatasets() {
         const dir = path.dirname(this._output.path as string);
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
-        for (const [property, values] of Object.entries(this._propertyValues)) {
-            const pname = cleanName(property);
-            index.write(`entity\ten-US\torg.wikdiata:${pname}\tparameter-datasets/${pname}.json\n`);
-            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${pname}.json`);
+        for (const [fname, values] of Object.entries(this._domainSamples)) {
+            index.write(`entity\ten-US\torg.wikidata:${fname}\tparameter-datasets/${fname}.json\n`);
+            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
+            const data : Record<string, any> = { result: "ok", data: [] };
+            for (const [value, display] of Object.entries(values)) {
+                if (display) {
+                    const canonical = this._tokenizer.tokenize(display).rawTokens.join(' ');
+                    data.data.push({ value : value, name: display, canonical });
+                }
+            }
+            paramDataset.end(JSON.stringify(data, undefined, 2));
+            await waitFinish(paramDataset);
+        }
+        for (const [pname, values] of Object.entries(this._propertyValues)) {
+            index.write(`entity\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
+            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
                 if (display) {
