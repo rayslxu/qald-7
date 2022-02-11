@@ -246,6 +246,7 @@ class ManifestGenerator {
         }, args, {
             nl: { canonical: [domainLabel] },
             impl : {
+                inherit_arguments: new Ast.Value.Boolean(false),
                 handle_thingtalk: new Ast.Value.Boolean(true),
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String(domain)])
             }
