@@ -329,7 +329,7 @@ export default class SPARQLToThingTalkConverter {
         let propertyLabel, propertyType;
         if (property === 'id') {
             propertyLabel = property;
-            propertyType = new Type.Entity('org.wikidata:entity');
+            propertyType = valueType!;
         } else {
             if (property.startsWith(PROPERTY_PREFIX)) {
                 property = property.slice(PROPERTY_PREFIX.length);
@@ -379,8 +379,14 @@ export default class SPARQLToThingTalkConverter {
             throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
 
         // if subject is an entity, create an id filter first
-        if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) 
-            this._addFilter(subject, await this._atomFilter('id', subject));
+        if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
+            const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
+            assert(domain);
+            const table = this._schema.getTable(domain);
+            assert(table);
+            this._addFilter(subject, await this._atomFilter('id', subject, '==', new Type.Entity(`org.wikidata:${table}`)));
+            this._setDomain(subject, domain);
+        }
 
         // if subject is an variable and object is an entity, create a regular filter
         if (triple.subject.termType === 'Variable' && triple.object.termType === 'NamedNode') { 

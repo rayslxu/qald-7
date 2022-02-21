@@ -293,7 +293,7 @@ class SPARQLToThingTalkConverter {
         let propertyLabel, propertyType;
         if (property === 'id') {
             propertyLabel = property;
-            propertyType = new thingtalk_1.Type.Entity('org.wikidata:entity');
+            propertyType = valueType;
         }
         else {
             if (property.startsWith(wikidata_2.PROPERTY_PREFIX)) {
@@ -329,8 +329,14 @@ class SPARQLToThingTalkConverter {
         if (!subject || !predicate || !object)
             throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
         // if subject is an entity, create an id filter first
-        if (triple.subject.termType === 'NamedNode' && subject.startsWith(wikidata_2.ENTITY_PREFIX))
-            this._addFilter(subject, await this._atomFilter('id', subject));
+        if (triple.subject.termType === 'NamedNode' && subject.startsWith(wikidata_2.ENTITY_PREFIX)) {
+            const domain = await this._wikidata.getDomain(subject.slice(wikidata_2.ENTITY_PREFIX.length));
+            (0, assert_1.default)(domain);
+            const table = this._schema.getTable(domain);
+            (0, assert_1.default)(table);
+            this._addFilter(subject, await this._atomFilter('id', subject, '==', new thingtalk_1.Type.Entity(`org.wikidata:${table}`)));
+            this._setDomain(subject, domain);
+        }
         // if subject is an variable and object is an entity, create a regular filter
         if (triple.subject.termType === 'Variable' && triple.object.termType === 'NamedNode') {
             // for P31 triple, update the domain of the variable, do not add filter
