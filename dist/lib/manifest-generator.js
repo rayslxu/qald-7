@@ -327,9 +327,8 @@ async function main() {
         default: 'wikidata_cache.sqlite'
     });
     parser.add_argument('--include-non-entity-properties', {
-        required: false,
-        default: false,
-        type: Boolean
+        action: 'store_true',
+        default: false
     });
     const args = parser.parse_args();
     const generator = new ManifestGenerator(args);

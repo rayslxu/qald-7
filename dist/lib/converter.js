@@ -664,6 +664,10 @@ async function main() {
         required: false,
         type: fs.createWriteStream
     });
+    parser.add_argument('--include-entity-value', {
+        action: 'store_true',
+        default: false
+    });
     const args = parser.parse_args();
     const manifest = await fs_1.promises.readFile(args.manifest, { encoding: 'utf8' });
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
@@ -678,7 +682,7 @@ async function main() {
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
             const program = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
-            const target_code = genie_toolkit_1.ThingTalkUtils.serializePrediction(program, preprocessed, genie_toolkit_1.EntityUtils.makeDummyEntities(preprocessed), { locale: 'en', timezone: undefined, includeEntityValue: true }).join(' ');
+            const target_code = genie_toolkit_1.ThingTalkUtils.serializePrediction(program, preprocessed, genie_toolkit_1.EntityUtils.makeDummyEntities(preprocessed), { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }).join(' ');
             output.write({ id: item.id, preprocessed, target_code });
         }
         catch (e) {

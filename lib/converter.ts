@@ -745,6 +745,10 @@ async function main() {
         required: false,
         type: fs.createWriteStream
     });
+    parser.add_argument('--include-entity-value', {
+        action: 'store_true',
+        default: false
+    });
     const args = parser.parse_args();
 
     const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
@@ -765,7 +769,7 @@ async function main() {
                 program, 
                 preprocessed,
                 EntityUtils.makeDummyEntities(preprocessed),
-                { locale: 'en', timezone: undefined, includeEntityValue :true }
+                { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }
             ).join(' ');
             output.write({ id: item.id, preprocessed, target_code });
         } catch(e) {
