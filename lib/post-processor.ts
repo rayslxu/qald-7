@@ -141,9 +141,13 @@ async function main() {
             objectMode: true,
 
             async transform(ex, encoding, callback) {
-                const postprocessed = await processor.postprocess(ex.target_code, ex.preprocessed);
-                ex.target_code = postprocessed.join(' ');
-                callback(null, ex);
+                try {
+                    const postprocessed = await processor.postprocess(ex.target_code, ex.preprocessed);
+                    ex.target_code = postprocessed.join(' ');
+                    callback(null, ex);
+                } catch(e) {
+                    callback();
+                }
             },
 
             flush(callback) {
