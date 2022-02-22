@@ -221,10 +221,12 @@ class ManifestGenerator {
      * @returns the class definition
      */
     async _generateManifest() {
+        // imports
         const imports = [
             new thingtalk_1.Ast.MixinImportStmt(null, ['loader'], 'org.thingpedia.v2', []),
             new thingtalk_1.Ast.MixinImportStmt(null, ['config'], 'org.thingpedia.config.none', [])
         ];
+        // queries
         const queries = {};
         for (const domain in this._propertyLabelsByDomain) {
             const [fname, functionDef] = await this._processDomain(domain);
@@ -240,10 +242,15 @@ class ManifestGenerator {
             }
         });
         this._addEntity('entity', 'Entity');
+        // entity declarations
+        const entities = Object.values(this._entities).map((entity) => {
+            var _a;
+            return new thingtalk_1.Ast.EntityDef(null, entity.type.slice('org.wikidata:'.length), ((_a = entity.subtype_of) !== null && _a !== void 0 ? _a : []).map((e) => e.slice('org.wikidata:'.length)), { impl: { has_ner: new thingtalk_1.Ast.Value.Boolean(!!entity.has_ner_support) } });
+        });
         console.log('Start writing device manifest ...');
         const whitelist = new thingtalk_1.Ast.Value.Array(Object.keys(queries).filter((qname) => qname !== 'entity').map((qname) => new thingtalk_1.Ast.Value.String(qname)));
         return new thingtalk_1.Ast.ClassDef(null, 'org.wikidata', null, {
-            imports, queries
+            imports, queries, entities
         }, {
             nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' },
             impl: { whitelist }
