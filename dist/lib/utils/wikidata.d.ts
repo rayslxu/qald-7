@@ -61,6 +61,12 @@ export default class WikidataUtils {
      */
     getLabel(id: string): Promise<string | null>;
     /**
+     * Get the Wikidata alt label for an entity or a property
+     * @param id QID or PID
+     * @returns an array of alternative labels in English
+     */
+    getAltLabels(id: string): Promise<string[]>;
+    /**
      * Get the wikidata label for a list of entities/properties.
      * The API allows up to 50 entities/properties at a time.
      * @param qids a list of QIDs or PIDs

@@ -189,6 +189,25 @@ export default class WikidataUtils {
     }
 
     /**
+     * Get the Wikidata alt label for an entity or a property
+     * @param id QID or PID
+     * @returns an array of alternative labels in English
+     */
+    async getAltLabels(id : string) : Promise<string[]> {
+        const result = await this._request(this._wdk.getEntities({
+            ids: [id],
+            languages: ['en'],
+            props: ['aliases']
+        }));
+        try {
+            return (Object.values(result.entities)[0] as any).aliases.en.map((alias : any) => alias.value);
+        } catch(e) {
+            console.log(`Found no alt label for ${id}`);
+            return [];
+        }
+    }
+
+    /**
      * Get the wikidata label for a list of entities/properties. 
      * The API allows up to 50 entities/properties at a time. 
      * @param qids a list of QIDs or PIDs

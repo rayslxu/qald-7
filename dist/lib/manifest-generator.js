@@ -47,6 +47,7 @@ class ManifestGenerator {
         this._propertyValues = {};
         this._output = options.output;
         this._includeNonEntityProperties = options.include_non_entity_properties;
+        this._useWikidataAltLabels = options.use_wikidata_alt_labels;
     }
     /**
      * Get the domain of a entity
@@ -66,6 +67,23 @@ class ManifestGenerator {
             this._propertyLabelsByDomain[entityId] = {};
         const propertyLabel = await this._wikidata.getLabel(propertyId);
         this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel !== null && propertyLabel !== void 0 ? propertyLabel : propertyId;
+    }
+    /**
+     * Get the canonicals for a given property
+     * @param id QID of the property
+     * @param label Label of property
+     * @param type ThingTalk type of the property
+     */
+    async _generatePropertyCanonicals(id, label, type) {
+        const labels = [label];
+        if (this._useWikidataAltLabels) {
+            const altLabels = await this._wikidata.getAltLabels(id);
+            labels.push(...altLabels);
+        }
+        const baseCanonical = {};
+        for (const label of labels)
+            (0, genie_toolkit_1.genBaseCanonical)(baseCanonical, label, type, null);
+        return baseCanonical;
     }
     /**
      * Add an entity to entities.json
@@ -144,8 +162,9 @@ class ManifestGenerator {
         for (const property in propertyValues) {
             const label = (_a = propertyLabels[property]) !== null && _a !== void 0 ? _a : property;
             const pname = (0, misc_1.cleanName)(label);
-            const argumentDef = new thingtalk_1.Ast.ArgumentDef(null, thingtalk_1.Ast.ArgDirection.OUT, pname, new thingtalk_1.Type.Array(new thingtalk_1.Type.Entity(`org.wikidata:p_${pname}`)), {
-                nl: { canonical: { base: [label] } },
+            const ptype = new thingtalk_1.Type.Array(new thingtalk_1.Type.Entity(`org.wikidata:p_${pname}`));
+            const argumentDef = new thingtalk_1.Ast.ArgumentDef(null, thingtalk_1.Ast.ArgDirection.OUT, pname, ptype, {
+                nl: { canonical: await this._generatePropertyCanonicals(property, label, ptype) },
                 impl: { wikidata_id: new thingtalk_1.Ast.Value.String(property) }
             });
             args.push(argumentDef);
@@ -189,10 +208,8 @@ class ManifestGenerator {
                 continue;
             missing.push([id, label]);
             const ptype = new thingtalk_1.Type.Array(new thingtalk_1.Type.Entity(`org.wikidata:p_${pname}`));
-            const baseCanonical = {};
-            (0, genie_toolkit_1.genBaseCanonical)(baseCanonical, pname, ptype, null);
             const argumentDef = new thingtalk_1.Ast.ArgumentDef(null, thingtalk_1.Ast.ArgDirection.OUT, pname, ptype, {
-                nl: { canonical: baseCanonical },
+                nl: { canonical: await this._generatePropertyCanonicals(id, label, ptype) },
                 impl: { wikidata_id: new thingtalk_1.Ast.Value.String(id) }
             });
             args.push(argumentDef);
@@ -335,6 +352,11 @@ async function main() {
     });
     parser.add_argument('--include-non-entity-properties', {
         action: 'store_true',
+        default: false
+    });
+    parser.add_argument('--use-wikidata-alt-labels', {
+        action: 'store_true',
+        help: 'Enable wikidata alternative labels as annotations.',
         default: false
     });
     const args = parser.parse_args();

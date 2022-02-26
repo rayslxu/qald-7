@@ -21,7 +21,8 @@ interface Entity {
 interface ManifestGeneratorOptions {
     cache : string,
     output : fs.WriteStream,
-    include_non_entity_properties : boolean
+    include_non_entity_properties : boolean,
+    use_wikidata_alt_labels : boolean
 }
 
 class ManifestGenerator {
@@ -48,6 +49,7 @@ class ManifestGenerator {
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
+    private _useWikidataAltLabels : boolean;
 
     constructor(options : ManifestGeneratorOptions) {
         this._wikidata = new WikidataUtils(options.cache);
@@ -63,6 +65,7 @@ class ManifestGenerator {
         this._output = options.output;
 
         this._includeNonEntityProperties = options.include_non_entity_properties;
+        this._useWikidataAltLabels = options.use_wikidata_alt_labels;
     }
 
     /**
@@ -85,6 +88,24 @@ class ManifestGenerator {
         
         const propertyLabel = await this._wikidata.getLabel(propertyId);
         this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel ?? propertyId;
+    }
+
+    /**
+     * Get the canonicals for a given property
+     * @param id QID of the property 
+     * @param label Label of property 
+     * @param type ThingTalk type of the property 
+     */
+    private async _generatePropertyCanonicals(id : string, label : string, type : Type) {
+        const labels = [label];
+        if (this._useWikidataAltLabels) {
+            const altLabels = await this._wikidata.getAltLabels(id);
+            labels.push(...altLabels);
+        } 
+        const baseCanonical = {};
+        for (const label of labels) 
+            genBaseCanonical(baseCanonical, label, type, null);
+        return baseCanonical;
     }
 
     /**
@@ -167,15 +188,13 @@ class ManifestGenerator {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
             const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
-            const baseCanonical = {};
-            genBaseCanonical(baseCanonical, pname, ptype, null);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
                 pname, 
                 ptype,
                 { 
-                    nl: { canonical: baseCanonical }, 
+                    nl: { canonical: await this._generatePropertyCanonicals(property, label, ptype) }, 
                     impl: { wikidata_id: new Ast.Value.String(property) } 
                 }
             );
@@ -222,15 +241,13 @@ class ManifestGenerator {
                 continue;
             missing.push([id, label]);
             const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
-            const baseCanonical = {};
-            genBaseCanonical(baseCanonical, pname, ptype, null);
             const argumentDef = new Ast.ArgumentDef(
                 null, 
                 Ast.ArgDirection.OUT, 
                 pname,
                 ptype,
                 {
-                    nl: { canonical:  baseCanonical },
+                    nl: { canonical:  await this._generatePropertyCanonicals(id, label, ptype) },
                     impl: { wikidata_id: new Ast.Value.String(id) }
                 }
             );
@@ -393,6 +410,11 @@ async function main() {
     });
     parser.add_argument('--include-non-entity-properties', {
         action: 'store_true',
+        default: false
+    });
+    parser.add_argument('--use-wikidata-alt-labels', {
+        action: 'store_true',
+        help: 'Enable wikidata alternative labels as annotations.',
         default: false
     });
     const args = parser.parse_args();
