@@ -166,13 +166,16 @@ class ManifestGenerator {
         for (const property in propertyValues) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
+            const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
+            const baseCanonical = {};
+            genBaseCanonical(baseCanonical, pname, ptype, null);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
                 pname, 
-                new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`)),
+                ptype,
                 { 
-                    nl: { canonical: { base: [label] } },
+                    nl: { canonical: baseCanonical }, 
                     impl: { wikidata_id: new Ast.Value.String(property) } 
                 }
             );
