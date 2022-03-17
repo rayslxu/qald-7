@@ -19,6 +19,7 @@ interface Entity {
 }
 
 interface ManifestGeneratorOptions {
+    experiment : 'qald7'|'qald9',
     cache : string,
     output : fs.WriteStream,
     include_non_entity_properties : boolean,
@@ -55,7 +56,7 @@ class ManifestGenerator {
         this._wikidata = new WikidataUtils(options.cache);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
-        this._examples = preprocessQALD();
+        this._examples = preprocessQALD(options.experiment);
         this._domainLabels = {};
         this._domainSamples = {};
         this._entities = {};
@@ -132,36 +133,41 @@ class ManifestGenerator {
      * @param example an cleaned QALD example
      */
     private async _processOneExample(example : Example) {
-        const parsed = this._parser.parse(example.sparql) as AskQuery;
-        const triples = extractTriples(parsed);
+        try {
+            const parsed = this._parser.parse(example.sparql) as AskQuery;
+            const triples = extractTriples(parsed);
 
-        const variables : Record<string, string> = {};
-        // if variable appears as a subject of a statement, where to predicate is P31
-        // add the object of this statement into the domain list
-        for (const triple of triples) {
-            if ((triple.predicate as IriTerm).value === `${PROPERTY_PREFIX}P31` && 
-                (triple.subject as VariableTerm).termType === 'Variable' &&
-                (triple.object as IriTerm).termType === 'NamedNode') {
-                const domain = triple.object.value.slice(ENTITY_PREFIX.length);
-                variables[triple.subject.value] = domain;
-                this._domainLabels[domain] = await this._wikidata.getLabel(domain) ?? domain;
+            const variables : Record<string, string> = {};
+            // if variable appears as a subject of a statement, where to predicate is P31
+            // add the object of this statement into the domain list
+            for (const triple of triples) {
+                if ((triple.predicate as IriTerm).value === `${PROPERTY_PREFIX}P31` && 
+                    (triple.subject as VariableTerm).termType === 'Variable' &&
+                    (triple.object as IriTerm).termType === 'NamedNode') {
+                    const domain = triple.object.value.slice(ENTITY_PREFIX.length);
+                    variables[triple.subject.value] = domain;
+                    this._domainLabels[domain] = await this._wikidata.getLabel(domain) ?? domain;
+                }
             }
-        }
-        for (const triple of triples) {
-            if ((triple.subject as IriTerm).termType === 'NamedNode') {
-                const entityId = triple.subject.value.slice(ENTITY_PREFIX.length);
-                const domain = await this._getEntityDomain(entityId);
-                if (!domain)
-                    continue;
-                const domainLabel = await this._wikidata.getLabel(domain);
-                this._domainLabels[domain] = domainLabel || domain;
-                for (const property of extractProperties(triple.predicate)) 
-                    await this._updateProperties(domain, property);
-            } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
-                const domain = variables[triple.subject.value];
-                for (const property of extractProperties(triple.predicate))
-                    await this._updateProperties(domain, property);
+            for (const triple of triples) {
+                if ((triple.subject as IriTerm).termType === 'NamedNode') {
+                    const entityId = triple.subject.value.slice(ENTITY_PREFIX.length);
+                    const domain = await this._getEntityDomain(entityId);
+                    if (!domain)
+                        continue;
+                    const domainLabel = await this._wikidata.getLabel(domain);
+                    this._domainLabels[domain] = domainLabel || domain;
+                    for (const property of extractProperties(triple.predicate)) 
+                        await this._updateProperties(domain, property);
+                } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
+                    const domain = variables[triple.subject.value];
+                    for (const property of extractProperties(triple.predicate))
+                        await this._updateProperties(domain, property);
+                }
             }
+        } catch(e) {
+            console.log(`Failed to convert sparql: ${example.sparql}`);
+            console.error(e);
         }
     }
 
@@ -403,6 +409,10 @@ async function main() {
     parser.add_argument('-o', '--output', {
         required: true,
         type: fs.createWriteStream
+    });
+    parser.add_argument('--experiment', {
+        required: false,
+        default: 'qald7'
     });
     parser.add_argument('--cache', {
         required: false,

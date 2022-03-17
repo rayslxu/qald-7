@@ -38,7 +38,7 @@ class ManifestGenerator {
         this._wikidata = new wikidata_1.default(options.cache);
         this._parser = new sparqljs_1.Parser();
         this._tokenizer = new genie_toolkit_1.I18n.LanguagePack('en-US').getTokenizer();
-        this._examples = (0, qald_1.preprocessQALD)();
+        this._examples = (0, qald_1.preprocessQALD)(options.experiment);
         this._domainLabels = {};
         this._domainSamples = {};
         this._entities = {};
@@ -109,36 +109,41 @@ class ManifestGenerator {
      */
     async _processOneExample(example) {
         var _a;
-        const parsed = this._parser.parse(example.sparql);
-        const triples = (0, sparqljs_2.extractTriples)(parsed);
-        const variables = {};
-        // if variable appears as a subject of a statement, where to predicate is P31
-        // add the object of this statement into the domain list
-        for (const triple of triples) {
-            if (triple.predicate.value === `${wikidata_2.PROPERTY_PREFIX}P31` &&
-                triple.subject.termType === 'Variable' &&
-                triple.object.termType === 'NamedNode') {
-                const domain = triple.object.value.slice(wikidata_2.ENTITY_PREFIX.length);
-                variables[triple.subject.value] = domain;
-                this._domainLabels[domain] = (_a = await this._wikidata.getLabel(domain)) !== null && _a !== void 0 ? _a : domain;
+        try {
+            const parsed = this._parser.parse(example.sparql);
+            const triples = (0, sparqljs_2.extractTriples)(parsed);
+            const variables = {};
+            // if variable appears as a subject of a statement, where to predicate is P31
+            // add the object of this statement into the domain list
+            for (const triple of triples) {
+                if (triple.predicate.value === `${wikidata_2.PROPERTY_PREFIX}P31` &&
+                    triple.subject.termType === 'Variable' &&
+                    triple.object.termType === 'NamedNode') {
+                    const domain = triple.object.value.slice(wikidata_2.ENTITY_PREFIX.length);
+                    variables[triple.subject.value] = domain;
+                    this._domainLabels[domain] = (_a = await this._wikidata.getLabel(domain)) !== null && _a !== void 0 ? _a : domain;
+                }
+            }
+            for (const triple of triples) {
+                if (triple.subject.termType === 'NamedNode') {
+                    const entityId = triple.subject.value.slice(wikidata_2.ENTITY_PREFIX.length);
+                    const domain = await this._getEntityDomain(entityId);
+                    if (!domain)
+                        continue;
+                    const domainLabel = await this._wikidata.getLabel(domain);
+                    this._domainLabels[domain] = domainLabel || domain;
+                    for (const property of (0, sparqljs_2.extractProperties)(triple.predicate))
+                        await this._updateProperties(domain, property);
+                }
+                else if (triple.subject.termType === 'Variable' && triple.subject.value in variables) {
+                    const domain = variables[triple.subject.value];
+                    for (const property of (0, sparqljs_2.extractProperties)(triple.predicate))
+                        await this._updateProperties(domain, property);
+                }
             }
         }
-        for (const triple of triples) {
-            if (triple.subject.termType === 'NamedNode') {
-                const entityId = triple.subject.value.slice(wikidata_2.ENTITY_PREFIX.length);
-                const domain = await this._getEntityDomain(entityId);
-                if (!domain)
-                    continue;
-                const domainLabel = await this._wikidata.getLabel(domain);
-                this._domainLabels[domain] = domainLabel || domain;
-                for (const property of (0, sparqljs_2.extractProperties)(triple.predicate))
-                    await this._updateProperties(domain, property);
-            }
-            else if (triple.subject.termType === 'Variable' && triple.subject.value in variables) {
-                const domain = variables[triple.subject.value];
-                for (const property of (0, sparqljs_2.extractProperties)(triple.predicate))
-                    await this._updateProperties(domain, property);
-            }
+        catch (e) {
+            console.error(e);
         }
     }
     /**
@@ -345,6 +350,10 @@ async function main() {
     parser.add_argument('-o', '--output', {
         required: true,
         type: fs.createWriteStream
+    });
+    parser.add_argument('--experiment', {
+        required: false,
+        default: 'qald7'
     });
     parser.add_argument('--cache', {
         required: false,

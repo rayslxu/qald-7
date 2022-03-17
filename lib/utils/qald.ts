@@ -1,5 +1,4 @@
-import trainQuestions from '../../data/train.json';
-import testQuestions from '../../data/test.json';
+import fs from 'fs';
 
 export interface Example {
     id : string,
@@ -24,7 +23,9 @@ export function preprocessExample(example : any) : Example {
  * Preprocess all QALD train/test examples into a cleaned array
  * @returns An array of examples
  */
-export function preprocessQALD() : Example[] {
+export function preprocessQALD(experiment : string) : Example[] {
+    const trainQuestions = JSON.parse(fs.readFileSync(`./data/${experiment}/train.json`, 'utf-8'));
+    const testQuestions = JSON.parse(fs.readFileSync(`./data/${experiment}/test.json`, 'utf-8'));
     const questions = [];
     for (const example of trainQuestions.questions) 
         questions.push(preprocessExample(example));

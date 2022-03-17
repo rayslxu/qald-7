@@ -13,7 +13,7 @@ export declare function preprocessExample(example: any): Example;
  * Preprocess all QALD train/test examples into a cleaned array
  * @returns An array of examples
  */
-export declare function preprocessQALD(): Example[];
+export declare function preprocessQALD(experiment: string): Example[];
 /**
  * In some examples of QALD-7, an entity span is splitted into multiple keywords,
  * manually override them to recover
