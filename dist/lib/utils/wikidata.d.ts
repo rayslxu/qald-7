@@ -77,8 +77,8 @@ export default class WikidataUtils {
      * Get example entities for the given domain
      *
      * Examples are sorted based on sitelinks.
-     * Order by sitelinks in human (Q5) and taxon (Q16521) domain will lead to timeout,
-     * thus handle these two domains specially
+     * Order by sitelinks in human (Q5), painting (Q3305213), and taxon (Q16521) domain
+     * will lead to timeout, thus handle these three domains specially
      *
      * @param domain QID of the domain
      * @param limit the maximum number of entities to return

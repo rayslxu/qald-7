@@ -143,6 +143,7 @@ class ManifestGenerator {
             }
         }
         catch (e) {
+            console.log(`Failed to convert sparql: ${example.sparql}`);
             console.error(e);
         }
     }

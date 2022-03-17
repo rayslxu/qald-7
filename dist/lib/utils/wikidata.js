@@ -177,6 +177,8 @@ class WikidataUtils {
      * @returns natural language label in English
      */
     async getLabel(id) {
+        if (!/[P|Q][0-9]+/.test(id))
+            return null;
         const result = await this._request(this._wdk.getEntities({
             ids: [id],
             languages: ['en'],
@@ -220,6 +222,8 @@ class WikidataUtils {
         const result = {};
         const uncached = [];
         for (const id of ids) {
+            if (!/[P|Q][0-9]+/.test(id))
+                continue;
             const cached = await this._getCache('labels', 'label', { key: 'id', value: id });
             if (cached)
                 result[id] = cached.label;
@@ -247,8 +251,8 @@ class WikidataUtils {
      * Get example entities for the given domain
      *
      * Examples are sorted based on sitelinks.
-     * Order by sitelinks in human (Q5) and taxon (Q16521) domain will lead to timeout,
-     * thus handle these two domains specially
+     * Order by sitelinks in human (Q5), painting (Q3305213), and taxon (Q16521) domain
+     * will lead to timeout, thus handle these three domains specially
      *
      * @param domain QID of the domain
      * @param limit the maximum number of entities to return
@@ -256,11 +260,11 @@ class WikidataUtils {
      */
     async getEntitiesByDomain(domain, limit = 100) {
         let sparql;
-        if (['Q16521', 'Q5'].includes(domain)) {
+        if (['Q16521', 'Q5', 'Q3305213'].includes(domain)) {
             sparql = `SELECT ?v ?sitelinks WHERE {
                 ?v wdt:P31 wd:${domain} ;
                    wikibase:sitelinks ?sitelinks . 
-                FILTER (?sitelinks > 100) .
+                FILTER (?sitelinks > ${domain === 'Q3305213' ? 20 : 100}) .
             } LIMIT ${limit}`;
         }
         else {
