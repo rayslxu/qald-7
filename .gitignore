@@ -1,6 +1,9 @@
+entities.json
 parameter-datasets.tsv
 parameter-datasets
+manifest.tt
 
+wikidata_cache.sqlite
 
 workdir/*
 !workdir/Makefile
