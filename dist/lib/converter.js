@@ -496,7 +496,6 @@ class SPARQLToThingTalkConverter {
             this._keywords = (0, misc_1.getSpans)(utterance);
         else
             this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
-        console.log(this._keywords);
     }
     /**
      * Convert SPARQL into ThingTalk
@@ -692,14 +691,15 @@ async function main() {
     for await (const item of input) {
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            const program = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
+            const keywords = item.question[0].keywords;
+            const program = await converter.convert(item.query.sparql, preprocessed, keywords ? keywords.split(', ') : []);
             const target_code = genie_toolkit_1.ThingTalkUtils.serializePrediction(program, preprocessed, genie_toolkit_1.EntityUtils.makeDummyEntities(preprocessed), { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }).join(' ');
             output.write({ id: item.id, preprocessed, target_code });
         }
         catch (e) {
             console.log(`Example ${item.id} failed`);
             if (args.drop)
-                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${e.message.replace(/\s+/g, ' ')}`);
+                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${e.message.replace(/\s+/g, ' ')}\n`);
         }
     }
     await (0, misc_1.waitFinish)(input);

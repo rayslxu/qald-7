@@ -774,7 +774,8 @@ async function main() {
     for await (const item of input) {
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            const program = await converter.convert(item.query.sparql, item.question[0].keywords.split(', '));
+            const keywords = item.question[0].keywords;
+            const program = await converter.convert(item.query.sparql, preprocessed, keywords ? keywords.split(', ') : []);
             const target_code = ThingTalkUtils.serializePrediction(
                 program, 
                 preprocessed,
@@ -785,7 +786,7 @@ async function main() {
         } catch(e) {
             console.log(`Example ${item.id} failed`);
             if (args.drop)
-                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}`);
+                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
         }
     }
     await waitFinish(input);
