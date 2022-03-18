@@ -10,6 +10,10 @@ export function removeAccent(v : string) {
     return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+export function removeEndPunctuation(v : string) {
+    return v.replace(/[.!?]$/g, '');
+}
+
 export function cleanName(v : string) {
     // replace '(s)' to simply 's'
     v = v.replace(/\(s\)/g, 's');
@@ -69,7 +73,7 @@ export function closest(s : string, arr : string[], algorithm : 'jaccard'|'f1' =
     let closest = null;
     let maxSimilarity = -1;
     for (const candidate of arr) {
-        const score = similarity(s, candidate);
+        const score = similarity(s, candidate, algorithm);
         if (score <= discard_threshold)
             continue;
         if (score > maxSimilarity) {
@@ -78,4 +82,15 @@ export function closest(s : string, arr : string[], algorithm : 'jaccard'|'f1' =
         }
     }
     return closest;
+}
+
+// return all possible spans of a sentence
+export function getSpans(s : string) : string[] {
+    const spans = [];
+    const tokens = removeEndPunctuation(s).split(/\s+/);
+    for (let len = 1; len <= tokens.length; len ++) {
+        for (let index = 0; index <= tokens.length - len; index ++)
+            spans.push(tokens.slice(index, index + len).join(' '));
+    }
+    return spans;
 }

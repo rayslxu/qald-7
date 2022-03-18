@@ -90,14 +90,15 @@ export default class SPARQLToThingTalkConverter {
     private _parseWhereClause;
     private _parseHavingClause;
     /**
-     * reset tables used to track the conversion
+     * init tables used to track the conversion
      */
-    private _reset;
+    private _init;
     /**
      * Convert SPARQL into ThingTalk
      * @param sparql a string of SPARQL query
+     * @param utterance a string of the utterance
      * @param keywords a list of keywords in the utterance including the mentioned entities
      * @returns A ThingTalk Program
      */
-    convert(sparql: string, keywords: string[]): Promise<Ast.Program>;
+    convert(sparql: string, utterance: string, keywords?: string[]): Promise<Ast.Program>;
 }

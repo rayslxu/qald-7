@@ -38,7 +38,7 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?uri
 }
 TT:
-[ doctoral_advisor ] of @org.wikidata . entity ( ) filter id == " Q937 " ^^org.wikidata:entity ( " albert einstein " ) ;
+[ doctoral_advisor ] of @org.wikidata . human ( ) filter id == " Q937 " ^^org.wikidata:human ( " albert einstein " ) ;
 
 ====
 Utterance: Did Kaurismäki ever win the Grand Prix at Cannes?
@@ -48,7 +48,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804> . 
 }
 TT: 
-[ contains ( award_received , " Q844804 " ^^org.wikidata:p_award_received ( " grand prix at cannes " ) ) ] of @org.wikidata . entity ( ) filter id == " Q276186 " ^^org.wikidata:entity ( " kaurismäki " ) ;
+[ contains ( award_received , " Q844804 " ^^org.wikidata:p_award_received ( " grand prix at cannes " ) ) ] of @org.wikidata . human ( ) filter id == " Q276186 " ^^org.wikidata:human ( " kaurismäki " ) ;
 
 ====
 Utterance: Which countries have more than two official languages??
@@ -108,7 +108,7 @@ ASK WHERE {
     FILTER(regex(?name,'Mary')) 
 }
 TT: 
-[ contains~ ( spouse , " mary " ) ] of @org.wikidata . entity ( ) filter id == " Q91 " ^^org.wikidata:entity ( " lincoln " ) ;
+[ contains~ ( spouse , " mary " ) ] of @org.wikidata . human ( ) filter id == " Q91 " ^^org.wikidata:human ( " lincoln " ) ;
 
 ====
 Utterance: How many countries are there in Europe ? 
@@ -141,7 +141,7 @@ SELECT DISTINCT ?date WHERE {
     <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?date .
 }
 TT: 
-[ date_of_birth ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ cast_member ] of @org.wikidata . entity ( ) filter id == " Q162371 " ^^org.wikidata:entity ( " charmed " ) ) ) ;
+[ date_of_birth ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ cast_member ] of @org.wikidata . television_series ( ) filter id == " Q162371 " ^^org.wikidata:television_series ( " charmed " ) ) ) ;
 
 ====
 Utterance: Does the Isar flow into a lake?
@@ -152,4 +152,21 @@ ASK WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>  . 
 }
 TT:
-[ contains ( mouth_of_the_watercourse , any ( @org.wikidata . lake ( ) ) ) ] of @org.wikidata . entity ( ) filter id == " Q106588 " ^^org.wikidata:entity ( " isar " ) ;
+[ contains ( mouth_of_the_watercourse , any ( @org.wikidata . lake ( ) ) ) ] of @org.wikidata . river ( ) filter id == " Q106588 " ^^org.wikidata:river ( " isar " ) ;
+
+====
+Utterance: List all boardgames by GMT.
+Keywords: 
+SPARQL: 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?uri WHERE { ?uri wdt:P31 wd:Q131436 . }
+TT: 
+@org.wikidata . board_game ( ) ;
+
+
+====
+Utterance: Who developed Skype?
+Keywords:
+SPARQL: 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?uri WHERE { wd:Q40984 wdt:P178 ?uri . }
+TT: 
+[ developer ] of @org.wikidata . website ( ) filter id == " Q40984 " ^^org.wikidata:website ( " skype " ) ; 

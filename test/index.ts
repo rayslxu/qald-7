@@ -24,7 +24,7 @@ async function main() {
         const sparql = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length, tests[i].indexOf('TT:')).trim();
         const expected = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length).trim();     
         const preprocessed = tokenizer.tokenize(utterance).tokens.join(' ');
-        const converted = await converter.convert(sparql, keywords.split(', '));
+        const converted = await converter.convert(sparql, utterance, keywords.split(', ').filter(Boolean));
         const thingtalk = ThingTalkUtils.serializePrediction(
             converted, 
             preprocessed,

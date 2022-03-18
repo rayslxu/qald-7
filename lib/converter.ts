@@ -16,7 +16,7 @@ import {
     PropertyPath
 } from 'sparqljs';
 import * as argparse from 'argparse';
-import { waitFinish, closest } from './utils/misc';
+import { waitFinish, closest, getSpans } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
@@ -548,21 +548,25 @@ export default class SPARQLToThingTalkConverter {
     }
     
     /**
-     * reset tables used to track the conversion
+     * init tables used to track the conversion
      */
-    private _reset(keywords : string[]) {
+    private _init(utterance : string, keywords : string[]) {
         this._tables = {};
-        this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
+        if (keywords.length === 0)
+            this._keywords = getSpans(utterance);
+        else 
+            this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
     }
 
     /**
      * Convert SPARQL into ThingTalk
      * @param sparql a string of SPARQL query 
+     * @param utterance a string of the utterance
      * @param keywords a list of keywords in the utterance including the mentioned entities 
      * @returns A ThingTalk Program
      */
-    async convert(sparql : string, keywords : string[]) : Promise<Ast.Program> {
-        this._reset(keywords);
+    async convert(sparql : string, utterance : string, keywords : string[] = []) : Promise<Ast.Program> {
+        this._init(utterance, keywords);
         const parsed = this._parser.parse(sparql) as SelectQuery|AskQuery;
         if (parsed.where) {
             for (const clause of parsed.where) 

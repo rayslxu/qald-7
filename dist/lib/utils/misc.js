@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.closest = exports.similarity = exports.waitFinish = exports.idArgument = exports.cleanName = exports.removeAccent = exports.snakeCase = void 0;
+exports.getSpans = exports.closest = exports.similarity = exports.waitFinish = exports.idArgument = exports.cleanName = exports.removeEndPunctuation = exports.removeAccent = exports.snakeCase = void 0;
 const en_stemmer_1 = __importDefault(require("en-stemmer"));
 const stopword_1 = require("stopword");
 const thingtalk_1 = require("thingtalk");
@@ -15,6 +15,10 @@ function removeAccent(v) {
     return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 exports.removeAccent = removeAccent;
+function removeEndPunctuation(v) {
+    return v.replace(/[.!?]$/g, '');
+}
+exports.removeEndPunctuation = removeEndPunctuation;
 function cleanName(v) {
     // replace '(s)' to simply 's'
     v = v.replace(/\(s\)/g, 's');
@@ -67,7 +71,7 @@ function closest(s, arr, algorithm = 'f1', discard_threshold = 0) {
     let closest = null;
     let maxSimilarity = -1;
     for (const candidate of arr) {
-        const score = similarity(s, candidate);
+        const score = similarity(s, candidate, algorithm);
         if (score <= discard_threshold)
             continue;
         if (score > maxSimilarity) {
@@ -78,4 +82,15 @@ function closest(s, arr, algorithm = 'f1', discard_threshold = 0) {
     return closest;
 }
 exports.closest = closest;
+// return all possible spans of a sentence
+function getSpans(s) {
+    const spans = [];
+    const tokens = removeEndPunctuation(s).split(/\s+/);
+    for (let len = 1; len <= tokens.length; len++) {
+        for (let index = 0; index <= tokens.length - len; index++)
+            spans.push(tokens.slice(index, index + len).join(' '));
+    }
+    return spans;
+}
+exports.getSpans = getSpans;
 //# sourceMappingURL=misc.js.map

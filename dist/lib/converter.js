@@ -488,21 +488,26 @@ class SPARQLToThingTalkConverter {
         }
     }
     /**
-     * reset tables used to track the conversion
+     * init tables used to track the conversion
      */
-    _reset(keywords) {
+    _init(utterance, keywords) {
         this._tables = {};
-        this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
+        if (keywords.length === 0)
+            this._keywords = (0, misc_1.getSpans)(utterance);
+        else
+            this._keywords = keywords.map((keyword) => this._tokenizer.tokenize(keyword).rawTokens.join(' '));
+        console.log(this._keywords);
     }
     /**
      * Convert SPARQL into ThingTalk
      * @param sparql a string of SPARQL query
+     * @param utterance a string of the utterance
      * @param keywords a list of keywords in the utterance including the mentioned entities
      * @returns A ThingTalk Program
      */
-    async convert(sparql, keywords) {
+    async convert(sparql, utterance, keywords = []) {
         var _a, _b;
-        this._reset(keywords);
+        this._init(utterance, keywords);
         const parsed = this._parser.parse(sparql);
         if (parsed.where) {
             for (const clause of parsed.where)
