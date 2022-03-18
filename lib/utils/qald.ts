@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 export interface Example {
     id : string,
@@ -24,8 +25,8 @@ export function preprocessExample(example : any) : Example {
  * @returns An array of examples
  */
 export function preprocessQALD(experiment : string) : Example[] {
-    const trainQuestions = JSON.parse(fs.readFileSync(`./data/${experiment}/train.json`, 'utf-8'));
-    const testQuestions = JSON.parse(fs.readFileSync(`./data/${experiment}/test.json`, 'utf-8'));
+    const trainQuestions = JSON.parse(fs.readFileSync(path.join(__dirname, `../../../data/${experiment}/train.json`), 'utf-8'));
+    const testQuestions = JSON.parse(fs.readFileSync(path.join(__dirname, `../../../data/${experiment}/test.json`), 'utf-8'));
     const questions = [];
     for (const example of trainQuestions.questions) 
         questions.push(preprocessExample(example));

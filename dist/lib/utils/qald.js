@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ENTITY_SPAN_OVERRIDE = exports.preprocessQALD = exports.preprocessExample = void 0;
 const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 /**
  * Preprocess one QALD example to extract only useful information for us
  * @param example An example in QALD
@@ -23,8 +24,8 @@ exports.preprocessExample = preprocessExample;
  * @returns An array of examples
  */
 function preprocessQALD(experiment) {
-    const trainQuestions = JSON.parse(fs_1.default.readFileSync(`./data/${experiment}/train.json`, 'utf-8'));
-    const testQuestions = JSON.parse(fs_1.default.readFileSync(`./data/${experiment}/test.json`, 'utf-8'));
+    const trainQuestions = JSON.parse(fs_1.default.readFileSync(path_1.default.join(__dirname, `../../../data/${experiment}/train.json`), 'utf-8'));
+    const testQuestions = JSON.parse(fs_1.default.readFileSync(path_1.default.join(__dirname, `../../../data/${experiment}/test.json`), 'utf-8'));
     const questions = [];
     for (const example of trainQuestions.questions)
         questions.push(preprocessExample(example));
