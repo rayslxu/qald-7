@@ -2,5 +2,7 @@ entities.json
 parameter-datasets.tsv
 parameter-datasets
 manifest.tt
-node_modules
 wikidata_cache.sqlite
+
+node_modules
+dist
