@@ -48,6 +48,10 @@ class ManifestGenerator {
      * we use that as the key instead of PID 
      */
     private _propertyValues : Record<string, Record<string, string>>; // Record<property name, Record<QID, value label>>
+    /**
+     * @member _propertyTypes : an object with PID as key, and thingtalk type as value
+     */
+    private _propertyTypes : Record<string, Type>;
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
@@ -65,6 +69,7 @@ class ManifestGenerator {
         this._propertyLabelsByDomain = {};
         this._properties = {};
         this._propertyValues = {};
+        this._propertyTypes = {};
         this._output = options.output;
 
         this._includeNonEntityProperties = options.include_non_entity_properties;
@@ -91,6 +96,58 @@ class ManifestGenerator {
         
         const propertyLabel = await this._wikidata.getLabel(propertyId);
         this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel ?? propertyId;
+    }
+    
+
+    /**
+     * Get the thingtalk type of a property
+     * @param propertyId the PID of the property
+     * @param propertyName the name of the property
+     * @returns the ThingTalk type of the property
+     */
+    private async _getPropertyType(propertyId : string, propertyName : string) {
+        if (propertyId in this._propertyTypes) 
+            return this._propertyTypes[propertyId];
+        const type = await this._getPropertyTypeHelper(propertyId, propertyName);
+        this._propertyTypes[propertyId] = type;
+        return type;
+    }
+
+    private async _getPropertyTypeHelper(propertyId : string, propertyName : string) {
+        if (propertyId === 'P21')
+            return new Type.Enum(['female', 'male']);
+        
+        const timeProperties = await this._wikidata.getTimeProperties();
+        if (timeProperties.includes(propertyId))
+            return Type.Date;
+        
+        const units = await this._wikidata.getAllowedUnits(propertyId);
+        if (units.length > 0) {
+            if (units.includes('kilogram'))
+                return new Type.Measure('kg');
+            if (units.includes('metre') ||  units.includes('kilometre'))
+                return new Type.Measure('m');
+            if (units.includes('second') || units.includes('year'))
+                return new Type.Measure('ms');
+            if (units.includes('degree Celsius'))
+                return new Type.Measure('C');
+            if (units.includes('metre per second') || units.includes('kilometre per second'))
+                return new Type.Measure('mps');
+            if (units.includes('square metre'))
+                return new Type.Measure('m2');
+            if (units.includes('cubic metre'))
+                return new Type.Measure('m3');
+            if (units.includes('percent'))
+                return Type.Number;
+            if (units.includes('United States dollar'))
+                return Type.Currency;
+            if (units.includes('human')) // capacity
+                return Type.Number;
+            throw new Error(`Unknown measurement type with unit ${units.join(', ')} for ${propertyId}`);
+        }
+
+        // default to an array entity type
+        return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
     }
 
     /**
@@ -195,7 +252,7 @@ class ManifestGenerator {
         for (const property in propertyValues) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
-            const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
+            const ptype = await this._getPropertyType(property, pname);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
@@ -248,7 +305,7 @@ class ManifestGenerator {
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
             missing.push([id, label]);
-            const ptype = new Type.Array(new Type.Entity(`org.wikidata:p_${pname}`));
+            const ptype = await this._getPropertyType(id, pname);
             const argumentDef = new Ast.ArgumentDef(
                 null, 
                 Ast.ArgDirection.OUT, 

@@ -336,4 +336,36 @@ export default class WikidataUtils {
         }
         return properties;
     }
+
+
+    /**
+     * Get properties that are marked as "Wikidata property with datatype 'time'"
+     * 
+     * @returns a list of property ids 
+     */
+    async getTimeProperties() {
+        const sparql = `SELECT DISTINCT ?p WHERE {
+            ?p wdt:P31 wd:Q18636219 ;
+        }`;
+        const res = await this._query(sparql);
+        return res.map((r : any) => r.p.value.slice(ENTITY_PREFIX.length));
+    }
+
+    /**
+     * Get the allowed units (Q21514353) of a property
+     * This allows to detect Measure types
+     *
+     * @param propertyId
+     * @returns {Promise<Array.String>} A list of allowed units
+     */
+    async getAllowedUnits(propertyId : string) : Promise<string[]> {
+        const query = `SELECT ?value ?valueLabel WHERE {
+            wd:${propertyId} p:P2302 ?statement .
+            ?statement ps:P2302 wd:Q21514353 .
+            ?statement pq:P2305 ?value .
+            SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        }`;
+        const result = await this._query(query);
+        return result.map((r : any) => r.valueLabel.value);
+    }
 }
