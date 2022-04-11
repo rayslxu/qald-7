@@ -27,6 +27,7 @@ interface ManifestGeneratorOptions {
 }
 
 class ManifestGenerator {
+    private _experiment : 'qald7'|'qald9';
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
     private _tokenizer : I18n.BaseTokenizer;
@@ -53,6 +54,7 @@ class ManifestGenerator {
     private _useWikidataAltLabels : boolean;
 
     constructor(options : ManifestGeneratorOptions) {
+        this._experiment = options.experiment;
         this._wikidata = new WikidataUtils(options.cache);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
@@ -325,7 +327,7 @@ class ManifestGenerator {
         return new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries, entities
         }, {
-            nl: { name: 'WikidataQA', description: 'Question Answering over Wikidata' },
+            nl: { name: `WikidataQA based on ${this._experiment}`, description: 'Question Answering over Wikidata' },
             impl: { whitelist }
         });
     }
