@@ -118,7 +118,7 @@ class ManifestGenerator {
             return new Type.Enum(['female', 'male']);
         
         const timeProperties = await this._wikidata.getTimeProperties();
-        if (timeProperties.includes(propertyId))
+        if (timeProperties.includes(propertyId) || propertyName.startsWith('date_of_'))
             return Type.Date;
         
         const units = await this._wikidata.getAllowedUnits(propertyId);
@@ -145,6 +145,10 @@ class ManifestGenerator {
                 return Type.Number;
             throw new Error(`Unknown measurement type with unit ${units.join(', ')} for ${propertyId}`);
         }
+
+        const range = await this._wikidata.getRangeConstraint(propertyId);
+        if (range)
+            return Type.Number;
 
         // default to an array entity type
         return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));

@@ -356,7 +356,7 @@ export default class WikidataUtils {
      * This allows to detect Measure types
      *
      * @param propertyId
-     * @returns {Promise<Array.String>} A list of allowed units
+     * @returns A list of allowed units
      */
     async getAllowedUnits(propertyId : string) : Promise<string[]> {
         const query = `SELECT ?value ?valueLabel WHERE {
@@ -367,5 +367,31 @@ export default class WikidataUtils {
         }`;
         const result = await this._query(query);
         return result.map((r : any) => r.valueLabel.value);
+    }
+
+    /**
+     * Get range constraint
+     *
+     * @param propertyId
+     * @returns range or null
+     */
+    async getRangeConstraint(propertyId : string) : Promise<Record<string, number>|null> {
+        const query = `SELECT ?max ?min WHERE {
+            wd:${propertyId} p:P2302 ?statement .
+            ?statement ps:P2302 wd:Q21510860 .
+            ?statement pq:P2312 ?max .
+            ?statement pq:P2313 ?min .
+        }`;
+        const result = await this._query(query);
+        if (result.length > 0) {
+            const range : Record<string, number> = {};
+            if (result[0].max)
+                range.max = result[0].max.value;
+            if (result[0].min)
+                range.min = result[0].min.value;
+            if (Object.keys(range).length > 0)
+                return range;
+        }
+        return null;
     }
 }
