@@ -787,6 +787,8 @@ async function main() {
             console.log(`Example ${item.id} failed`);
             if (args.drop)
                 args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
+            else 
+                console.log((e as Error).message);
         }
     }
     await waitFinish(input);
