@@ -309,6 +309,13 @@ export default class SPARQLToThingTalkConverter {
                 throw new Error(`Failed find matching span for entity ${value} : ${wikidataLabel} among ${this._keywords}`);
             return new Ast.Value.Entity(value, type.type, display); 
         } 
+        if (type instanceof Type.Enum) {
+            assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
+            value = value.slice(ENTITY_PREFIX.length);
+            const wikidataLabel = await this._wikidata.getLabel(value);
+            assert(wikidataLabel);
+            return new Ast.Value.Enum(wikidataLabel); 
+        }
         if (type === Type.Number)
             return new Ast.Value.Number(parseFloat(value));
         if (type === Type.String) 
