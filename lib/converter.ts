@@ -755,6 +755,12 @@ async function main() {
         required: false,
         type: fs.createWriteStream
     });
+    parser.add_argument('--offset', {
+        required: false,
+        type: parseInt,
+        default: 1,
+        help: `Start from the nth example`
+    });
     parser.add_argument('--include-entity-value', {
         action: 'store_true',
         default: false
@@ -771,7 +777,12 @@ async function main() {
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
     const output = new DatasetStringifier();
     output.pipe(args.output);
+    
+    let counter = 0;
     for await (const item of input) {
+        counter ++;
+        if (counter < args.offset)
+            continue;
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
             const keywords = item.question[0].keywords;
