@@ -141,7 +141,7 @@ SELECT DISTINCT ?date WHERE {
     <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?date .
 }
 TT: 
-[ date_of_birth ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ cast_member ] of @org.wikidata . television_series ( ) filter id == " Q162371 " ^^org.wikidata:television_series ( " charmed " ) ) ) ;
+[ < cast_member / date_of_birth > ] of @org.wikidata . television_series ( ) filter id == " Q162371 " ^^org.wikidata:television_series ( " charmed " ) ;
 
 ====
 Utterance: Does the Isar flow into a lake?
@@ -170,3 +170,24 @@ SPARQL:
 PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?uri WHERE { wd:Q40984 wdt:P178 ?uri . }
 TT: 
 [ developer ] of @org.wikidata . website ( ) filter id == " Q40984 " ^^org.wikidata:website ( " skype " ) ; 
+
+====
+Utterance: Who wrote the lyrics for the Polish national anthem?
+Keywords: Poland, national anthem, write, lyrics
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q36> <http://www.wikidata.org/prop/direct/P85>/<http://www.wikidata.org/prop/direct/P676> ?uri . 
+}
+TT:
+[ < anthem / lyrics_by > ] of @org.wikidata . sovereign_state ( ) filter id == " Q36 " ^^org.wikidata:sovereign_state ( " polish " ) ;
+
+====
+Utterance: Which writers studied in Istanbul?
+Keywords: writers, studied, Istanbul
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q36180> . 
+    ?uri <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>  <http://www.wikidata.org/entity/Q406> . 
+}
+TT:
+@org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;

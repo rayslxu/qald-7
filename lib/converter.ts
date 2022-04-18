@@ -201,7 +201,7 @@ class WikiSchema {
 }
 
 interface Projection {
-    property : string, 
+    property : string|Ast.PropertyPathSequence, 
     variable : string
 }
 
@@ -212,6 +212,11 @@ interface Table {
     verifications : Ast.BooleanExpression[]
 }
 
+interface SPARQLToThingTalkConverterOptions {
+    cache : string;
+    enablePropertyPath : boolean;
+}
+
 export default class SPARQLToThingTalkConverter {
     private _schema : WikiSchema;
     private _parser : SparqlParser;
@@ -220,15 +225,17 @@ export default class SPARQLToThingTalkConverter {
     private _keywords : string[];
     private _tables : Record<string, Table>;
     private _variableCounter : number;
+    private _enablePropertyPath : boolean;
 
-    constructor(classDef : Ast.ClassDef, cache : string) {
+    constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
-        this._wikidata = new WikidataUtils(cache);
+        this._wikidata = new WikidataUtils(options.cache);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
         this._keywords = [];
         this._variableCounter = 0;
+        this._enablePropertyPath = !!options.enablePropertyPath;
     } 
 
     /**
@@ -369,12 +376,52 @@ export default class SPARQLToThingTalkConverter {
     }
 
     private async _convertSequencePathTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
-        const predicates = triple.predicate.items;
-        if (predicates.length > 2)
-            throw new Error(`Unsupported triple with a 3+ length path:  ${JSON.stringify(triple)}`);
-        const variable = this._newVariable();
-        await this._convertBasicTriple({ subject: triple.subject, predicate: predicates[0], object: variable }, filtersBySubject);
-        await this._convertBasicTriple({ subject: variable, predicate: predicates[1], object: triple.object }, filtersBySubject);
+        // if we enable property path, and the triple is not a projection (currently not supported)
+        if (this._enablePropertyPath) { 
+            const subject = triple.subject.value;
+            const predicate = triple.predicate;
+            const object = triple.object.value;
+            // if subject is an entity, create an id filter
+            if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
+                const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
+                assert(domain);
+                const table = this._schema.getTable(domain);
+                assert(table);
+                this._addFilter(subject, await this._atomFilter('id', subject, '==', new Type.Entity(`org.wikidata:${table}`)));
+                this._setDomain(subject, domain);
+            }
+            const sequence : Ast.PropertyPathSequence = [];
+            for (const element of predicate.items) {
+                assert(element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX));
+                const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
+                sequence.push(new Ast.PropertyPathElement(property));
+            }
+            const lastPropertyType = this._schema.getPropertyType(sequence[sequence.length - 1].property);
+            if (triple.object.termType === 'Variable') {
+                this._addProjection(subject, { property : sequence, variable : object });
+            } else {
+                const value = await this._toThingTalkValue(object, elemType(lastPropertyType));
+                const filter = new Ast.PropertyPathBooleanExpression(
+                    null, 
+                    sequence, 
+                    lastPropertyType instanceof Type.Array ? 'contains' : '==',
+                    value, 
+                    null
+                );
+                if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
+                    this._addVerification(subject, filter);
+                else 
+                    this._addFilter(subject, filter);
+            }
+            
+        } else {
+            const predicates = triple.predicate.items;  
+            if (predicates.length > 2)
+                throw new Error(`Unsupported triple with a 3+ length path:  ${JSON.stringify(triple)}`);
+            const variable = this._newVariable();
+            await this._convertBasicTriple({ subject: triple.subject, predicate: predicates[0], object: variable }, filtersBySubject);
+            await this._convertBasicTriple({ subject: variable, predicate: predicates[1], object: triple.object }, filtersBySubject);
+        }
     }
 
     private async _convertBasicTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
@@ -489,6 +536,9 @@ export default class SPARQLToThingTalkConverter {
             const projection = table.projections.find((proj) => proj.variable === lhs.value);
             if (!projection)
                 continue;
+
+            if (typeof projection.property !== 'string')
+                throw new Error(`Join on property path not supported`);
             
             let booleanExpression;
             if (projection.property.endsWith('Label')) {
@@ -547,6 +597,8 @@ export default class SPARQLToThingTalkConverter {
             const projection = this._tables[subject].projections.find((proj) => proj.variable === variable);
             if (!projection)
                 throw new Error(`Can't find matching variable for the having clause`);
+            if (typeof projection.property !== 'string')
+                throw new Error(`Having clause not supported for property path`);
             assert(rhs.termType === 'Literal' && !isNaN(rhs.value));
             this._addFilter(subject, this._aggregateFilter('count', [projection.property], having.operator, parseFloat(rhs.value)));
         } else {
@@ -633,8 +685,17 @@ export default class SPARQLToThingTalkConverter {
                 // for a table, skip the table - it's a helper table to generate filter
                 if (projections.length === 0)
                     continue;
-                if (!(projections.length === 1 && projections[0] === 'id'))
-                    query = new Ast.ProjectionExpression(null, query, projections, [], [], null);
+                if (!(projections.length === 1 && projections[0] === 'id')) {
+                    if (projections.some((proj) => typeof proj !== 'string')) {
+                        const projectionElements = projections.map((proj) => {
+                            return new Ast.ProjectionElement(proj, null, []);
+                        });
+                        query = new Ast.ProjectionExpression2(null, query, projectionElements, null);
+                    } else {
+                        query = new Ast.ProjectionExpression(null, query, projections as string[], [], [], null);
+                    }
+
+                }
             }
 
             // handle sorting
@@ -644,6 +705,8 @@ export default class SPARQLToThingTalkConverter {
                 assert('termType' in expression && expression.termType === 'Variable');
                 const projection = table.projections.find((proj) => proj.variable === expression.value);
                 if (projection) {
+                    if (typeof projection.property !== 'string')
+                        throw new Error(`Sort on property path not supported`);
                     const property = new Ast.Value.VarRef(projection.property);
                     const direction = parsed.order![0].descending ? 'desc' : 'asc';
                     query = new Ast.SortExpression(null, query, property, direction, null);
@@ -677,6 +740,8 @@ export default class SPARQLToThingTalkConverter {
             if (this._tables[mainSubject].projections.some((proj) => proj.variable === subquerySubject)) {
                 const projection = this._tables[mainSubject].projections.find((proj) => proj.variable === subquerySubject);
                 const property = projection!.property;
+                if (typeof property !== 'string')
+                    throw new Error(`Subquery on property path not supported`);
                 subqueryFilter = new Ast.ComparisonSubqueryBooleanExpression(
                     null,
                     new Ast.Value.VarRef(property),
@@ -687,6 +752,8 @@ export default class SPARQLToThingTalkConverter {
             } else if (this._tables[subquerySubject].projections.some((proj) => proj.variable === mainSubject)) {
                 const projection = this._tables[subquerySubject].projections.find((proj) => proj.variable === mainSubject);
                 const property = projection!.property;
+                if (typeof property !== 'string')
+                    throw new Error(`Subquery on property path not supported`);
                 subqueryFilter = new Ast.ComparisonSubqueryBooleanExpression(
                     null,
                     new Ast.Value.VarRef('id'),
@@ -712,6 +779,8 @@ export default class SPARQLToThingTalkConverter {
                 const proj = this._tables[mainSubject].projections.find((proj) => proj.variable === subject);
                 if (!proj)
                     throw new Error(`No supported verification question: ${sparql}`);
+                if (typeof proj.property !== 'string')
+                    throw new Error(`Subquery on property path not supported`);
                 subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
                     null,
                     new Ast.Value.VarRef(proj.property),
@@ -772,13 +841,18 @@ async function main() {
         action: 'store_true',
         default: false
     });
+    parser.add_argument('--property-path', {
+        action: 'store_true',
+        default: false,
+        help: `Enable property path filter/projection in ThingTalk`
+    });
     const args = parser.parse_args();
 
     const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
     assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new SPARQLToThingTalkConverter(classDef, args.cache);
+    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache, enablePropertyPath: args.property_path });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));

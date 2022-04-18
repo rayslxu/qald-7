@@ -46,5 +46,6 @@ export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
     "Q159": "cosmonauts", // russia
     "Q5274359": "the first season of the HBO television series The Sopranos".toLowerCase(),
     "Q4970706": "federal chancellors of germany",
-    "Q10800557": "actors"
+    "Q10800557": "actors",
+    "Q36": "polish"
 };
