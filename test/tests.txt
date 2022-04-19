@@ -202,3 +202,14 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 @org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity + > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;
+
+====
+Utternace: In which city did John F. Kennedy die?
+Keywords: city, John F. Kennedy, die
+SPARQL:
+SELECT DISTINCT ?uri WHERE {  
+    <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/direct/P20>/<http://www.wikidata.org/prop/direct/P131> ?uri . 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>  .  
+} 
+TT: 
+[ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( org.wikidata:city ) ] of @org.wikidata . human ( ) filter id == " Q9696 " ^^org.wikidata:human ( " john f . kennedy " ) ;

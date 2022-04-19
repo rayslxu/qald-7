@@ -202,7 +202,8 @@ class WikiSchema {
 
 interface Projection {
     property : string|Ast.PropertyPathSequence, 
-    variable : string
+    variable ?: string,
+    type ?: string
 }
 
 interface Table {
@@ -658,6 +659,33 @@ export default class SPARQLToThingTalkConverter {
                 }
             }
         }
+
+        // first check tables with only domain information, it can potentially be resolved with a type annotation
+        // on another table's projection
+        // only apply to selection not verification
+        if (parsed.queryType === 'SELECT') {
+            for (const [subject, table] of Object.entries(this._tables)) {
+                if (subject.startsWith(ENTITY_PREFIX))
+                    continue;
+                let isProjected = false;
+                if (table.domain !== 'entity' && 
+                    table.filters.length === 0 && 
+                    table.projections.length === 0 &&
+                    table.verifications.length === 0) {
+                    for (const table2 of Object.values(this._tables)) {
+                        const proj = table2.projections.find((p) => p.variable === subject);
+                        if (proj) {
+                            isProjected = true;
+                            proj.type = table.domain;
+                        }
+                    }
+                }
+                if (isProjected)
+                    delete this._tables[subject];
+            }
+        }
+
+        // parse all tables into thingtalk
         for (const [subject, table] of Object.entries(this._tables)) {
             // handle filters
             let query : Ast.Expression = baseQuery(table.domain);
@@ -674,12 +702,12 @@ export default class SPARQLToThingTalkConverter {
             }
 
             // handle projections and verifications
-            const projections = [];
+            const projections : Projection[] = [];
             if (variables.includes(subject))
-                projections.push('id');
+                projections.push({ property : 'id' });
             for (const projection of table.projections) {
-                if (variables.includes(projection.variable) || Object.keys(this._tables).includes(projection.variable))
-                    projections.push(projection.property);
+                if (variables.includes(projection.variable!) || Object.keys(this._tables).includes(projection.variable!))
+                    projections.push(projection);
             }
             if (parsed.queryType === 'ASK' && table.verifications.length > 0) {
                 assert(projections.length === 0);
@@ -690,16 +718,15 @@ export default class SPARQLToThingTalkConverter {
                 // for a table, skip the table - it's a helper table to generate filter
                 if (projections.length === 0)
                     continue;
-                if (!(projections.length === 1 && projections[0] === 'id')) {
-                    if (projections.some((proj) => typeof proj !== 'string')) {
-                        const projectionElements = projections.map((proj) => {
-                            return new Ast.ProjectionElement(proj, null, []);
-                        });
-                        query = new Ast.ProjectionExpression2(null, query, projectionElements, null);
-                    } else {
-                        query = new Ast.ProjectionExpression(null, query, projections as string[], [], [], null);
-                    }
-
+                if (!(projections.length === 1 && projections[0].property === 'id')) {
+                    const projectionElements = projections.map((proj) => {
+                        return new Ast.ProjectionElement(
+                            proj.property,
+                            null,
+                            proj.type ? [new Type.Entity(`org.wikidata:${proj.type}`)] : []
+                        );
+                    });
+                    query = new Ast.ProjectionExpression2(null, query, projectionElements, null);
                 }
             }
 
@@ -733,12 +760,12 @@ export default class SPARQLToThingTalkConverter {
             let [[mainSubject, main], [subquerySubject, subquery]] = Object.entries(queries);
             // the query without any projection in SPARQL variables should be the subquery
             // swap if necessary
-            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable)))
+            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)))
                 [mainSubject, main, subquerySubject, subquery] = [subquerySubject, subquery, mainSubject, main];
             // verify 
-            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable)))
+            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)))
                 throw new Error(`Failed to identify main query in ${sparql}`);
-            if (this._tables[subquerySubject].projections.some((proj) => variables.includes(proj.variable)))
+            if (this._tables[subquerySubject].projections.some((proj) => variables.includes(proj.variable!)))
                 throw new Error(`Failed to identify subquery in ${sparql}.`);
                 
             let subqueryFilter : Ast.ComparisonSubqueryBooleanExpression;
