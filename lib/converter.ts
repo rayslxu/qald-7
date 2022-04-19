@@ -392,9 +392,14 @@ export default class SPARQLToThingTalkConverter {
             }
             const sequence : Ast.PropertyPathSequence = [];
             for (const element of predicate.items) {
-                assert(element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX));
-                const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
-                sequence.push(new Ast.PropertyPathElement(property));
+                if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
+                    const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property));
+                } else if (element.type === 'path' && element.pathType === '+') {
+                    assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
+                    const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property, true));
+                }
             }
             const lastPropertyType = this._schema.getPropertyType(sequence[sequence.length - 1].property);
             if (triple.object.termType === 'Variable') {
