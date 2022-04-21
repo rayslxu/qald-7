@@ -201,7 +201,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>+  <http://www.wikidata.org/entity/Q406> . 
 }
 TT:
-@org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity + > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;
+@org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;
 
 ====
 Utternace: In which city did John F. Kennedy die?

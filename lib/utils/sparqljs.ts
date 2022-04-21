@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath } from 'sparqljs';
 import { PROPERTY_PREFIX } from './wikidata';
 
@@ -44,4 +45,29 @@ export function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm)
     }
     extract(predicate);
     return properties;
+}
+
+
+/**
+ * Some heuristics to simplify the property path
+ * The simplified version should not have any difference in semantics in natural language
+ */
+export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|VariableTerm) : IriTerm|PropertyPath|VariableTerm {
+    // property path
+    if ('type' in predicate && predicate.type === 'path') {
+        if (predicate.pathType === '/') {
+            // TODO
+            predicate.items = predicate.items.map((item) => postprocessPropertyPath(item) as IriTerm|PropertyPath);
+        } else if (predicate.pathType === '+') {
+            assert(predicate.items.length === 1);
+            const item = predicate.items[0];
+
+            // P131+ -> P131
+            if ('termType' in item) {
+                if (item.termType === 'NamedNode' && item.value === `${PROPERTY_PREFIX}P131`) 
+                    return item;
+            }
+        }     
+    }
+    return predicate;
 }

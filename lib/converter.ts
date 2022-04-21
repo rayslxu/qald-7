@@ -11,14 +11,13 @@ import {
     SparqlParser, 
     AskQuery, 
     UnionPattern, 
-    Triple,
-    IriTerm,
-    PropertyPath
+    Triple
 } from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish, closest, getSpans } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
+import { postprocessPropertyPath } from './utils/sparqljs';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
 
@@ -129,25 +128,6 @@ function parseSpecialUnion(union : UnionPattern) : Triple|false {
         return false;
     
     return first;
-}
-
-/**
- * Get property in predicate with some special cases handling
- * case 1: P131+ ==> P131
- * @param predicate A predicate
- * @returns the property in the predicate
- */
-function extractPredicate(predicate : IriTerm | PropertyPath) : string|null {
-    if ('value' in predicate)
-        return predicate.value;
-    if (predicate.type === 'path' && predicate.pathType === '+') {
-        if (predicate.items.length !== 1)
-            return null;
-        const p = predicate.items[0];
-        if ('value' in p && p.value === `${PROPERTY_PREFIX}P131`)
-            return p.value;
-    } 
-    return null;
 }
  
 /**
@@ -432,7 +412,7 @@ export default class SPARQLToThingTalkConverter {
 
     private async _convertBasicTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
         const subject = triple.subject.value;
-        const predicate = extractPredicate(triple.predicate);
+        const predicate = triple.predicate.value;
         const object = triple.object.value;
 
         if (!subject || !predicate || !object)
@@ -490,7 +470,8 @@ export default class SPARQLToThingTalkConverter {
     private async _convertTriples(triples : Triple[]) : Promise<Record<string, Ast.BooleanExpression>> {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
-            if ('type' in triple.predicate && triple.predicate.type === 'path' && triple.predicate.pathType === '/')
+            triple.predicate = postprocessPropertyPath(triple.predicate);
+            if ('type' in triple.predicate && triple.predicate.type === 'path')
                 await this._convertSequencePathTriple(triple, filtersBySubject);
             else 
                 await this._convertBasicTriple(triple, filtersBySubject);
