@@ -690,10 +690,23 @@ export default class SPARQLToThingTalkConverter {
                 if (variables.includes(projection.variable!) || Object.keys(this._tables).includes(projection.variable!))
                     projections.push(projection);
             }
-            if (parsed.queryType === 'ASK' && table.verifications.length > 0) {
-                assert(projections.length === 0);
-                const verification = table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, table.verifications) : table.verifications[0];
-                query = new Ast.BooleanQuestionExpression(null, query, verification, null);
+            if (parsed.queryType === 'ASK') {
+                if (table.verifications.length > 0) {
+                    assert(projections.length === 0);
+                    const verification = table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, table.verifications) : table.verifications[0];
+                    query = new Ast.BooleanQuestionExpression(null, query, verification, null);
+                } else if (table.projections.length > 0) {
+                    const isNullVerifications = table.projections.map((proj) => {
+                        if (typeof proj.property === 'string')
+                            return new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                        return new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                    });
+                    const verification = new Ast.NotBooleanExpression(
+                        null, 
+                        isNullVerifications.length > 1 ? new Ast.OrBooleanExpression(null, isNullVerifications) : isNullVerifications[0]
+                    );
+                    query = new Ast.BooleanQuestionExpression(null, query, verification, null);
+                }
             } else if (parsed.queryType === 'SELECT') {
                 // if it's not a verification question, and there is no projection/verification 
                 // for a table, skip the table - it's a helper table to generate filter
@@ -733,9 +746,9 @@ export default class SPARQLToThingTalkConverter {
         
         if (Object.values(queries).length === 1) {
             const query = Object.values(queries)[0];
-            if (parsed.queryType === 'ASK' && !(query instanceof Ast.BooleanQuestionExpression))
-                throw new Error(`Unsupported command: verification question on if the result is empty or not: ${sparql}`);
-            return makeProgram(Object.values(queries)[0]); 
+            if (parsed.queryType === 'ASK' && !(query instanceof Ast.BooleanQuestionExpression)) 
+                throw new Error(`Unsupported verification question: ${sparql}`);
+            return makeProgram(query); 
         }
         if (Object.values(queries).length === 2 && parsed.queryType === 'SELECT') {
             let [[mainSubject, main], [subquerySubject, subquery]] = Object.entries(queries);
