@@ -11,7 +11,8 @@ import {
     SparqlParser, 
     AskQuery, 
     UnionPattern, 
-    Triple
+    Triple,
+    OperationExpression
 } from 'sparqljs';
 import * as argparse from 'argparse';
 import { waitFinish, closest, getSpans } from './utils/misc';
@@ -510,15 +511,14 @@ export default class SPARQLToThingTalkConverter {
     }
 
     /**
-     * Parse a filter clause
-     * @param filter a filter clause
+     * Parse a filter expression where the operation is a binary operation
+     * @param expression a filter expression
      * @param isVerification if it's a verification question or not
+     * @param negate if the filter should be negated 
      */
-    private async _parseFilter(filter : any, isVerification : boolean) {
-        const expression = filter.expression;
-        assert(filter.type === 'filter' && expression.args.length === 2);
+    private async _parseBinaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
         const [lhs, rhs] = expression.args;
-        assert(lhs.termType === 'Variable' && rhs.termType === 'Literal');
+        assert('termType' in lhs && lhs.termType === 'Variable' && 'termType' in rhs && rhs.termType === 'Variable');
         for (const [subject, table] of Object.entries(this._tables)) {
             const projection = table.projections.find((proj) => proj.variable === lhs.value);
             if (!projection)
@@ -537,12 +537,69 @@ export default class SPARQLToThingTalkConverter {
             } else {
                 booleanExpression = await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number);
             }
+
+            if (negate)
+                booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
             
             if (isVerification)
                 this._addVerification(subject, booleanExpression);
             else 
                 this._addFilter(subject, booleanExpression);
         }
+    }
+
+    /**
+     * Parse a filter expression where the operation is a unary operation
+     * @param expression a filter expression
+     * @param isVerification if it's a verification question or not
+     * @param negate if the filter should be negated 
+     */
+    private async _parseUnaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
+        const arg = expression.args[0];
+        let subject, booleanExpression;
+        if (expression.operator === 'bound') {
+            assert('termType' in arg && arg.termType === 'Variable');
+            let match;
+            for (const [s, t] of Object.entries(this._tables)) {
+                match = t.projections.find((proj) => proj.variable === arg.value);
+                if (match) {
+                    subject = s;
+                    break;
+                }
+            } 
+            if (!match)
+                throw new Error(`Cannot find projection ${arg.value}`);
+            if (typeof match.property === 'string')
+                booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+            else 
+                booleanExpression = new Ast.PropertyPathBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+            
+        }
+        if (!booleanExpression || !subject)
+            throw new Error(`Unsupported operator ${expression.operator}`);
+        if (negate)
+            booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
+        
+        if (isVerification)
+            this._addVerification(subject, booleanExpression);
+        else 
+            this._addFilter(subject, booleanExpression);
+    }
+
+    /**
+     * Parse a filter expression
+     * @param expression a filter expression
+     * @param isVerification if it's a verification question or not
+     * @param negate if the filter should be negated 
+     */
+    private async _parseFilter(expression : OperationExpression, isVerification : boolean, negate = false) {
+        assert(expression.type === 'operation');
+        if (expression.operator === '!')
+            await this._parseFilter(expression.args[0] as OperationExpression, isVerification, !negate);
+        else if (expression.args.length === 1)
+            await this._parseUnaryOperation(expression, isVerification, negate);
+        else if (expression.args.length === 2)
+            await this._parseBinaryOperation(expression, isVerification, negate);
     }
 
     /**
@@ -566,7 +623,7 @@ export default class SPARQLToThingTalkConverter {
         else if (where.type === 'union') 
             await this._parseUnion(where);
         else if (where.type === 'filter')
-            await this._parseFilter(where, isVerification);
+            await this._parseFilter(where.expression, isVerification);
         else 
             throw new Error(`Unsupported filter ${JSON.stringify(where)}`);
     }
@@ -804,7 +861,7 @@ export default class SPARQLToThingTalkConverter {
                     continue;
                 const proj = this._tables[mainSubject].projections.find((proj) => proj.variable === subject);
                 if (!proj)
-                    throw new Error(`No supported verification question: ${sparql}`);
+                    throw new Error(`Not supported verification question: ${sparql}`);
                 if (typeof proj.property !== 'string')
                     throw new Error(`Subquery on property path not supported`);
                 subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
