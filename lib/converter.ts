@@ -957,8 +957,7 @@ async function main() {
             continue;
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            const keywords = item.question[0].keywords;
-            const program = await converter.convert(item.query.sparql, preprocessed, keywords ? keywords.split(', ') : []);
+            const program = await converter.convert(item.query.sparql, preprocessed);
             const target_code = ThingTalkUtils.serializePrediction(
                 program, 
                 preprocessed,

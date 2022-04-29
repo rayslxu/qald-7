@@ -19,12 +19,11 @@ async function main() {
     const start = index ? (index > 0 ? index - 1 : tests.length + index) : 0;
     for (let i = Math.max(start, 0); i < tests.length; i++) {
         console.log(`Running test ${i + 1} ...` );
-        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('Keywords:')).trim();
-        const keywords = tests[i].slice(tests[i].indexOf('Keywords:') + 'Keywords:'.length, tests[i].indexOf('SPARQL:')).trim();
+        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('SPARQL:')).trim();
         const sparql = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length, tests[i].indexOf('TT:')).trim();
         const expected = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length).trim();     
         const preprocessed = tokenizer.tokenize(utterance).tokens.join(' ');
-        const converted = await converter.convert(sparql, utterance, keywords.split(', ').filter(Boolean));
+        const converted = await converter.convert(sparql, preprocessed);
         const thingtalk = ThingTalkUtils.serializePrediction(
             converted, 
             preprocessed,
