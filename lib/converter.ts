@@ -289,13 +289,15 @@ export default class SPARQLToThingTalkConverter {
         if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(ENTITY_PREFIX));
             value = value.slice(ENTITY_PREFIX.length);
-            if (ENTITY_SPAN_OVERRIDE[value]) 
-                return new Ast.Value.Entity(value, type.type, ENTITY_SPAN_OVERRIDE[value]);
             const wikidataLabel = await this._wikidata.getLabel(value);
             assert(wikidataLabel);
-            const display = closest(wikidataLabel, this._keywords);
-            if (!display)
-                throw new Error(`Failed find matching span for entity ${value} : ${wikidataLabel} among ${this._keywords}`);
+            let display = closest(wikidataLabel, this._keywords);
+            if (!display) {
+                if (ENTITY_SPAN_OVERRIDE[value]) 
+                    display = ENTITY_SPAN_OVERRIDE[value];
+                else
+                    throw new Error(`Failed find matching span for entity ${value} : ${wikidataLabel} among ${this._keywords}`);
+            }
             return new Ast.Value.Entity(value, type.type, display); 
         } 
         if (type instanceof Type.Enum) {
@@ -518,7 +520,7 @@ export default class SPARQLToThingTalkConverter {
      */
     private async _parseBinaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
         const [lhs, rhs] = expression.args;
-        assert('termType' in lhs && lhs.termType === 'Variable' && 'termType' in rhs && rhs.termType === 'Variable');
+        assert('termType' in lhs && lhs.termType === 'Variable' && 'termType' in rhs);
         for (const [subject, table] of Object.entries(this._tables)) {
             const projection = table.projections.find((proj) => proj.variable === lhs.value);
             if (!projection)
