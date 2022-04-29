@@ -756,15 +756,21 @@ export default class SPARQLToThingTalkConverter {
                     query = new Ast.BooleanQuestionExpression(null, query, verification, null);
                 } else if (table.projections.length > 0) {
                     const isNullVerifications = table.projections.map((proj) => {
-                        if (typeof proj.property === 'string')
+                        if (typeof proj.property === 'string') {
+                            // if there is other tables for the projection, do not create a is null verification, a subquery is needed
+                            if (proj.variable && proj.variable in this._tables)
+                                return null;
                             return new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                        }
                         return new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
-                    });
-                    const verification = new Ast.NotBooleanExpression(
-                        null, 
-                        isNullVerifications.length > 1 ? new Ast.OrBooleanExpression(null, isNullVerifications) : isNullVerifications[0]
-                    );
-                    query = new Ast.BooleanQuestionExpression(null, query, verification, null);
+                    }).filter((Boolean)) as Ast.BooleanExpression[];
+                    if (isNullVerifications.length > 0) {
+                        const verification = new Ast.NotBooleanExpression(
+                            null, 
+                            isNullVerifications.length > 1 ? new Ast.OrBooleanExpression(null, isNullVerifications) : isNullVerifications[0]
+                        );
+                        query = new Ast.BooleanQuestionExpression(null, query, verification, null);
+                    }
                 }
             } else if (parsed.queryType === 'SELECT') {
                 // if it's not a verification question, and there is no projection/verification 
