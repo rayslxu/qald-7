@@ -11,7 +11,7 @@ async function main() {
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: undefined, timezone: undefined });
     assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new SPARQLToThingTalkConverter(classDef, { cache: 'wikidata_cache.sqlite', enablePropertyPath : true });
+    const converter = new SPARQLToThingTalkConverter(classDef, { cache: 'wikidata_cache.sqlite' });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
     const tests = fs.readFileSync('./test/tests.txt').toString('utf-8').split('====');
 

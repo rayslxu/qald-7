@@ -204,7 +204,6 @@ interface Table {
 
 interface SPARQLToThingTalkConverterOptions {
     cache : string;
-    enablePropertyPath : boolean;
 }
 
 export default class SPARQLToThingTalkConverter {
@@ -215,8 +214,6 @@ export default class SPARQLToThingTalkConverter {
     private _keywords : string[];
     private _tables : Record<string, Table>;
     private _comparison : Comparison[];
-    private _variableCounter : number;
-    private _enablePropertyPath : boolean;
 
     constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._schema = new WikiSchema(classDef);
@@ -226,8 +223,6 @@ export default class SPARQLToThingTalkConverter {
         this._tables = {};
         this._comparison = [];
         this._keywords = [];
-        this._variableCounter = 0;
-        this._enablePropertyPath = !!options.enablePropertyPath;
     } 
 
     /**
@@ -277,16 +272,6 @@ export default class SPARQLToThingTalkConverter {
     private _setDomain(subject : string, domain : string) {
         this._initTable(subject);
         this._tables[subject].domain = this._schema.getTable(domain);
-    }
-
-    /**
-     * @return a new sparqljs compatible variable
-     */
-    private _newVariable() {
-        return {
-            termType: "Variable",
-            value: `v_${this._variableCounter ++}`
-        };
     }
      
     /**
@@ -370,63 +355,53 @@ export default class SPARQLToThingTalkConverter {
     }
 
     private async _convertSequencePathTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
-        // if we enable property path, and the triple is not a projection (currently not supported)
-        if (this._enablePropertyPath) { 
-            const subject = triple.subject.value;
-            const predicate = triple.predicate;
-            const object = triple.object.value;
-            // if subject is an entity, create an id filter
-            if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
-                const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
-                assert(domain);
-                const table = this._schema.getTable(domain);
-                assert(table);
-                this._addFilter(subject, await this._atomFilter('id', subject, '==', new Type.Entity(`org.wikidata:${table}`)));
-                this._setDomain(subject, domain);
-            }
-            const sequence : Ast.PropertyPathSequence = [];
-            if (['+', '*', '?'].includes(predicate.pathType)) {
-                assert(predicate.items.length === 1 && predicate.items[0].termType === 'NamedNode');
-                const property = this._schema.getProperty(predicate.items[0].value.slice(PROPERTY_PREFIX.length));
-                sequence.push(new Ast.PropertyPathElement(property, predicate.pathType));
-            } else {
-                for (const element of predicate.items) {
-                    if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
-                        const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
-                        sequence.push(new Ast.PropertyPathElement(property));
-                    } else if (element.type === 'path' && ['+', '*', '?'].includes(element.pathType)) {
-                        assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
-                        const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
-                        sequence.push(new Ast.PropertyPathElement(property, element.pathType));
-                    }
+        const subject = triple.subject.value;
+        const predicate = triple.predicate;
+        const object = triple.object.value;
+        // if subject is an entity, create an id filter
+        if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
+            const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
+            assert(domain);
+            const table = this._schema.getTable(domain);
+            assert(table);
+            this._addFilter(subject, await this._atomFilter('id', subject, '==', new Type.Entity(`org.wikidata:${table}`)));
+            this._setDomain(subject, domain);
+        }
+        const sequence : Ast.PropertyPathSequence = [];
+        if (['+', '*', '?'].includes(predicate.pathType)) {
+            assert(predicate.items.length === 1 && predicate.items[0].termType === 'NamedNode');
+            const property = this._schema.getProperty(predicate.items[0].value.slice(PROPERTY_PREFIX.length));
+            sequence.push(new Ast.PropertyPathElement(property, predicate.pathType));
+        } else {
+            for (const element of predicate.items) {
+                if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
+                    const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property));
+                } else if (element.type === 'path' && ['+', '*', '?'].includes(element.pathType)) {
+                    assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
+                    const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property, element.pathType));
                 }
             }
-            const lastPropertyType = this._schema.getPropertyType(sequence[sequence.length - 1].property);
-            if (triple.object.termType === 'Variable') {
-                this._addProjection(subject, { property : sequence, variable : object });
-            } else {
-                const value = await this._toThingTalkValue(object, elemType(lastPropertyType));
-                const filter = new Ast.PropertyPathBooleanExpression(
-                    null, 
-                    sequence, 
-                    lastPropertyType instanceof Type.Array ? 'contains' : '==',
-                    value, 
-                    null
-                );
-                if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
-                    this._addVerification(subject, filter);
-                else 
-                    this._addFilter(subject, filter);
-            }
-            
-        } else {
-            const predicates = triple.predicate.items;  
-            if (predicates.length > 2)
-                throw new Error(`Unsupported triple with a 3+ length path:  ${JSON.stringify(triple)}`);
-            const variable = this._newVariable();
-            await this._convertBasicTriple({ subject: triple.subject, predicate: predicates[0], object: variable }, filtersBySubject);
-            await this._convertBasicTriple({ subject: variable, predicate: predicates[1], object: triple.object }, filtersBySubject);
         }
+        const lastPropertyType = this._schema.getPropertyType(sequence[sequence.length - 1].property);
+        if (triple.object.termType === 'Variable') {
+            this._addProjection(subject, { property : sequence, variable : object });
+        } else {
+            const value = await this._toThingTalkValue(object, elemType(lastPropertyType));
+            const filter = new Ast.PropertyPathBooleanExpression(
+                null, 
+                sequence, 
+                lastPropertyType instanceof Type.Array ? 'contains' : '==',
+                value, 
+                null
+            );
+            if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
+                this._addVerification(subject, filter);
+            else 
+                this._addFilter(subject, filter);
+        }
+        
     }
 
     private async _convertBasicTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
@@ -985,18 +960,13 @@ async function main() {
         action: 'store_true',
         default: false
     });
-    parser.add_argument('--property-path', {
-        action: 'store_true',
-        default: false,
-        help: `Enable property path filter/projection in ThingTalk`
-    });
     const args = parser.parse_args();
 
     const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
     assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache, enablePropertyPath: args.property_path });
+    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
