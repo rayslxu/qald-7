@@ -206,3 +206,12 @@ SELECT DISTINCT ?uri WHERE {
 } ORDER BY DESC(?elevation) LIMIT 1
 TT:
 sort ( elevation_above_sea_level desc of @org.wikidata . mountain ( ) filter elevation_above_sea_level < any ( [ elevation_above_sea_level ] of @org.wikidata . mountain ( ) filter id == " Q16466024 " ^^org.wikidata:mountain ( " annapurna " ) ) ) [ 1 ] ;
+
+==== 
+Utterance: Are tree frogs a type of amphibian?
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q53696> <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q10908> . 
+}
+TT:
+[ contains ( < parent_taxon * > , " Q10908 " ^^org.wikidata:p_parent_taxon ( " amphibian " ) ) ] of @org.wikidata . taxon ( ) filter id == " Q53696 " ^^org.wikidata:taxon ( " tree frog " ) ;

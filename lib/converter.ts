@@ -385,14 +385,20 @@ export default class SPARQLToThingTalkConverter {
                 this._setDomain(subject, domain);
             }
             const sequence : Ast.PropertyPathSequence = [];
-            for (const element of predicate.items) {
-                if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
-                    const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
-                    sequence.push(new Ast.PropertyPathElement(property));
-                } else if (element.type === 'path' && ['+', '*', '?'].includes(element.pathType)) {
-                    assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
-                    const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
-                    sequence.push(new Ast.PropertyPathElement(property, element.pathType));
+            if (['+', '*', '?'].includes(predicate.pathType)) {
+                assert(predicate.items.length === 1 && predicate.items[0].termType === 'NamedNode');
+                const property = this._schema.getProperty(predicate.items[0].value.slice(PROPERTY_PREFIX.length));
+                sequence.push(new Ast.PropertyPathElement(property, predicate.pathType));
+            } else {
+                for (const element of predicate.items) {
+                    if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
+                        const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
+                        sequence.push(new Ast.PropertyPathElement(property));
+                    } else if (element.type === 'path' && ['+', '*', '?'].includes(element.pathType)) {
+                        assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
+                        const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
+                        sequence.push(new Ast.PropertyPathElement(property, element.pathType));
+                    }
                 }
             }
             const lastPropertyType = this._schema.getPropertyType(sequence[sequence.length - 1].property);
