@@ -187,6 +187,14 @@ interface Projection {
     type ?: string
 }
 
+// comparison is used for making comparison between two tables
+// lhs and rhs should be the variable name used for the comparison in SPARQL
+interface Comparison {
+    lhs : string,
+    operator : string, 
+    rhs : string
+}
+
 interface Table {
     domain : string,
     projections : Projection[],
@@ -206,6 +214,7 @@ export default class SPARQLToThingTalkConverter {
     private _tokenizer : I18n.BaseTokenizer;
     private _keywords : string[];
     private _tables : Record<string, Table>;
+    private _comparison : Comparison[];
     private _variableCounter : number;
     private _enablePropertyPath : boolean;
 
@@ -215,6 +224,7 @@ export default class SPARQLToThingTalkConverter {
         this._wikidata = new WikidataUtils(options.cache);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
+        this._comparison = [];
         this._keywords = [];
         this._variableCounter = 0;
         this._enablePropertyPath = !!options.enablePropertyPath;
@@ -521,32 +531,42 @@ export default class SPARQLToThingTalkConverter {
     private async _parseBinaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
         const [lhs, rhs] = expression.args;
         assert('termType' in lhs && lhs.termType === 'Variable' && 'termType' in rhs);
-        for (const [subject, table] of Object.entries(this._tables)) {
-            const projection = table.projections.find((proj) => proj.variable === lhs.value);
-            if (!projection)
-                continue;
+        if (rhs.termType === 'Variable') {
+            this._comparison.push({
+                lhs: lhs.value,
+                operator: expression.operator,
+                rhs: rhs.value
+            });
+        } else if (rhs.termType === 'Literal') {
+            for (const [subject, table] of Object.entries(this._tables)) {
+                const projection = table.projections.find((proj) => proj.variable === lhs.value);
+                if (!projection)
+                    continue;
 
-            if (typeof projection.property !== 'string')
-                throw new Error(`Join on property path not supported`);
-            
-            let booleanExpression;
-            if (projection.property.endsWith('Label')) {
-                assert(expression.operator === 'regex');
-                const property = projection.property.slice(0, -'Label'.length);
-                const propertyType = this._schema.getPropertyType(property);
-                const operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
-                booleanExpression = await this._atomFilter(property, rhs.value, operator, Type.String);
-            } else {
-                booleanExpression = await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number);
+                if (typeof projection.property !== 'string')
+                    throw new Error(`Join on property path not supported`);
+                
+                let booleanExpression;
+                if (projection.property.endsWith('Label')) {
+                    assert(expression.operator === 'regex');
+                    const property = projection.property.slice(0, -'Label'.length);
+                    const propertyType = this._schema.getPropertyType(property);
+                    const operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
+                    booleanExpression = await this._atomFilter(property, rhs.value, operator, Type.String);
+                } else {
+                    booleanExpression = await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number);
+                }
+
+                if (negate)
+                    booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
+                
+                if (isVerification)
+                    this._addVerification(subject, booleanExpression);
+                else 
+                    this._addFilter(subject, booleanExpression);
             }
-
-            if (negate)
-                booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
-            
-            if (isVerification)
-                this._addVerification(subject, booleanExpression);
-            else 
-                this._addFilter(subject, booleanExpression);
+        } else {
+            throw new Error(`Unsupported binary operation ${expression.operator} with value type ${rhs.termType}`);
         }
     }
 
@@ -589,7 +609,7 @@ export default class SPARQLToThingTalkConverter {
     }
 
     /**
-     * Parse a filter expression
+     * Parse a filter expression (with SPARQL keyword "FILTER")
      * @param expression a filter expression
      * @param isVerification if it's a verification question or not
      * @param negate if the filter should be negated 
@@ -674,7 +694,9 @@ export default class SPARQLToThingTalkConverter {
         this._init(utterance, keywords);
         const parsed = this._parser.parse(sparql) as SelectQuery|AskQuery;
         if (parsed.where) {
-            for (const clause of parsed.where) 
+            for (const clause of parsed.where.filter((clause) => clause.type !== 'filter')) 
+                await this._parseWhereClause(clause, parsed.queryType === 'ASK');
+            for (const clause of parsed.where.filter((clause) => clause.type === 'filter')) 
                 await this._parseWhereClause(clause, parsed.queryType === 'ASK');
         }
         if ('having' in parsed && 'group' in parsed) {
@@ -743,11 +765,19 @@ export default class SPARQLToThingTalkConverter {
 
             // handle projections and verifications
             const projections : Projection[] = [];
+            // handle variables that is used in comparison
+            const comparisonProjection : Projection[] = [];
             if (variables.includes(subject))
                 projections.push({ property : 'id' });
             for (const projection of table.projections) {
                 if (variables.includes(projection.variable!) || Object.keys(this._tables).includes(projection.variable!))
                     projections.push(projection);
+                if (this._comparison.length > 0) {
+                    for (const comparison of this._comparison) {
+                        if (comparison.lhs === projection.variable || comparison.rhs === projection.variable)
+                            comparisonProjection.push(projection);
+                    }
+                } 
             }
             if (parsed.queryType === 'ASK') {
                 if (table.verifications.length > 0) {
@@ -775,9 +805,9 @@ export default class SPARQLToThingTalkConverter {
             } else if (parsed.queryType === 'SELECT') {
                 // if it's not a verification question, and there is no projection/verification 
                 // for a table, skip the table - it's a helper table to generate filter
-                if (projections.length === 0)
+                if (projections.length === 0 && comparisonProjection.length === 0)
                     continue;
-                if (!(projections.length === 1 && projections[0].property === 'id')) {
+                if (!(projections.length === 1 && projections[0].property === 'id') && projections.length !== 0) {
                     const projectionElements = projections.map((proj) => {
                         return new Ast.ProjectionElement(
                             proj.property,
@@ -786,7 +816,7 @@ export default class SPARQLToThingTalkConverter {
                         );
                     });
                     query = new Ast.ProjectionExpression2(null, query, projectionElements, null);
-                }
+                } 
             }
 
             // handle sorting
@@ -819,16 +849,33 @@ export default class SPARQLToThingTalkConverter {
             let [[mainSubject, main], [subquerySubject, subquery]] = Object.entries(queries);
             // the query without any projection in SPARQL variables should be the subquery
             // swap if necessary
-            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)))
+            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)) && !variables.includes(mainSubject))
                 [mainSubject, main, subquerySubject, subquery] = [subquerySubject, subquery, mainSubject, main];
             // verify 
-            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)))
+            if (!this._tables[mainSubject].projections.some((proj) => variables.includes(proj.variable!)) && !variables.includes(mainSubject))
                 throw new Error(`Failed to identify main query in ${sparql}`);
             if (this._tables[subquerySubject].projections.some((proj) => variables.includes(proj.variable!)))
                 throw new Error(`Failed to identify subquery in ${sparql}.`);
                 
             let subqueryFilter : Ast.ComparisonSubqueryBooleanExpression;
-            if (this._tables[mainSubject].projections.some((proj) => proj.variable === subquerySubject)) {
+            if (this._comparison.length === 1) {
+                // handle comparison of two entities with subquery  
+                const comp = this._comparison[0];
+                const mainProperty = this._tables[mainSubject].projections.find((proj) => 
+                    proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+                )!.property as string;
+                const subqueryProperty = this._tables[subquerySubject].projections.find((proj) => 
+                    proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+                )!.property as string;
+                subqueryFilter = new Ast.ComparisonSubqueryBooleanExpression(
+                    null,
+                    new Ast.Value.VarRef(mainProperty),
+                    comp.operator,
+                    new Ast.ProjectionExpression(null, subquery, [subqueryProperty], [], [], null),
+                    null
+                );
+
+            } else if (this._tables[mainSubject].projections.some((proj) => proj.variable === subquerySubject)) {
                 const projection = this._tables[mainSubject].projections.find((proj) => proj.variable === subquerySubject);
                 const property = projection!.property;
                 if (typeof property !== 'string')

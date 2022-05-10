@@ -193,3 +193,16 @@ SELECT DISTINCT ?uri WHERE {
 } 
 TT: 
 [ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( org.wikidata:city ) ] of @org.wikidata . human ( ) filter id == " Q9696 " ^^org.wikidata:human ( " john f . kennedy " ) ;
+
+
+====
+Utterance: Which mountain is the highest after the Annapurna?
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502> . 
+    ?uri <http://www.wikidata.org/prop/direct/P2044> ?elevation . 
+    <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?elevation2 . 
+    FILTER (?elevation < ?elevation2) . 
+} ORDER BY DESC(?elevation) LIMIT 1
+TT:
+sort ( elevation_above_sea_level desc of @org.wikidata . mountain ( ) filter elevation_above_sea_level < any ( [ elevation_above_sea_level ] of @org.wikidata . mountain ( ) filter id == " Q16466024 " ^^org.wikidata:mountain ( " annapurna " ) ) ) [ 1 ] ;
