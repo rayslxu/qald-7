@@ -94,13 +94,11 @@ function elemType(type : Type) : Type {
 /**
  * Handle a few special cases for union clause
  * case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
+ * case 2: { ?s P31 ?o } union { ?s P31/P279* ?o } ==> { ?s P31 ?o }
  * @param predicate A predicate
  * @returns a parsed triple for the special cases, and false if not matched 
  */
 function parseSpecialUnion(union : UnionPattern) : Triple|false {
-    const SPECIAL_PREDICATE = [
-        'P17' // country
-    ];
     if (union.patterns.length !== 2)
         return false;
     if (union.patterns[0].type !== 'bgp' || union.patterns[1].type !== 'bgp')
@@ -119,16 +117,22 @@ function parseSpecialUnion(union : UnionPattern) : Triple|false {
         return false;
     if (second.predicate.items.length !== 2)
         return false;
-    if (!('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' ))
-        return false;
-    if (!('termType' in second.predicate.items[1] && second.predicate.items[1].termType === 'NamedNode' ))
-        return false;
-    if (second.predicate.items[0].value !== first.predicate.value)
-        return false;
-    if (!SPECIAL_PREDICATE.includes(second.predicate.items[1].value.slice(PROPERTY_PREFIX.length)))
-        return false;
+        
+    // case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
+    if ('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' &&
+        'termType' in second.predicate.items[1] && second.predicate.items[1].termType === 'NamedNode' &&
+        second.predicate.items[0].value === first.predicate.value &&
+        second.predicate.items[1].value.slice(PROPERTY_PREFIX.length) === 'P17') // country
+        return first;
+    // case 2: { ?s P31 ?o } union { ?s P31/P279* ?o } ==> { ?s P31 ?o }
+    if ('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' &&
+        'pathType' in second.predicate.items[1] && second.predicate.items[1].pathType === '*' &&
+        second.predicate.items[0].value === first.predicate.value &&
+        'termType' in second.predicate.items[1].items[0] && second.predicate.items[1].items[0].termType === 'NamedNode' &&
+        second.predicate.items[1].items[0].value.slice(PROPERTY_PREFIX.length) === 'P279')
+        return first;
     
-    return first;
+    return false;
 }
  
 /**
