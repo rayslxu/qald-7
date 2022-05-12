@@ -56,7 +56,17 @@ export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|Variabl
     // property path
     if ('type' in predicate && predicate.type === 'path') {
         if (predicate.pathType === '/') {
-            // TODO
+            // P31/P279* -> P31
+            if (predicate.items.length === 2) {
+                const [first, second] = predicate.items;
+                if ('termType' in first && first.termType === 'NamedNode' && first.value === `${PROPERTY_PREFIX}P31` && 
+                    'pathType' in second && second.pathType === '*' && 
+                    'termType' in second.items[0] && second.items[0].termType === 'NamedNode' 
+                    && second.items[0].value === `${PROPERTY_PREFIX}P279`)
+                    return first;
+            }
+
+            
             predicate.items = predicate.items.map((item) => postprocessPropertyPath(item) as IriTerm|PropertyPath);
         } else if (predicate.pathType === '+') {
             assert(predicate.items.length === 1);

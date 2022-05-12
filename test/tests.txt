@@ -228,7 +228,6 @@ SELECT DISTINCT ?uri WHERE {
 TT: 
 @org.wikidata . organization ( ) filter contains ( industry , " Q418 " ^^org.wikidata:p_industry ( " telecommunications " ) ) && contains ( country , " Q31 " ^^org.wikidata:p_country ( " belgium " ) ) ;
 
-
 ====
 Utterance: Is there a video game called Battle Chess?
 SPARQL: 
@@ -239,3 +238,15 @@ ASK WHERE {
 }
 TT: 
 [ id =~ " battle chess " ] of @org.wikidata . video_game ( ) ;
+
+====
+Utterance: Give me the websites of companies with more than 500000 employees.
+SPARQL:
+SELECT DISTINCT ?string WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31>/(<http://www.wikidata.org/prop/direct/P279>*) <http://www.wikidata.org/entity/Q4830453> . 
+    ?uri <http://www.wikidata.org/prop/direct/P1128> ?number . 
+    FILTER(?number > 500000) . 
+    ?uri <http://www.wikidata.org/prop/direct/P856> ?string . 
+}
+TT:
+[ official_website ] of @org.wikidata . business ( ) filter employees >= 500000 ;
