@@ -10,130 +10,31 @@ import {
     Parser, 
     SparqlParser, 
     AskQuery, 
-    UnionPattern, 
     Triple,
     OperationExpression
 } from 'sparqljs';
 import * as argparse from 'argparse';
-import { waitFinish, closest, getSpans } from './utils/misc';
-import WikidataUtils from './utils/wikidata';
+import { 
+    waitFinish, 
+    closest, 
+    getSpans,
+} from './utils/misc';
+import {
+    baseQuery,
+    makeProgram,
+    makeSubqueryProgram,
+    makeSubqueryVerificationProgram,
+    elemType
+} from './utils/thingtalk';
+import { 
+    postprocessPropertyPath,
+    parseSpecialUnion
+} from './utils/sparqljs';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
-import { postprocessPropertyPath } from './utils/sparqljs';
-import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
+import WikidataUtils from './utils/wikidata';
+import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 
-/**
- * A shortcut for quickly creating a basic query
- * @param domain the name of a domain
- * @return an invocation of a base domain query (no projection, no filter)
- */
-function baseQuery(domain : string) {
-    return new Ast.InvocationExpression(
-        null,
-        new Ast.Invocation(null, new Ast.DeviceSelector(null, 'org.wikidata', null, null), domain, [], null),
-        null
-    );
-}
-
-/**
- * A shortcut for creating a program from an query expression
- * @param expression a ThingTalk query expression
- * @returns a ThingTalk program 
- */
-function makeProgram(expression : Ast.Expression) {
-    if (!(expression instanceof Ast.ChainExpression))
-        expression = new Ast.ChainExpression(null, [expression], expression.schema);
-    return new Ast.Program(null, [], [], [new Ast.ExpressionStatement(null, expression)]);
-}
-
-/**
- * A shortcut for creating a program with a subquery
- * @param main the main query
- * @param subquery the subquery
- * @returns a ThingTalk program
- */
-function makeSubqueryProgram(main : Ast.Expression, subquery : Ast.BooleanExpression) {
-    type ParentExpression  = Ast.ProjectionExpression|Ast.SortExpression|Ast.IndexExpression|Ast.BooleanQuestionExpression|Ast.AggregationExpression;
-    let filterTable = main;
-    let parent : ParentExpression|undefined;
-    while (!(filterTable instanceof Ast.FilterExpression || filterTable instanceof Ast.InvocationExpression)) {
-        parent = (filterTable as ParentExpression);
-        filterTable = parent.expression;
-    }
-    if (filterTable instanceof Ast.FilterExpression)
-        filterTable.filter = new Ast.AndBooleanExpression(null, [filterTable.filter, subquery]);
-    else if (parent)
-        parent.expression = new Ast.FilterExpression(null, filterTable, subquery, null);
-    else
-        main = new Ast.FilterExpression(null, filterTable, subquery, null);
-    return new Ast.Program(null, [], [], [new Ast.ExpressionStatement(null, main)]);
-}
-
-/**
- * A shortcut for creating a program with subquery verification
- * @param main the main query
- * @param subqueries the boolean expressions to verify
- */
-function makeSubqueryVerificationProgram(main : Ast.Expression, subqueries : Ast.BooleanExpression[]) {
-    assert(subqueries.length > 0);
-    const verification = subqueries.length === 1 ? subqueries[0] : new Ast.AndBooleanExpression(null, subqueries);
-    const expression = new Ast.BooleanQuestionExpression(null, main, verification, null);
-    return new Ast.Program(null, [], [], [new Ast.ExpressionStatement(null, expression)]);
-}
-
-/**
- * Get the element type of a ThingTalk type
- * @param type a ThingTalk type
- */
-function elemType(type : Type) : Type {
-    while (type instanceof Type.Array)
-        type = type.elem as Type;
-    return type;
-}
-
-/**
- * Handle a few special cases for union clause
- * case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
- * case 2: { ?s P31 ?o } union { ?s P31/P279* ?o } ==> { ?s P31 ?o }
- * @param predicate A predicate
- * @returns a parsed triple for the special cases, and false if not matched 
- */
-function parseSpecialUnion(union : UnionPattern) : Triple|false {
-    if (union.patterns.length !== 2)
-        return false;
-    if (union.patterns[0].type !== 'bgp' || union.patterns[1].type !== 'bgp')
-        return false;
-    if (union.patterns[0].triples.length !== 1 || union.patterns[1].triples.length !== 1)
-        return false;
-    const first = union.patterns[0].triples[0];
-    const second = union.patterns[1].triples[0];
-    if (!(first.subject.value && first.subject.value === second.subject.value))
-        return false;
-    if (!(first.object.value && first.object.value === second.object.value))
-        return false;
-    if (!('termType' in first.predicate && first.predicate.termType === 'NamedNode'))
-        return false;
-    if (!('type' in second.predicate && second.predicate.type === 'path' && second.predicate.pathType === '/'))
-        return false;
-    if (second.predicate.items.length !== 2)
-        return false;
-        
-    // case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
-    if ('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' &&
-        'termType' in second.predicate.items[1] && second.predicate.items[1].termType === 'NamedNode' &&
-        second.predicate.items[0].value === first.predicate.value &&
-        second.predicate.items[1].value.slice(PROPERTY_PREFIX.length) === 'P17') // country
-        return first;
-    // case 2: { ?s P31 ?o } union { ?s P31/P279* ?o } ==> { ?s P31 ?o }
-    if ('termType' in second.predicate.items[0] && second.predicate.items[0].termType === 'NamedNode' &&
-        'pathType' in second.predicate.items[1] && second.predicate.items[1].pathType === '*' &&
-        second.predicate.items[0].value === first.predicate.value &&
-        'termType' in second.predicate.items[1].items[0] && second.predicate.items[1].items[0].termType === 'NamedNode' &&
-        second.predicate.items[1].items[0].value.slice(PROPERTY_PREFIX.length) === 'P279')
-        return first;
-    
-    return false;
-}
  
 /**
  * A class to retrieve schema information from the schema
@@ -1016,7 +917,7 @@ async function main() {
 
     const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
-    assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
+    assert(library instanceof Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
     const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();

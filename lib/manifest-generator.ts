@@ -6,7 +6,8 @@ import { I18n, genBaseCanonical } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
-import { cleanName, waitFinish, idArgument } from './utils/misc';
+import { cleanName, waitFinish } from './utils/misc';
+import { idArgument } from './utils/thingtalk';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 

@@ -1,6 +1,5 @@
 import stemmer from 'en-stemmer';
 import { removeStopwords } from 'stopword';
-import { Ast, Type } from 'thingtalk';
 
 export function snakeCase(v : string) {
     return v.trim().replace(/[() _-]+/g, '_').toLowerCase();
@@ -25,16 +24,6 @@ export function cleanName(v : string) {
     // replace any special tokens to underscore
     v = v.replace(/[^1-9a-zA-Z]/g, '_').replace(/__/g, '_');
     return v;
-}
-
-export function idArgument(entityType : string) : Ast.ArgumentDef {
-    return new Ast.ArgumentDef(
-        null,
-        Ast.ArgDirection.OUT,
-        'id', 
-        new Type.Entity(`org.wikidata:${entityType}`),
-        { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
-    );
 }
 
 export function waitFinish(stream : NodeJS.WritableStream) : Promise<void> {
