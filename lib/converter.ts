@@ -338,6 +338,8 @@ export default class SPARQLToThingTalkConverter {
         }
         if (operator === '>' || operator === '<') 
             operator = operator + '=';
+        if (valueType === Type.String) 
+            operator = propertyType instanceof Type.Array ? 'contains~' : '=~';
         return new Ast.AtomBooleanExpression(
             null,
             propertyLabel,
@@ -410,7 +412,7 @@ export default class SPARQLToThingTalkConverter {
 
     private async _convertBasicTriple(triple : any, filtersBySubject : Record<string, Ast.BooleanExpression[]>) {
         const subject = triple.subject.value;
-        const predicate = triple.predicate.value;
+        let predicate = triple.predicate.value;
         const object = triple.object.value;
 
         if (!subject || !predicate || !object)
@@ -427,7 +429,7 @@ export default class SPARQLToThingTalkConverter {
         }
 
         // if subject is an variable and object is an entity, create a regular filter
-        if (triple.subject.termType === 'Variable' && triple.object.termType === 'NamedNode') { 
+        if (triple.subject.termType === 'Variable' && triple.object.termType !== 'Variable') { 
             // for P31 triple, update the domain of the variable, do not add filter
             if (triple.predicate.termType === 'NamedNode' && predicate === `${PROPERTY_PREFIX}P31`) {
                 this._setDomain(subject, object.slice(ENTITY_PREFIX.length));
@@ -435,7 +437,25 @@ export default class SPARQLToThingTalkConverter {
             }
             if (!(subject in filtersBySubject))
                 filtersBySubject[subject] = [];
-            filtersBySubject[subject].push(await this._atomFilter(predicate, object));
+            const valueType = triple.object.termType === 'Literal' ? Type.String : undefined;
+            if (valueType) {
+                if (subject in this._tables) {
+                    predicate = 'id';
+                } else {
+                    let match;
+                    for (const t of Object.values(this._tables)) {
+                        match = t.projections.find((proj) => proj.variable === subject);
+                        if (match) 
+                            break;
+                    } 
+                    if (!match)
+                        throw new Error(`Cannot find projection ${subject}`);
+                    if (!(typeof match.property === 'string'))
+                        throw new Error(`Property path not supported for label filter`);
+                    predicate = match.property;
+                }
+            }
+            filtersBySubject[subject].push(await this._atomFilter(predicate, object, undefined, valueType));
         } 
 
         // if object is an variable, create a projection
@@ -613,10 +633,14 @@ export default class SPARQLToThingTalkConverter {
      * Parse a basic triple where clause
      * @param where a where clause
      */
-    private async _parseBasic(where : any) {
+    private async _parseBasic(where : any, isVerification = false) {
         const filtersBySubject = await this._convertTriples(where.triples);
-        for (const [subject, filter] of Object.entries(filtersBySubject)) 
-            this._addFilter(subject, filter);  
+        for (const [subject, filter] of Object.entries(filtersBySubject)) { 
+            if (isVerification)
+                this._addVerification(subject, filter);
+            else
+                this._addFilter(subject, filter);  
+        }
     }
 
     /**
@@ -626,7 +650,7 @@ export default class SPARQLToThingTalkConverter {
      */
     private async _parseWhereClause(where : any, isVerification : boolean) {
         if (where.type === 'bgp') 
-            await this._parseBasic(where);
+            await this._parseBasic(where, isVerification);
         else if (where.type === 'union') 
             await this._parseUnion(where);
         else if (where.type === 'filter')

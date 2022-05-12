@@ -227,3 +227,15 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 @org.wikidata . organization ( ) filter contains ( industry , " Q418 " ^^org.wikidata:p_industry ( " telecommunications " ) ) && contains ( country , " Q31 " ^^org.wikidata:p_country ( " belgium " ) ) ;
+
+
+====
+Utterance: Is there a video game called Battle Chess?
+SPARQL: 
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>  
+ASK WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q7889> . 
+    ?uri rdfs:label "Battle Chess"@en 
+}
+TT: 
+[ id =~ " battle chess " ] of @org.wikidata . video_game ( ) ;
