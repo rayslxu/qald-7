@@ -250,3 +250,23 @@ SELECT DISTINCT ?string WHERE {
 }
 TT:
 [ official_website ] of @org.wikidata . business ( ) filter employees >= 500000 ;
+
+====
+Utterance: Is Lake Baikal bigger than the Great Bear Lake?
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?area1 . 
+    <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?area2 . 
+    FILTER(?area1 > ?area2) 
+}
+TT: 
+[ area > any ( [ area ] of @org.wikidata . lake ( ) filter id == " Q5525 " ^^org.wikidata:lake ( " great bear lake " ) ) ] of @org.wikidata . lake ( ) filter id == " Q5513 " ^^org.wikidata:lake ( " lake baikal " ) ;
+
+====
+Utterance: Was U.S. president Jackson involved in a war?
+SPARQL: 
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?uri . 
+}
+TT:
+[ ! ( conflict == NULL ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ( " jackson " ) ;

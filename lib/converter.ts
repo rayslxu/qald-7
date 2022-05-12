@@ -686,6 +686,7 @@ export default class SPARQLToThingTalkConverter {
      */
     private _init(utterance : string, keywords : string[]) {
         this._tables = {};
+        this._comparison = [];
         if (keywords.length === 0)
             this._keywords = getSpans(utterance);
         else 
@@ -793,22 +794,27 @@ export default class SPARQLToThingTalkConverter {
                     assert(projections.length === 0);
                     const verification = table.verifications.length > 1 ? new Ast.AndBooleanExpression(null, table.verifications) : table.verifications[0];
                     query = new Ast.BooleanQuestionExpression(null, query, verification, null);
-                } else if (table.projections.length > 0) {
-                    const isNullVerifications = table.projections.map((proj) => {
-                        if (typeof proj.property === 'string') {
-                            // if there is other tables for the projection, do not create a is null verification, a subquery is needed
-                            if (proj.variable && proj.variable in this._tables)
-                                return null;
-                            return new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                } else {
+                    const projections = table.projections.filter((proj) => 
+                        this._comparison.every((comparison) => ![comparison.lhs, comparison.rhs].includes(proj.variable!))
+                    );
+                    if (projections.length > 0) {
+                        const isNullVerifications = projections.map((proj) => {
+                            if (typeof proj.property === 'string') {
+                                // if there is other tables for the projection, do not create a is null verification, a subquery is needed
+                                if (proj.variable && proj.variable in this._tables)
+                                    return null;
+                                return new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                            }
+                            return new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
+                        }).filter((Boolean)) as Ast.BooleanExpression[];
+                        if (isNullVerifications.length > 0) {
+                            const verification = new Ast.NotBooleanExpression(
+                                null, 
+                                isNullVerifications.length > 1 ? new Ast.OrBooleanExpression(null, isNullVerifications) : isNullVerifications[0]
+                            );
+                            query = new Ast.BooleanQuestionExpression(null, query, verification, null);
                         }
-                        return new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
-                    }).filter((Boolean)) as Ast.BooleanExpression[];
-                    if (isNullVerifications.length > 0) {
-                        const verification = new Ast.NotBooleanExpression(
-                            null, 
-                            isNullVerifications.length > 1 ? new Ast.OrBooleanExpression(null, isNullVerifications) : isNullVerifications[0]
-                        );
-                        query = new Ast.BooleanQuestionExpression(null, query, verification, null);
                     }
                 }
             } else if (parsed.queryType === 'SELECT') {
@@ -923,18 +929,36 @@ export default class SPARQLToThingTalkConverter {
             for (const [subject, query] of Object.entries(queries)) {
                 if (subject === mainSubject)
                     continue;
-                const proj = this._tables[mainSubject].projections.find((proj) => proj.variable === subject);
-                if (!proj)
-                    throw new Error(`Not supported verification question: ${sparql}`);
-                if (typeof proj.property !== 'string')
-                    throw new Error(`Subquery on property path not supported`);
-                subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
-                    null,
-                    new Ast.Value.VarRef(proj.property),
-                    this._schema.getPropertyType(proj.property) instanceof Type.Array ? 'contains' : '==',
-                    query, 
-                    null
-                ));
+                if (this._comparison.length === 1) {
+                    // handle comparison of two entities with subquery  
+                    const comp = this._comparison[0];
+                    const mainProperty = this._tables[mainSubject].projections.find((proj) => 
+                        proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+                    )!.property as string;
+                    const subqueryProperty = this._tables[subject].projections.find((proj) => 
+                        proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+                    )!.property as string;
+                    subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
+                        null,
+                        new Ast.Value.VarRef(mainProperty),
+                        comp.operator,
+                        new Ast.ProjectionExpression(null, query, [subqueryProperty], [], [], null),
+                        null
+                    ));
+                } else {
+                    const proj = this._tables[mainSubject].projections.find((proj) => proj.variable === subject);
+                    if (!proj)
+                        throw new Error(`Not supported verification question: ${sparql}`);
+                    if (typeof proj.property !== 'string')
+                        throw new Error(`Subquery on property path not supported`);
+                    subqueries.push(new Ast.ComparisonSubqueryBooleanExpression(
+                        null,
+                        new Ast.Value.VarRef(proj.property),
+                        this._schema.getPropertyType(proj.property) instanceof Type.Array ? 'contains' : '==',
+                        query, 
+                        null
+                    ));
+                }
             }
             return makeSubqueryVerificationProgram(main, subqueries);
         }
