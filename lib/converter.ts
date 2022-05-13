@@ -30,61 +30,25 @@ import {
     postprocessPropertyPath,
     parseSpecialUnion
 } from './utils/sparqljs';
+import {
+    isNamedNode,
+    isWikidataEntityNode,
+    isVariable,
+    isLiteral,
+    isWikidataPropertyNode,
+    isUnaryPropertyPath,
+    isPropertyPath,
+    isFilterPattern,
+    isBasicGraphPattern,
+    isUnionPattern,
+    isAggregateExpression
+} from './utils/sparqljs-typeguard';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
 import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
 import WikidataUtils from './utils/wikidata';
+import { WikiSchema } from './schema';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 
- 
-/**
- * A class to retrieve schema information from the schema
- */
-class WikiSchema {
-    private _tableMap : Record<string, string>;
-    private _propertyMap : Record<string, string>;
-    private _propertyTypeMap : Record<string, Type>;
-
-    constructor(schema : Ast.ClassDef) {
-        this._tableMap = {};
-        this._propertyMap = {};
-        this._propertyTypeMap = {};
-        for (const [qname, query] of Object.entries(schema.queries)) {
-            const qid = ((query.getImplementationAnnotation('wikidata_subject')) as any[])[0];
-            this._tableMap[qid] = qname;
-            for (const arg of query.iterateArguments()) {
-                if (arg.name === 'id')
-                    continue;
-                const pid = arg.getImplementationAnnotation('wikidata_id') as string;
-                this._propertyMap[pid] = arg.name;
-                this._propertyTypeMap[arg.name] = arg.type;
-            }
-        }
-    }
-
-    /**
-     * @param qid QID of a domain
-     * @returns the table name (cleaned label of the QID)
-     */
-    getTable(qid : string) : string {
-        return this._tableMap[qid];
-    }
-
-    /**
-     * @param pid PID of a property
-     * @returns the property name (cleaned label of the PID)
-     */
-    getProperty(pid : string) : string {
-        return this._propertyMap[pid];
-    }
-
-    /**
-     * @param property the name of the property
-     * @returns the entity type of the property 
-     */
-    getPropertyType(property : string) : Type {
-        return this._propertyTypeMap[property];
-    }
-}
 
 interface Projection {
     property : string|Ast.PropertyPathSequence, 
@@ -266,7 +230,7 @@ export default class SPARQLToThingTalkConverter {
         const predicate = triple.predicate;
         const object = triple.object.value;
         // if subject is an entity, create an id filter
-        if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
+        if (isWikidataEntityNode(triple.subject)) {
             const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
             assert(domain);
             const table = this._schema.getTable(domain);
@@ -275,19 +239,20 @@ export default class SPARQLToThingTalkConverter {
             this._setDomain(subject, domain);
         }
         const sequence : Ast.PropertyPathSequence = [];
-        if (['+', '*', '?'].includes(predicate.pathType)) {
-            assert(predicate.items.length === 1 && predicate.items[0].termType === 'NamedNode');
+        if (isUnaryPropertyPath(predicate)) {
+            assert(predicate.items.length === 1 && isNamedNode(predicate.items[0]));
             const property = this._schema.getProperty(predicate.items[0].value.slice(PROPERTY_PREFIX.length));
-            sequence.push(new Ast.PropertyPathElement(property, predicate.pathType));
+            sequence.push(new Ast.PropertyPathElement(property, predicate.pathType as '*'|'+'));
         } else {
+            // sequence property path
             for (const element of predicate.items) {
-                if (element.termType === 'NamedNode' && element.value.startsWith(PROPERTY_PREFIX)) {
+                if (isWikidataPropertyNode(element)) {
                     const property = this._schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
                     sequence.push(new Ast.PropertyPathElement(property));
-                } else if (element.type === 'path' && ['+', '*', '?'].includes(element.pathType)) {
-                    assert(element.items.length === 1 && element.items[0].termType === 'NamedNode');
+                } else if (isUnaryPropertyPath(element)) {
+                    assert(element.items.length === 1 && isNamedNode(element.items[0]));
                     const property = this._schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
-                    sequence.push(new Ast.PropertyPathElement(property, element.pathType));
+                    sequence.push(new Ast.PropertyPathElement(property, element.pathType as '*'|'+'));
                 }
             }
         }
@@ -303,7 +268,7 @@ export default class SPARQLToThingTalkConverter {
                 value, 
                 null
             );
-            if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
+            if (isNamedNode(triple.subject) && isNamedNode(triple.object)) 
                 this._addVerification(subject, filter);
             else 
                 this._addFilter(subject, filter);
@@ -320,7 +285,7 @@ export default class SPARQLToThingTalkConverter {
             throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
 
         // if subject is an entity, create an id filter first
-        if (triple.subject.termType === 'NamedNode' && subject.startsWith(ENTITY_PREFIX)) {
+        if (isWikidataEntityNode(triple.subject)) {
             const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
             assert(domain);
             const table = this._schema.getTable(domain);
@@ -332,13 +297,13 @@ export default class SPARQLToThingTalkConverter {
         // if subject is an variable and object is an entity, create a regular filter
         if (triple.subject.termType === 'Variable' && triple.object.termType !== 'Variable') { 
             // for P31 triple, update the domain of the variable, do not add filter
-            if (triple.predicate.termType === 'NamedNode' && predicate === `${PROPERTY_PREFIX}P31`) {
+            if (isWikidataPropertyNode(triple.predicate, 'P31')) {
                 this._setDomain(subject, object.slice(ENTITY_PREFIX.length));
                 return;
             }
             if (!(subject in filtersBySubject))
                 filtersBySubject[subject] = [];
-            const valueType = triple.object.termType === 'Literal' ? Type.String : undefined;
+            const valueType = isLiteral(triple.object) ? Type.String : undefined;
             if (valueType) {
                 if (subject in this._tables) {
                     predicate = 'id';
@@ -377,7 +342,7 @@ export default class SPARQLToThingTalkConverter {
         }
 
         // if both subject and object are entities, create a "verification", for boolean question
-        if (triple.subject.termType === 'NamedNode' && triple.object.termType === 'NamedNode') 
+        if (isNamedNode(triple.subject) && isNamedNode(triple.object)) 
             this._addVerification(subject, await this._atomFilter(predicate, object));
     }
 
@@ -390,7 +355,7 @@ export default class SPARQLToThingTalkConverter {
         const filtersBySubject : Record<string, Ast.BooleanExpression[]> = {};
         for (const triple of triples) {
             triple.predicate = postprocessPropertyPath(triple.predicate);
-            if ('type' in triple.predicate && triple.predicate.type === 'path')
+            if (isPropertyPath(triple.predicate))
                 await this._convertSequencePathTriple(triple, filtersBySubject);
             else 
                 await this._convertBasicTriple(triple, filtersBySubject);
@@ -415,7 +380,7 @@ export default class SPARQLToThingTalkConverter {
         let existedSubject;
         const operands = [];
         for (const pattern of where.patterns) {
-            assert(pattern.type === 'bgp');
+            assert(isBasicGraphPattern(pattern));
             const filtersBySubject = await this._convertTriples(pattern.triples);
             for (const [subject, filter] of Object.entries(filtersBySubject)) {
                 if (!existedSubject)
@@ -436,14 +401,14 @@ export default class SPARQLToThingTalkConverter {
      */
     private async _parseBinaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
         const [lhs, rhs] = expression.args;
-        assert('termType' in lhs && lhs.termType === 'Variable' && 'termType' in rhs);
-        if (rhs.termType === 'Variable') {
+        assert(isVariable(lhs));
+        if (isVariable(rhs)) {
             this._comparison.push({
                 lhs: lhs.value,
                 operator: expression.operator,
                 rhs: rhs.value
             });
-        } else if (rhs.termType === 'Literal') {
+        } else if (isLiteral(rhs)) {
             for (const [subject, table] of Object.entries(this._tables)) {
                 const projection = table.projections.find((proj) => proj.variable === lhs.value);
                 if (!projection)
@@ -472,7 +437,7 @@ export default class SPARQLToThingTalkConverter {
                     this._addFilter(subject, booleanExpression);
             }
         } else {
-            throw new Error(`Unsupported binary operation ${expression.operator} with value type ${rhs.termType}`);
+            throw new Error(`Unsupported binary operation ${expression.operator} with value ${rhs}`);
         }
     }
 
@@ -486,7 +451,7 @@ export default class SPARQLToThingTalkConverter {
         const arg = expression.args[0];
         let subject, booleanExpression;
         if (expression.operator === 'bound') {
-            assert('termType' in arg && arg.termType === 'Variable');
+            assert(isVariable(arg));
             let match;
             for (const [s, t] of Object.entries(this._tables)) {
                 match = t.projections.find((proj) => proj.variable === arg.value);
@@ -550,12 +515,12 @@ export default class SPARQLToThingTalkConverter {
      * @param isVerification if it's a verification question or not
      */
     private async _parseWhereClause(where : any, isVerification : boolean) {
-        if (where.type === 'bgp') 
+        if (isBasicGraphPattern(where)) 
             await this._parseBasic(where, isVerification);
-        else if (where.type === 'union') 
+        else if (isUnionPattern(where)) 
             await this._parseUnion(where);
-        else if (where.type === 'filter')
-            await this._parseFilter(where.expression, isVerification);
+        else if (isFilterPattern(where))
+            await this._parseFilter(where.expression as OperationExpression, isVerification);
         else 
             throw new Error(`Unsupported filter ${JSON.stringify(where)}`);
     }
@@ -568,14 +533,14 @@ export default class SPARQLToThingTalkConverter {
         if (having.type === 'operation') {
             assert(having.args.length === 2);
             const [lhs, rhs] = having.args;
-            assert(lhs.type === 'aggregate' && !lhs.distinct && lhs.aggregation === 'count' && lhs.expression.termType === 'Variable');
+            assert(isAggregateExpression(lhs, 'count') && isVariable(lhs.expression) && !lhs.distinct);
             const variable = lhs.expression.value;
             const projection = this._tables[subject].projections.find((proj) => proj.variable === variable);
             if (!projection)
                 throw new Error(`Can't find matching variable for the having clause`);
             if (typeof projection.property !== 'string')
                 throw new Error(`Having clause not supported for property path`);
-            assert(rhs.termType === 'Literal' && !isNaN(rhs.value));
+            assert(isLiteral(rhs) && Number(rhs.value));
             this._addFilter(subject, this._aggregateFilter('count', [projection.property], having.operator, parseFloat(rhs.value)));
         } else {
             throw new Error(`Unsupported having clause ${JSON.stringify(having)}`);
@@ -622,10 +587,9 @@ export default class SPARQLToThingTalkConverter {
             for (const variable of parsed.variables ?? []) {
                 if ('value' in variable && variable.value !== '*') {
                     variables.push(variable.value);
-                } else if ('expression' in variable && 'type' in variable.expression && variable.expression.type === 'aggregate') {
-                    assert(variable.expression.aggregation === 'count');
+                } else if ('expression' in variable && isAggregateExpression(variable.expression, 'count')) {
                     const expression = variable.expression.expression;
-                    assert('termType' in expression && expression.termType === 'Variable' );
+                    assert(isVariable(expression));
                     aggregation.count = expression.value;
                 } else {
                     throw new Error(`Unsupported variable type: ${variable}`);
