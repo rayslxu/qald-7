@@ -297,7 +297,7 @@ export default class WikidataUtils {
      * @returns an array of PIDs belongs to the given domain
      */
     async getDomainProperties(domain : string, includeNonEntityProperties = false) : Promise<string[]> {
-        const properties : Set<string> = new Set();
+        const propertyCounter : Record<string, number> = {};
         const exampleEntities = await this.getEntitiesByDomain(domain);
         const entityOnlyFilter = `FILTER(STRSTARTS(STR(?v), "${ENTITY_PREFIX}")) .`;
         for (const entity of exampleEntities) {
@@ -308,11 +308,16 @@ export default class WikidataUtils {
             } `;
             const res = await this._query(sparql);
             res.forEach((r : any) => {
-                if (r.p.value !== PROPERTY_PREFIX + 'P31')
-                    properties.add(r.p.value.slice(PROPERTY_PREFIX.length));
+                if (r.p.value !== PROPERTY_PREFIX + 'P31') {
+                    const property = r.p.value.slice(PROPERTY_PREFIX.length);
+                    if (!(property in propertyCounter))
+                        propertyCounter[property] = 0;
+                    propertyCounter[property] += 1;
+                }
             });
         }
-        return Array.from(properties);
+        // a property is included only if at least two entities have it
+        return Object.keys(propertyCounter).filter((p) => propertyCounter[p] >= 2);
     }
 
     /**
@@ -332,7 +337,6 @@ export default class WikidataUtils {
             ?entity p:${property} ?statement .
             ${optionalStatements.join(' ')}
         } LIMIT 100`;
-        console.log(sparql);
         const res = await this._query(sparql);
         res.forEach((r : any) => {
             for (const qualifier in this.qualifiers) {
@@ -340,7 +344,8 @@ export default class WikidataUtils {
                     qualifierCount[qualifier] += 1;
             }
         });
-        return Object.keys(this.qualifiers).filter((q) => qualifierCount[q] > 2);
+        // a qualifier is included only if there are two instances among the examples
+        return Object.keys(this.qualifiers).filter((q) => qualifierCount[q] >= 2);
     } 
 
     /**
@@ -355,6 +360,7 @@ export default class WikidataUtils {
      */
     async getDomainPropertiesAndValues(domain : string, includeNonEntityProperties = false) : Promise<Record<string, any>> {
         const properties : Record<string, string[]> = {};
+        const propertyCounter : Record<string, number> = {};
         const exampleEntities = await this.getEntitiesByDomain(domain);
         const entityOnlyFilter = `FILTER(STRSTARTS(STR(?v), "${ENTITY_PREFIX}")) .`;
         for (const entity of exampleEntities) {
@@ -371,9 +377,17 @@ export default class WikidataUtils {
                 const value = r.v.value.slice(ENTITY_PREFIX.length); 
                 if (!(property in properties))
                     properties[property] = [];
+                if (!(property in propertyCounter))
+                    propertyCounter[property] = 0;
                 properties[property].push(value);
+                propertyCounter[property] += 1;
             });
         }
+        // a property is included only if at least two entities have it
+        Object.entries(propertyCounter).forEach(([property, count]) => {
+            if (count < 2)
+                delete properties[property];
+        });
         return properties;
     }
 
