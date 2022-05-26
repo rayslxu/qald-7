@@ -7,7 +7,7 @@ import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs'
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, waitFinish } from './utils/misc';
-import { idArgument } from './utils/thingtalk';
+import { idArgument, elemType } from './utils/thingtalk';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
@@ -114,7 +114,7 @@ class ManifestGenerator {
         const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
         if (qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
-                value: new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, 'value', type)
+                value: new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, 'value', elemType(type))
             };
             for (const qualifier of qualifiers) {
                 const name = this._wikidata.qualifiers[qualifier].name;
@@ -125,7 +125,8 @@ class ManifestGenerator {
                 };
                 fields[qualifier] = new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, name, qtype, annotation);
             }
-            type = new Type.Compound(null, fields);
+            const compoundType = new Type.Compound(null, fields);
+            type = type instanceof Type.Array ? new Type.Array(compoundType) : compoundType;
         }
         this._propertyTypes[propertyId] = type;
         return type;
