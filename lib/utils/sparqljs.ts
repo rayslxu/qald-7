@@ -39,9 +39,9 @@ export function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm)
         if (isNamedNode(predicate)) {
             if (predicate.value.startsWith(PROPERTY_PREFIX)) 
                 properties.push(predicate.value.slice(PROPERTY_PREFIX.length));
-        } else {
-            for (const item of (predicate as PropertyPath).items) 
-                extract(item);
+        } else if (isPropertyPath(predicate)) {
+            // only extract the first item in the property path
+            extract(predicate.items[0]);
         }
     }
     extract(predicate);
