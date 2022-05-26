@@ -114,7 +114,7 @@ class ManifestGenerator {
         const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
         if (qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
-                value: new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, 'value', elemType(type))
+                value: new Ast.ArgumentDef(null, null, 'value', elemType(type))
             };
             for (const qualifier of qualifiers) {
                 const name = this._wikidata.qualifiers[qualifier].name;
@@ -123,7 +123,7 @@ class ManifestGenerator {
                     nl: { canonical: await this._generatePropertyCanonicals(qualifier, name, qtype) }, 
                     impl: { wikidata_id: new Ast.Value.String(qualifier) } 
                 };
-                fields[qualifier] = new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, name, qtype, annotation);
+                fields[qualifier] = new Ast.ArgumentDef(null, null, name, qtype, annotation);
             }
             const compoundType = new Type.Compound(null, fields);
             type = type instanceof Type.Array ? new Type.Array(compoundType) : compoundType;

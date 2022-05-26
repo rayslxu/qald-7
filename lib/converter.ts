@@ -175,6 +175,8 @@ export default class SPARQLToThingTalkConverter {
             return new Ast.Value.Number(parseFloat(value));
         if (type === Type.String) 
             return new Ast.Value.String(value);
+        if (type instanceof Type.Compound)
+            return this._toThingTalkValue(value, type.fields.value.type);
 
         throw new Error('Unsupported value type: ' + type);
     }
