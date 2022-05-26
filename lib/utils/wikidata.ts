@@ -3,6 +3,7 @@ import * as sqlite3 from 'sqlite3';
 import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
+import { Type } from 'thingtalk';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -26,6 +27,11 @@ interface Constraint {
     value : string
 }
 
+interface Qualifier {
+    name : string, 
+    type : Type
+}
+
 function normalizeURL(url : string) {
     return url.trim().replace(/\s+/g, ' ');
 }
@@ -35,11 +41,17 @@ export default class WikidataUtils {
     private _cachePath : string;
     private _cache ! : sqlite3.Database;
     private _cacheLoaded : boolean;
+    public qualifiers : Record<string, Qualifier>;
 
     constructor(cachePath : string) {
         this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
         this._cacheLoaded = false;
+        this.qualifiers = {
+            'P580': { name: 'start_time', type: Type.Date }, 
+            'P582': { name: 'end_time', type: Type.Date }, 
+            'P585': { name: 'point_in_time', type: Type.Date }, 
+        };
     }
 
     /**
@@ -302,6 +314,34 @@ export default class WikidataUtils {
         }
         return Array.from(properties);
     }
+
+    /**
+     * Given a domain and a property, find if the property has the pre-selected qualifiers
+     * Currently, only start time, end time, and point in time 
+     * @param domain QID
+     * @param property PID
+     * @returns a list of qualifiers PID 
+     */
+    async getQualifiersByProperty(domain : string, property : string) : Promise<string[]> {
+        const qualifierCount : Record<string, number> = Object.keys(this.qualifiers).reduce((counter, q) => 
+            Object.assign(counter, { [q]: 0 }), {}
+        );
+        const optionalStatements = Object.keys(this.qualifiers).map((q) => `OPTIONAL { ?statement pq:${q} ?${q}. }`);
+        const sparql = `SELECT DISTINCT ?entity ${Object.keys(this.qualifiers).map((q) => `?${q}`).join(' ')} WHERE {
+            ?entity wdt:P31 wd:${domain} .
+            ?entity p:${property} ?statement .
+            ${optionalStatements.join(' ')}
+        } LIMIT 100`;
+        console.log(sparql);
+        const res = await this._query(sparql);
+        res.forEach((r : any) => {
+            for (const qualifier in this.qualifiers) {
+                if (qualifier in r)
+                    qualifierCount[qualifier] += 1;
+            }
+        });
+        return Object.keys(this.qualifiers).filter((q) => qualifierCount[q] > 2);
+    } 
 
     /**
      * Get properties and their values for a given domain

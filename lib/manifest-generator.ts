@@ -102,14 +102,31 @@ class ManifestGenerator {
 
     /**
      * Get the thingtalk type of a property
+     * @param domain the QID of the domain
      * @param propertyId the PID of the property
      * @param propertyName the name of the property
      * @returns the ThingTalk type of the property
      */
-    private async _getPropertyType(propertyId : string, propertyName : string) {
+    private async _getPropertyType(domain : string, propertyId : string, propertyName : string) {
         if (propertyId in this._propertyTypes) 
             return this._propertyTypes[propertyId];
-        const type = await this._getPropertyTypeHelper(propertyId, propertyName);
+        let type = await this._getPropertyTypeHelper(propertyId, propertyName);
+        const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
+        if (qualifiers.length > 0) {
+            const fields : Record<string, Ast.ArgumentDef> = {
+                value: new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, 'value', type)
+            };
+            for (const qualifier of qualifiers) {
+                const name = this._wikidata.qualifiers[qualifier].name;
+                const qtype = this._wikidata.qualifiers[qualifier].type;
+                const annotation = { 
+                    nl: { canonical: await this._generatePropertyCanonicals(qualifier, name, qtype) }, 
+                    impl: { wikidata_id: new Ast.Value.String(qualifier) } 
+                };
+                fields[qualifier] = new Ast.ArgumentDef(null, Ast.ArgDirection.OUT, name, qtype, annotation);
+            }
+            type = new Type.Compound(null, fields);
+        }
         this._propertyTypes[propertyId] = type;
         return type;
     }
@@ -257,7 +274,7 @@ class ManifestGenerator {
         for (const property in propertyValues) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
-            const ptype = await this._getPropertyType(property, pname);
+            const ptype = await this._getPropertyType(domain, property, pname);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
@@ -310,7 +327,7 @@ class ManifestGenerator {
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
             missing.push([id, label]);
-            const ptype = await this._getPropertyType(id, pname);
+            const ptype = await this._getPropertyType(domain, id, pname);
             const argumentDef = new Ast.ArgumentDef(
                 null, 
                 Ast.ArgDirection.OUT, 
