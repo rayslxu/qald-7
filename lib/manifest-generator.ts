@@ -23,7 +23,7 @@ interface ManifestGeneratorOptions {
     experiment : 'qald7'|'qald9',
     cache : string,
     output : fs.WriteStream,
-    include_non_entity_properties : boolean,
+    exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean
 }
 
@@ -73,7 +73,7 @@ class ManifestGenerator {
         this._propertyTypes = {};
         this._output = options.output;
 
-        this._includeNonEntityProperties = options.include_non_entity_properties;
+        this._includeNonEntityProperties = !options.exclude_non_entity_properties;
         this._useWikidataAltLabels = options.use_wikidata_alt_labels;
     }
 
@@ -500,7 +500,7 @@ async function main() {
         required: false,
         default: 'wikidata_cache.sqlite'
     });
-    parser.add_argument('--include-non-entity-properties', {
+    parser.add_argument('--exclude-non-entity-properties', {
         action: 'store_true',
         default: false
     });
