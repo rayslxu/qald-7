@@ -19,6 +19,11 @@ interface Entity {
     subtype_of : string[]|null;
 }
 
+interface PropertyValues {
+    entities : Record<string, Record<string, string>>, // Record<property name, Record<QID, value label>>
+    strings : Record<string, string[]> // Record<property name, values>
+}
+
 interface ManifestGeneratorOptions {
     experiment : 'qald7'|'qald9',
     cache : string,
@@ -48,7 +53,7 @@ class ManifestGenerator {
      * parameter datasets. Since the paths of parameter datasets is based on the property name, 
      * we use that as the key instead of PID 
      */
-    private _propertyValues : Record<string, Record<string, string>>; // Record<property name, Record<QID, value label>>
+    private _propertyValues : PropertyValues;
     /**
      * @member _propertyTypes : an object with PID as key, and thingtalk type as value
      */
@@ -69,7 +74,7 @@ class ManifestGenerator {
         this._entities = {};
         this._propertyLabelsByDomain = {};
         this._properties = {};
-        this._propertyValues = {};
+        this._propertyValues = { entities: {}, strings: {} };
         this._propertyTypes = {};
         this._output = options.output;
 
@@ -105,12 +110,13 @@ class ManifestGenerator {
      * @param domain the QID of the domain
      * @param propertyId the PID of the property
      * @param propertyName the name of the property
+     * @param values a list of example values
      * @returns the ThingTalk type of the property
      */
-    private async _getPropertyType(domain : string, propertyId : string, propertyName : string) {
+    private async _getPropertyType(domain : string, propertyId : string, propertyName : string, values ?: string[]) {
         if (propertyId in this._propertyTypes) 
             return this._propertyTypes[propertyId];
-        let type = await this._getPropertyTypeHelper(propertyId, propertyName);
+        let type = await this._getPropertyTypeHelper(propertyId, propertyName, values);
         const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
         if (qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
@@ -132,7 +138,7 @@ class ManifestGenerator {
         return type;
     }
 
-    private async _getPropertyTypeHelper(propertyId : string, propertyName : string) {
+    private async _getPropertyTypeHelper(propertyId : string, propertyName : string, values ?: string[]) {
         if (propertyId === 'P21')
             return new Type.Enum(['female', 'male']);
         
@@ -168,7 +174,17 @@ class ManifestGenerator {
         const range = await this._wikidata.getRangeConstraint(propertyId);
         if (range)
             return Type.Number;
+            
+        if (values) {
+            const stringValues = values.filter((v) => this._wikidata.isStringValue(v));
+            if (stringValues.length > values.length * 0.6) 
+                return Type.String;
 
+            const numberValues = values.filter((v) => this._wikidata.isNumber(v));
+            if (numberValues.length > values.length * 0.6)
+                return Type.Number;
+        }
+            
         // default to an array entity type
         return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
     }
@@ -272,10 +288,10 @@ class ManifestGenerator {
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
         const valueLabels = await this._wikidata.getLabelsByBatch(...Object.values(propertyValues).flat());
-        for (const property in propertyValues) {
+        for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
-            const ptype = await this._getPropertyType(domain, property, pname);
+            const ptype = await this._getPropertyType(domain, property, pname, values);
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
@@ -290,16 +306,23 @@ class ManifestGenerator {
             this._addEntity(`p_${pname}`, label);
             if (!(property in this._properties))
                 this._properties[property] = argumentDef;
-            const values = propertyValues[property];
             // TODO: separate property values by domain
-            if (values.length > 0) {
-                if (!(pname in this._propertyValues))
-                    this._propertyValues[pname] = {};
+            if (values.length === 0)
+                continue;
+            if (ptype instanceof Type.Entity) {
+                if (!(pname in this._propertyValues.entities))
+                    this._propertyValues.entities[pname] = {};
                 for (const value of values) {
-                    if (value in this._propertyValues[pname])
+                    if (value in this._propertyValues.entities[pname])
                         continue;
-                    this._propertyValues[pname][value] = valueLabels[value] ?? value;
+                    this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
                 }
+            }
+            if (ptype === Type.String) {
+                if (!(pname in this._propertyValues.strings))
+                    this._propertyValues.strings[pname] = [];
+                for (const value of values)
+                    this._propertyValues.strings[pname].push(value);
             }
         }
         return args;
@@ -431,7 +454,7 @@ class ManifestGenerator {
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
         }
-        for (const [pname, values] of Object.entries(this._propertyValues)) {
+        for (const [pname, values] of Object.entries(this._propertyValues.entities)) {
             index.write(`entity\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
@@ -444,6 +467,7 @@ class ManifestGenerator {
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
         }
+        // TODO: output string values
         index.end();
         await waitFinish(index);
     }

@@ -371,10 +371,10 @@ export default class WikidataUtils {
             } `;
             const res = await this._query(sparql);
             res.forEach((r : any) => {
-                if (!r.v.value.startsWith(ENTITY_PREFIX) || r.p.value === PROPERTY_PREFIX + 'P31')
+                if (r.p.value === PROPERTY_PREFIX + 'P31')
                     return;
                 const property = r.p.value.slice(PROPERTY_PREFIX.length);
-                const value = r.v.value.slice(ENTITY_PREFIX.length); 
+                const value = r.v.value.startsWith(ENTITY_PREFIX) ? r.v.value.slice(ENTITY_PREFIX.length) : r.v.value; 
                 if (!(property in properties))
                     properties[property] = [];
                 if (!(property in propertyCounter))
@@ -447,5 +447,35 @@ export default class WikidataUtils {
                 return range;
         }
         return null;
+    }
+
+    /**
+     * guess if the thingtalk type of a value is string
+     * @param value a string of value
+     * @returns if the value is a string value
+     */
+    isStringValue(value : string) : boolean {
+        // preprocessed entity type 
+        if (/[P|Q][0-9]+/.test(value))
+            return false;
+        // raw entity, url, pictures
+        if (value.startsWith('http://') || value.startsWith('https://'))
+            return false;
+        // date
+        if (!isNaN(Date.parse(value)))
+            return false;
+        // number, measurement
+        if (!isNaN(+value))
+            return false;
+        return true;
+    }
+
+    /**
+     * guess if the thingtalk type of a value is number
+     * @param value a string of value
+     * @returns if the value is a number value
+     */
+    isNumber(value : string) : boolean {
+        return !isNaN(+value);
     }
 }
