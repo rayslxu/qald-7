@@ -152,13 +152,13 @@ class ManifestGenerator {
                 return new Type.Measure('kg');
             if (units.includes('metre') ||  units.includes('kilometre'))
                 return new Type.Measure('m');
-            if (units.includes('second') || units.includes('year'))
+            if (units.includes('second') || units.includes('year') || units.includes(('minute') || units.includes('hour') || units.includes('day')))
                 return new Type.Measure('ms');
             if (units.includes('degree Celsius'))
                 return new Type.Measure('C');
             if (units.includes('metre per second') || units.includes('kilometre per second'))
                 return new Type.Measure('mps');
-            if (units.includes('square metre'))
+            if (units.includes('square metre') || units.includes('square kilometre'))
                 return new Type.Measure('m2');
             if (units.includes('cubic metre'))
                 return new Type.Measure('m3');
@@ -168,7 +168,12 @@ class ManifestGenerator {
                 return Type.Currency;
             if (units.includes('human')) // capacity
                 return Type.Number;
-            throw new Error(`Unknown measurement type with unit ${units.join(', ')} for ${propertyId}`);
+            if (units.includes('radian'))
+                return Type.Number;
+            if (units.includes('years old') || units.includes('annum'))
+                return Type.Number;
+            console.log(`Unsupported measurement type with unit ${units.join(', ')} for ${propertyId}, use Number instead`);
+            return Type.Number;
         }
 
         const range = await this._wikidata.getRangeConstraint(propertyId);
@@ -287,7 +292,18 @@ class ManifestGenerator {
         const args = [idArgument(cleanName(entityType))];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
-        const valueLabels = await this._wikidata.getLabelsByBatch(...Object.values(propertyValues).flat().filter((v) => !this._wikidata.isStringValue(v)));
+        // heuristics to drop properties for various IDs
+        Object.entries(propertyLabels).forEach(([property, label]) => {
+            if (label) {
+                label = label.replace(/\([^)*]\)/g, '').trim();
+                if (label.endsWith(' ID') || label.endsWith(' Identifier'))
+                    delete propertyValues[property];
+            } else {
+                delete propertyValues[property];
+            }
+        });
+        const entityValues = Object.values(propertyValues).flat().filter((v) => this._wikidata.isEntity);
+        const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);

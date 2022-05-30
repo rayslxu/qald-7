@@ -478,4 +478,13 @@ export default class WikidataUtils {
     isNumber(value : string) : boolean {
         return !isNaN(+value);
     }
+
+    /**
+     * guess if the thingtalk type of a value is entity
+     * @param value a string of value
+     * @returns if the value is a entity value
+     */
+    isEntity(value : string) : boolean {
+        return /^Q[0-9]+$/.test(value);
+    }
 }
