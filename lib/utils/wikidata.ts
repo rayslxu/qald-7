@@ -231,7 +231,7 @@ export default class WikidataUtils {
         const result : Record<string, string|null> = {};
         const uncached = [];
         for (const id of ids) {
-            if (!/[P|Q][0-9]+/.test(id))
+            if (!/^[P|Q][0-9]+$/.test(id))
                 continue;
             const cached = await this._getCache('labels', 'label', { key : 'id', value : id });
             if (cached) 
@@ -456,7 +456,7 @@ export default class WikidataUtils {
      */
     isStringValue(value : string) : boolean {
         // preprocessed entity type 
-        if (/[P|Q][0-9]+/.test(value))
+        if (/^Q[0-9]+$/.test(value))
             return false;
         // raw entity, url, pictures
         if (value.startsWith('http://') || value.startsWith('https://'))

@@ -287,7 +287,7 @@ class ManifestGenerator {
         const args = [idArgument(cleanName(entityType))];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
-        const valueLabels = await this._wikidata.getLabelsByBatch(...Object.values(propertyValues).flat());
+        const valueLabels = await this._wikidata.getLabelsByBatch(...Object.values(propertyValues).flat().filter((v) => !this._wikidata.isStringValue(v)));
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
