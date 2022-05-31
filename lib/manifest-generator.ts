@@ -57,7 +57,7 @@ class ManifestGenerator {
     /**
      * @member _propertyTypes : an object with PID as key, and thingtalk type as value
      */
-    private _propertyTypes : Record<string, Type>;
+    private _propertyTypes : Record<string, Type|null>;
     private _output : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
@@ -110,15 +110,14 @@ class ManifestGenerator {
      * @param domain the QID of the domain
      * @param propertyId the PID of the property
      * @param propertyName the name of the property
-     * @param values a list of example values
      * @returns the ThingTalk type of the property
      */
-    private async _getPropertyType(domain : string, propertyId : string, propertyName : string, values ?: string[]) {
+    private async _getPropertyType(domain : string, propertyId : string, propertyName : string) {
         if (propertyId in this._propertyTypes) 
             return this._propertyTypes[propertyId];
-        let type = await this._getPropertyTypeHelper(propertyId, propertyName, values);
+        let type = await this._getPropertyTypeHelper(propertyId, propertyName);
         const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
-        if (qualifiers.length > 0) {
+        if (type && qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
                 value: new Ast.ArgumentDef(null, null, 'value', elemType(type))
             };
@@ -138,60 +137,56 @@ class ManifestGenerator {
         return type;
     }
 
-    private async _getPropertyTypeHelper(propertyId : string, propertyName : string, values ?: string[]) {
+    private async _getPropertyTypeHelper(propertyId : string, propertyName : string) {
         if (propertyId === 'P21')
             return new Type.Enum(['female', 'male']);
-        
-        const timeProperties = await this._wikidata.getTimeProperties();
-        if (timeProperties.includes(propertyId) || propertyName.startsWith('date_of_'))
+            
+        const wikibaseType = await this._wikidata.getPropertyType(propertyId);
+        if (wikibaseType === 'String' || wikibaseType === 'Monolingualtext')
+            return Type.String;
+        if (wikibaseType === 'Url')
+            return new Type.Entity('tt:url');
+        if (wikibaseType === 'CommonsMedia')
+            return new Type.Entity('tt:picture');
+        if (wikibaseType === 'Time')
             return Type.Date;
+        if (wikibaseType === 'Quantity') {       
+            const units = await this._wikidata.getAllowedUnits(propertyId);
+            if (units.length > 0) {
+                if (units.includes('kilogram'))
+                    return new Type.Measure('kg');
+                if (units.includes('metre') ||  units.includes('kilometre'))
+                    return new Type.Measure('m');
+                if (units.includes('second') || units.includes('year') || units.includes(('minute') || units.includes('hour') || units.includes('day')))
+                    return new Type.Measure('ms');
+                if (units.includes('degree Celsius'))
+                    return new Type.Measure('C');
+                if (units.includes('metre per second') || units.includes('kilometre per second'))
+                    return new Type.Measure('mps');
+                if (units.includes('square metre') || units.includes('square kilometre'))
+                    return new Type.Measure('m2');
+                if (units.includes('cubic metre'))
+                    return new Type.Measure('m3');
+                if (units.includes('percent'))
+                    return Type.Number;
+                if (units.includes('United States dollar'))
+                    return Type.Currency;
+                if (units.includes('human')) // capacity
+                    return Type.Number;
+                if (units.includes('radian'))
+                    return Type.Number;
+                if (units.includes('years old') || units.includes('annum'))
+                    return Type.Number;
+                console.log(`Unsupported measurement type with unit ${units.join(', ')} for ${propertyId}, use Number instead`);
+            }
+            return Type.Number;
+        }
+        if (wikibaseType === 'WikibaseItem')
+            return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
         
-        const units = await this._wikidata.getAllowedUnits(propertyId);
-        if (units.length > 0) {
-            if (units.includes('kilogram'))
-                return new Type.Measure('kg');
-            if (units.includes('metre') ||  units.includes('kilometre'))
-                return new Type.Measure('m');
-            if (units.includes('second') || units.includes('year') || units.includes(('minute') || units.includes('hour') || units.includes('day')))
-                return new Type.Measure('ms');
-            if (units.includes('degree Celsius'))
-                return new Type.Measure('C');
-            if (units.includes('metre per second') || units.includes('kilometre per second'))
-                return new Type.Measure('mps');
-            if (units.includes('square metre') || units.includes('square kilometre'))
-                return new Type.Measure('m2');
-            if (units.includes('cubic metre'))
-                return new Type.Measure('m3');
-            if (units.includes('percent'))
-                return Type.Number;
-            if (units.includes('United States dollar'))
-                return Type.Currency;
-            if (units.includes('human')) // capacity
-                return Type.Number;
-            if (units.includes('radian'))
-                return Type.Number;
-            if (units.includes('years old') || units.includes('annum'))
-                return Type.Number;
-            console.log(`Unsupported measurement type with unit ${units.join(', ')} for ${propertyId}, use Number instead`);
-            return Type.Number;
-        }
-
-        const range = await this._wikidata.getRangeConstraint(propertyId);
-        if (range)
-            return Type.Number;
-            
-        if (values) {
-            const stringValues = values.filter((v) => this._wikidata.isStringValue(v));
-            if (stringValues.length > values.length * 0.6) 
-                return Type.String;
-
-            const numberValues = values.filter((v) => this._wikidata.isNumber(v));
-            if (numberValues.length > values.length * 0.6)
-                return Type.Number;
-        }
-            
-        // default to an array entity type
-        return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
+        // unsupported
+        
+        return null;
     }
 
     /**
@@ -307,7 +302,9 @@ class ManifestGenerator {
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
             const pname = cleanName(label);
-            const ptype = await this._getPropertyType(domain, property, pname, values);
+            const ptype = await this._getPropertyType(domain, property, pname);
+            if (!ptype) 
+                continue;
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
@@ -368,6 +365,8 @@ class ManifestGenerator {
                 continue;
             missing.push([id, label]);
             const ptype = await this._getPropertyType(domain, id, pname);
+            if (!ptype)
+                throw new Error('Unsupported property type for property ' + pname);
             const argumentDef = new Ast.ArgumentDef(
                 null, 
                 Ast.ArgDirection.OUT, 
@@ -484,6 +483,7 @@ class ManifestGenerator {
             await waitFinish(paramDataset);
         }
         // TODO: output string values
+        
         index.end();
         await waitFinish(index);
     }

@@ -32,6 +32,8 @@ interface Qualifier {
     type : Type
 }
 
+type WikibaseType = 'WikibaseItem' | 'CommonsMedia' | 'String' | 'Quantity' | 'Time' | 'Monolingualtext' | 'Url' | 'Unsupported';
+
 function normalizeURL(url : string) {
     return url.trim().replace(/\s+/g, ' ');
 }
@@ -41,12 +43,14 @@ export default class WikidataUtils {
     private _cachePath : string;
     private _cache ! : sqlite3.Database;
     private _cacheLoaded : boolean;
-    public qualifiers : Record<string, Qualifier>;
+    private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
+    public qualifiers : Record<string, Qualifier>; // all qualifiers to include
 
     constructor(cachePath : string) {
         this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
         this._cacheLoaded = false;
+        this._properties = {};
         this.qualifiers = {
             'P580': { name: 'start_time', type: Type.Date }, 
             'P582': { name: 'end_time', type: Type.Date }, 
@@ -447,6 +451,30 @@ export default class WikidataUtils {
                 return range;
         }
         return null;
+    }
+
+    /**
+     * Return 
+     * @param propertyId 
+     * @returns wikibaseType 
+     */
+    async getPropertyType(propertyId : string) : Promise<string> {
+        if (Object.keys(this._properties).length === 0) {   
+            const query = `SELECT ?p ?type WHERE {
+                ?p wikibase:propertyType ?type . 
+                FILTER (?type != wikibase:ExternalId)
+            }`;
+            const result = await this._query(query);
+            result.forEach((r : any) => {
+                const property : string = r.p.value;
+                const type : string = r.type.value;
+                let wikibaseType = type.slice('http://wikiba.se/ontology#'.length);
+                if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url'].includes(wikibaseType))
+                    wikibaseType = 'Unsupported';
+                this._properties[property.slice(ENTITY_PREFIX.length)] = wikibaseType as WikibaseType;
+            });
+        }
+        return this._properties[propertyId];
     }
 
     /**
