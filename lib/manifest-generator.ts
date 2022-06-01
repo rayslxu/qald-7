@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as argparse from 'argparse';
+import csvstringify from 'csv-stringify';
 import { Ast, Type } from 'thingtalk';
 import { I18n, genBaseCanonical } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
@@ -140,7 +141,7 @@ class ManifestGenerator {
     private async _getPropertyTypeHelper(propertyId : string, propertyName : string) {
         if (propertyId === 'P21')
             return new Type.Enum(['female', 'male']);
-            
+
         const wikibaseType = await this._wikidata.getPropertyType(propertyId);
         if (wikibaseType === 'String' || wikibaseType === 'Monolingualtext')
             return Type.String;
@@ -185,7 +186,6 @@ class ManifestGenerator {
             return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
         
         // unsupported
-        
         return null;
     }
 
@@ -456,34 +456,42 @@ class ManifestGenerator {
     async _outputParameterDatasets() {
         const dir = path.dirname(this._output.path as string);
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
+        // write entity dataset for ids 
         for (const [fname, values] of Object.entries(this._domainSamples)) {
             index.write(`entity\ten-US\torg.wikidata:${fname}\tparameter-datasets/${fname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) {
-                    const canonical = this._tokenizer.tokenize(display).rawTokens.join(' ');
-                    data.data.push({ value : value, name: display, canonical });
-                }
+                if (display) 
+                    data.data.push({ value : value, name: display, display });
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
         }
+        // write entity dataset for other properties
         for (const [pname, values] of Object.entries(this._propertyValues.entities)) {
             index.write(`entity\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) {
-                    const canonical = this._tokenizer.tokenize(display).rawTokens.join(' ');
-                    data.data.push({ value : value, name: display, canonical });
-                }
+                if (display) 
+                    data.data.push({ value : value, name: display, display });
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
         }
-        // TODO: output string values
-        
+        // write string dataset for properties
+        for (const [pname, values] of Object.entries(this._propertyValues.strings)) {
+            index.write(`string\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.tsv\n`);
+            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.tsv`);
+            const output = csvstringify({ header: false, delimiter: '\t' });
+            for (const value of values) {
+                const tokenized = this._tokenizer.tokenize(value);
+                output.write([value, tokenized.rawTokens.join(' '), 1]);
+            }
+            output.end();
+            await waitFinish(paramDataset);
+        }
         index.end();
         await waitFinish(index);
     }
