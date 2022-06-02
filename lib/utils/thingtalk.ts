@@ -75,7 +75,9 @@ export function makeSubqueryVerificationProgram(main : Ast.Expression, subquerie
  * @param type a ThingTalk type
  */
 export function elemType(type : Type) : Type {
-    while (type instanceof Type.Array)
-        type = type.elem as Type;
+    if (type instanceof Type.Array)
+        return elemType(type.elem as Type);
+    if (type instanceof Type.Compound)
+        return elemType(type.fields.value.type);
     return type;
 }

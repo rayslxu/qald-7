@@ -287,17 +287,7 @@ class ManifestGenerator {
         const args = [idArgument(cleanName(entityType))];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
-        // heuristics to drop properties for various IDs
-        Object.entries(propertyLabels).forEach(([property, label]) => {
-            if (label) {
-                label = label.replace(/\([^)*]\)/g, '').trim();
-                if (label.endsWith(' ID') || label.endsWith(' Identifier'))
-                    delete propertyValues[property];
-            } else {
-                delete propertyValues[property];
-            }
-        });
-        const entityValues = Object.values(propertyValues).flat().filter((v) => this._wikidata.isEntity);
+        const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
         const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
@@ -322,7 +312,8 @@ class ManifestGenerator {
             // TODO: separate property values by domain
             if (values.length === 0)
                 continue;
-            if (ptype instanceof Type.Entity) {
+            const vtype = elemType(ptype);
+            if (vtype instanceof Type.Entity) {
                 if (!(pname in this._propertyValues.entities))
                     this._propertyValues.entities[pname] = {};
                 for (const value of values) {
@@ -331,7 +322,7 @@ class ManifestGenerator {
                     this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
                 }
             }
-            if (ptype === Type.String) {
+            if (vtype === Type.String) {
                 if (!(pname in this._propertyValues.strings))
                     this._propertyValues.strings[pname] = [];
                 for (const value of values)
@@ -527,7 +518,6 @@ class ManifestGenerator {
         await this._outputEntities();
         await this._outputParameterDatasets();
         console.log('Done.');
-        
     }
 }
 
