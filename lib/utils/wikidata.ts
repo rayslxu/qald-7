@@ -128,7 +128,7 @@ export default class WikidataUtils {
      * @param caching enable caching for the request or not
      * @returns An object of the result
      */
-    private async _request(url : string, caching = true) {
+    private async _request(url : string, caching = true, attempts = 1) : Promise<any> {
         if (caching) {
             const cached = await this._getCache('http_requests', 'result', { key: 'url', value : url });
             if (cached) 
@@ -141,6 +141,8 @@ export default class WikidataUtils {
             const parsed = JSON.parse(result);
             return parsed;
         } catch(e) {
+            if (attempts < 2)
+                return this._request(url, caching, attempts + 1);
             console.log(`Failed to retrieve result for: ${url}`);
             console.log(e);
             return null;
@@ -307,7 +309,10 @@ export default class WikidataUtils {
         for (const entity of exampleEntities) {
             const sparql = `SELECT DISTINCT ?p WHERE {
                 wd:${entity} ?p ?v .
-                FILTER(STRSTARTS(STR(?p), "${PROPERTY_PREFIX}")) . 
+                FILTER(STRSTARTS(STR(?p), str(wdt:))) . 
+                BIND (IRI(replace(str(?p), str(wdt:), str(wd:)))  AS ?p2)
+                ?p2 wikibase:propertyType ?type ..
+                FILTER (?type != wikibase:ExternalId) .
                 ${includeNonEntityProperties ? '' : entityOnlyFilter }
             } `;
             const res = await this._query(sparql);
@@ -370,7 +375,10 @@ export default class WikidataUtils {
         for (const entity of exampleEntities) {
             const sparql = `SELECT DISTINCT ?p ?v WHERE {
                 wd:${entity} ?p ?v .
-                FILTER(STRSTARTS(STR(?p), "${PROPERTY_PREFIX}")) . 
+                FILTER(STRSTARTS(STR(?p), str(wdt:))) . 
+                BIND (IRI(replace(str(?p), str(wdt:), str(wd:)))  AS ?p2)
+                ?p2 wikibase:propertyType ?type .
+                FILTER (?type != wikibase:ExternalId) .
                 ${includeNonEntityProperties ? '' : entityOnlyFilter }
             } `;
             const res = await this._query(sparql);
