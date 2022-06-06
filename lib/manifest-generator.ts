@@ -453,8 +453,10 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) 
-                    data.data.push({ value : value, name: display, display });
+                if (display) {
+                    const tokenized = this._tokenizer.tokenize(display);
+                    data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
+                }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
@@ -465,8 +467,10 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) 
-                    data.data.push({ value : value, name: display, display });
+                if (display) {
+                    const tokenized = this._tokenizer.tokenize(display);
+                    data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
+                }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
