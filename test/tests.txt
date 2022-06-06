@@ -138,7 +138,7 @@ ASK WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>  . 
 }
 TT:
-[ contains ( mouth_of_the_watercourse , any ( @org.wikidata . lake ( ) ) ) ] of @org.wikidata . river ( ) filter id == " Q106588 " ^^org.wikidata:river ( " isar " ) ;
+[ contains ( mouth_of_the_watercourse , any ( [ id ] of @org.wikidata . lake ( ) ) ) ] of @org.wikidata . river ( ) filter id == " Q106588 " ^^org.wikidata:river ( " isar " ) ;
 
 ====
 Utterance: List all boardgames by GMT.
@@ -270,3 +270,13 @@ ASK WHERE {
 }
 TT:
 [ ! ( conflict == NULL ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ( " jackson " ) ;
+
+====
+Utterance: How many people live in the capital of Australia?
+SPARQL: 
+SELECT DISTINCT ?number WHERE { 
+    <http://www.wikidata.org/entity/Q408> <http://www.wikidata.org/prop/direct/P36> ?uri . 
+    ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
+}
+TT:
+[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ( " australia " ) ) ) ;

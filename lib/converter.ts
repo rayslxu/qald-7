@@ -822,7 +822,7 @@ export default class SPARQLToThingTalkConverter {
                         null,
                         new Ast.Value.VarRef(proj.property),
                         this._schema.getPropertyType(proj.property) instanceof Type.Array ? 'contains' : '==',
-                        query, 
+                        new Ast.ProjectionExpression(null, query, ['id'], [], [], null), 
                         null
                     ));
                 }
