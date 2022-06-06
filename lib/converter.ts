@@ -44,7 +44,7 @@ import {
     isAggregateExpression
 } from './utils/sparqljs-typeguard';
 import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from './utils/wikidata';
-import { ENTITY_SPAN_OVERRIDE } from './utils/qald';
+import { ENTITY_SPAN_OVERRIDE, MANUAL_CONVERSION } from './utils/qald';
 import WikidataUtils from './utils/wikidata';
 import { WikiSchema } from './schema';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
@@ -568,7 +568,7 @@ export default class SPARQLToThingTalkConverter {
      * @param keywords a list of keywords in the utterance including the mentioned entities 
      * @returns A ThingTalk Program
      */
-    async convert(sparql : string, utterance : string, keywords : string[] = []) : Promise<Ast.Program> {
+    async convert(sparql : string, utterance : string, keywords : string[] = []) : Promise<Ast.Program> { 
         this._init(utterance, keywords);
         const parsed = this._parser.parse(sparql) as SelectQuery|AskQuery;
         if (parsed.where) {
@@ -899,14 +899,18 @@ async function main() {
             continue;
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            const program = await converter.convert(item.query.sparql, preprocessed);
-            const target_code = ThingTalkUtils.serializePrediction(
-                program, 
-                preprocessed,
-                EntityUtils.makeDummyEntities(preprocessed),
-                { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }
-            ).join(' ');
-            output.write({ id: item.id, preprocessed, target_code });
+            if (item.query.sparql in MANUAL_CONVERSION) {
+                output.write({ id: item.id, preprocessed, target_code: MANUAL_CONVERSION[item.query.sparql] });
+            } else { 
+                const program = await converter.convert(item.query.sparql, preprocessed);
+                const target_code = ThingTalkUtils.serializePrediction(
+                    program, 
+                    preprocessed,
+                    EntityUtils.makeDummyEntities(preprocessed),
+                    { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }
+                ).join(' ');
+                output.write({ id: item.id, preprocessed, target_code });
+            }
         } catch(e) {
             console.log(`Example ${item.id} failed`);
             if (args.drop)
