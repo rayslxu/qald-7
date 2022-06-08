@@ -141,21 +141,6 @@ TT:
 [ contains ( mouth_of_the_watercourse , any ( [ id ] of @org.wikidata . lake ( ) ) ) ] of @org.wikidata . river ( ) filter id == " Q106588 " ^^org.wikidata:river ( " isar " ) ;
 
 ====
-Utterance: List all boardgames by GMT.
-SPARQL: 
-PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?uri WHERE { ?uri wdt:P31 wd:Q131436 . }
-TT: 
-@org.wikidata . board_game ( ) ;
-
-
-====
-Utterance: Who developed Skype?
-SPARQL: 
-PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?uri WHERE { wd:Q40984 wdt:P178 ?uri . }
-TT: 
-[ developer ] of @org.wikidata . website ( ) filter id == " Q40984 " ^^org.wikidata:website ( " skype " ) ; 
-
-====
 Utterance: Who wrote the lyrics for the Polish national anthem?
 SPARQL:
 SELECT DISTINCT ?uri WHERE { 
