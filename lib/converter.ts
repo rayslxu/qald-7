@@ -404,10 +404,14 @@ export default class SPARQLToThingTalkConverter {
     private async _parseBinaryOperation(expression : OperationExpression, isVerification : boolean, negate : boolean) {
         const [lhs, rhs] = expression.args;
         assert(isVariable(lhs));
+
+        let operator = expression.operator;
+        if (operator === '>' || operator === '<')
+            operator += '=';
         if (isVariable(rhs)) {
             this._comparison.push({
                 lhs: lhs.value,
-                operator: expression.operator,
+                operator: operator,
                 rhs: rhs.value
             });
         } else if (isLiteral(rhs)) {
@@ -421,13 +425,13 @@ export default class SPARQLToThingTalkConverter {
                 
                 let booleanExpression;
                 if (projection.property.endsWith('Label')) {
-                    assert(expression.operator === 'regex');
+                    assert(operator === 'regex');
                     const property = projection.property.slice(0, -'Label'.length);
                     const propertyType = this._schema.getPropertyType(property);
-                    const operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
+                    operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
                     booleanExpression = await this._atomFilter(property, rhs.value, operator, Type.String);
                 } else {
-                    booleanExpression = await this._atomFilter(projection.property, rhs.value, expression.operator, Type.Number);
+                    booleanExpression = await this._atomFilter(projection.property, rhs.value, operator, Type.Number);
                 }
 
                 if (negate)
