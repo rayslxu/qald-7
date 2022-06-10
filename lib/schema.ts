@@ -16,7 +16,8 @@ export class WikiSchema {
             const qid = ((query.getImplementationAnnotation('wikidata_subject')) as any[])[0];
             this._tableMap[qid] = qname;
             for (const arg of query.iterateArguments()) {
-                if (arg.name === 'id')
+                // skip id argument, and compound fields
+                if (arg.name === 'id' || arg.name.includes('.'))
                     continue;
                 const pid = arg.getImplementationAnnotation('wikidata_id') as string;
                 this._propertyMap[pid] = arg.name;

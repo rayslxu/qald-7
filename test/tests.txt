@@ -254,7 +254,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?uri . 
 }
 TT:
-[ ! ( conflict == NULL ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ( " jackson " ) ;
+[ ! ( conflict == null ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ( " jackson " ) ;
 
 ====
 Utterance: How many people live in the capital of Australia?
@@ -265,3 +265,14 @@ SELECT DISTINCT ?number WHERE {
 }
 TT:
 [ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ( " australia " ) ) ) ;
+
+====
+Utterance: Was the Cuban Missile Crisis earlier than the Bay of Pigs Invasion?
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q128160> <http://www.wikidata.org/prop/direct/P582> ?date1 . 
+    <http://www.wikidata.org/entity/Q191721> <http://www.wikidata.org/prop/direct/P580> ?date2 . 
+    FILTER(?date1 < ?date2) 
+}
+TT:
+[ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ( " bay of pigs invasion " ) ) ] of @org.wikidata . political_crisis ( ) filter id == " Q128160 " ^^org.wikidata:political_crisis ( " cuban missile crisis " ) ;
