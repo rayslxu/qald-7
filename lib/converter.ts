@@ -468,10 +468,21 @@ export default class SPARQLToThingTalkConverter {
             } 
             if (!match)
                 throw new Error(`Cannot find projection ${arg.value}`);
-            if (typeof match.property === 'string')
-                booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
-            else 
+            if (typeof match.property === 'string') {
+                const propertyType = this._schema.getPropertyType(match.property);
+                if (propertyType instanceof Type.Array) {
+                    booleanExpression = new Ast.ComputeBooleanExpression(
+                        null,
+                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(match.property)]),
+                        '==',
+                        new Ast.Value.Number(0)
+                    );
+                } else {
+                    booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+                }
+            } else {
                 booleanExpression = new Ast.PropertyPathBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+            }
             
         }
         if (!booleanExpression || !subject)
@@ -675,6 +686,15 @@ export default class SPARQLToThingTalkConverter {
                                 // if there is other tables for the projection, do not create a is null verification, a subquery is needed
                                 if (proj.variable && proj.variable in this._tables)
                                     return null;
+                                const propertyType = this._schema.getPropertyType(proj.property);
+                                if (propertyType instanceof Type.Array) {
+                                    return new Ast.ComputeBooleanExpression(
+                                        null,
+                                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(proj.property)]),
+                                        '==',
+                                        new Ast.Value.Number(0)
+                                    );
+                                }
                                 return new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
                             }
                             return new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
