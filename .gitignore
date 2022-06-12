@@ -4,5 +4,3 @@ parameter-datasets
 manifest.tt
 wikidata_cache.sqlite
 
-node_modules
-dist
