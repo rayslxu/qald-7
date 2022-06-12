@@ -412,6 +412,7 @@ class ManifestGenerator {
             is_list: true,
             is_monitorable: false
         }, [idArgument('entity'), ...Object.values(this._properties)], {
+            nl: { canonical: ['entity'] },
             impl : {
                 handle_thingtalk: new Ast.Value.Boolean(true),
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String('Q35120')])
