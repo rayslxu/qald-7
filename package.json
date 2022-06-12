@@ -6,15 +6,15 @@
     "test": "node dist/test/index.js"
   },
   "dependencies": {
+    "JSONStream": "^1.3.5",
     "argparse": "^2.0.1",
     "en-stemmer": "^1.0.3",
-    "genie-toolkit": "github:stanford-oval/genie-toolkit#wip/qald",
-    "JSONStream": "^1.3.5",
+    "genie-toolkit": "git+https://github.com/stanford-oval/genie-toolkit.git#wip/qald",
     "sparqljs": "^3.5.1",
     "sqlite3": "^5.0.2",
     "stopword": "^1.0.11",
     "thingpedia": "^2.10.0-alpha.6",
-    "thingtalk": "github:stanford-oval/thingtalk#wip/qald",
+    "thingtalk": "git+https://github.com/stanford-oval/thingtalk.git#wip/qald",
     "typescript": "^4.5.2",
     "wikibase-sdk": "^7.14.2"
   },
