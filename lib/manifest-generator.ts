@@ -2,14 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as argparse from 'argparse';
 import csvstringify from 'csv-stringify';
-import JSONStream from 'JSONStream';
 import { Ast, Type } from 'thingtalk';
 import { I18n, genBaseCanonical } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
-import { cleanName, waitFinish, waitEnd, loadJson } from './utils/misc';
+import { cleanName, waitFinish } from './utils/misc';
 import { idArgument, elemType } from './utils/thingtalk';
+import BootlegUtils from './utils/bootleg';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
@@ -32,18 +32,17 @@ interface ManifestGeneratorOptions {
     output : fs.WriteStream,
     exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean,
-    paths : Record<string, string>
+    bootleg_db : string
 }
 
 class ManifestGenerator {
     private _experiment : 'qald7'|'qald9';
     private _wikidata : WikidataUtils;
+    private _bootleg : BootlegUtils;
     private _parser : SparqlParser;
     private _tokenizer : I18n.BaseTokenizer;
     private _examples : Example[];
     private _entities : Record<string, Entity>;
-    private _paths : Record<string, string>;
-    private _bootlegTypes : Record<string, string[]>;
     private _domainLabels : Record<string, string>; // Record<QID, domain label>
     private _domainSamples : Record<string, Record<string, string|null>>; // Record<QID, entities> 
     private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<QID, Record<PID, property label>>
@@ -71,11 +70,10 @@ class ManifestGenerator {
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
         this._wikidata = new WikidataUtils(options.cache);
+        this._bootleg = new BootlegUtils(options.bootleg_db);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD(options.experiment);
-        this._paths = options.paths;
-        this._bootlegTypes = {};
         this._domainLabels = {};
         this._domainSamples = {};
         this._entities = {};
@@ -94,26 +92,9 @@ class ManifestGenerator {
      * @param entityId QID of an entity
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
-    private async _getEntityType(entityId : string) {
-        if (Object.keys(this._bootlegTypes).length === 0)
-            await this._loadBootlegTypes();
-        const bootlegTypes = this._bootlegTypes[entityId];
-        // return the first type in bootleg
-        if (bootlegTypes && bootlegTypes.length > 0) 
-            return cleanName(bootlegTypes[0]);
-        // otherwise get domain from wikidata
-        return this._wikidata.getDomain(entityId);
-    }
-
-    private async _loadBootlegTypes() {
-        console.log('Loading Bootleg type information ...');
-        const bootlegTypeCanonical =  await loadJson(this._paths.bootlegTypeCanonicals);
-        const pipeline = fs.createReadStream(this._paths.bootlegTypes).pipe(JSONStream.parse('$*'));
-        pipeline.on('data', async (item) => {
-            this._bootlegTypes[item.key] = item.value.map((qid : string) => bootlegTypeCanonical[qid]);
-        });
-        pipeline.on('error', (error : any) => console.error(error));
-        await waitEnd(pipeline);
+    private async _getEntityType(entityId : string) : Promise<string|null> {
+        const bootlegType = await this._bootleg.getType(entityId);
+        return  bootlegType ?? this._wikidata.getDomain(entityId);
     }
 
     /**
@@ -576,20 +557,11 @@ async function main() {
         help: 'Enable wikidata alternative labels as annotations.',
         default: false
     });
-    parser.add_argument('--bootleg-types-path', {
+    parser.add_argument('--bootleg-db', {
         required: false,
-        default: 'bootleg-types.json'
-    });
-    parser.add_argument('--bootleg-type-canonicals-path', {
-        required: false,
-        default: 'bootleg-type-canonicals.json'
+        default: 'bootleg.sqlite'
     });
     const args = parser.parse_args();
-    args.paths = {
-        'bootlegTypes': args.bootleg_types_path,
-        'bootlegTypeCanonicals': args.bootleg_type_canonicals_path
-    };
-
     const generator = new ManifestGenerator(args);
     generator.generate();
 }

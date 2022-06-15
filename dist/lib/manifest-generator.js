@@ -26,7 +26,6 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const argparse = __importStar(require("argparse"));
 const csv_stringify_1 = __importDefault(require("csv-stringify"));
-const JSONStream_1 = __importDefault(require("JSONStream"));
 const thingtalk_1 = require("thingtalk");
 const genie_toolkit_1 = require("genie-toolkit");
 const sparqljs_1 = require("sparqljs");
@@ -34,17 +33,17 @@ const sparqljs_2 = require("./utils/sparqljs");
 const qald_1 = require("./utils/qald");
 const misc_1 = require("./utils/misc");
 const thingtalk_2 = require("./utils/thingtalk");
+const bootleg_1 = __importDefault(require("./utils/bootleg"));
 const wikidata_1 = __importDefault(require("./utils/wikidata"));
 const wikidata_2 = require("./utils/wikidata");
 class ManifestGenerator {
     constructor(options) {
         this._experiment = options.experiment;
         this._wikidata = new wikidata_1.default(options.cache);
+        this._bootleg = new bootleg_1.default(options.bootleg_db);
         this._parser = new sparqljs_1.Parser();
         this._tokenizer = new genie_toolkit_1.I18n.LanguagePack('en-US').getTokenizer();
         this._examples = (0, qald_1.preprocessQALD)(options.experiment);
-        this._paths = options.paths;
-        this._bootlegTypes = {};
         this._domainLabels = {};
         this._domainSamples = {};
         this._entities = {};
@@ -62,24 +61,8 @@ class ManifestGenerator {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     async _getEntityType(entityId) {
-        if (Object.keys(this._bootlegTypes).length === 0)
-            await this._loadBootlegTypes();
-        const bootlegTypes = this._bootlegTypes[entityId];
-        // return the first type in bootleg
-        if (bootlegTypes && bootlegTypes.length > 0)
-            return (0, misc_1.cleanName)(bootlegTypes[0]);
-        // otherwise get domain from wikidata
-        return this._wikidata.getDomain(entityId);
-    }
-    async _loadBootlegTypes() {
-        console.log('Loading Bootleg type information ...');
-        const bootlegTypeCanonical = await (0, misc_1.loadJson)(this._paths.bootlegTypeCanonicals);
-        const pipeline = fs.createReadStream(this._paths.bootlegTypes).pipe(JSONStream_1.default.parse('$*'));
-        pipeline.on('data', async (item) => {
-            this._bootlegTypes[item.key] = item.value.map((qid) => bootlegTypeCanonical[qid]);
-        });
-        pipeline.on('error', (error) => console.error(error));
-        await (0, misc_1.waitEnd)(pipeline);
+        const bootlegType = await this._bootleg.getType(entityId);
+        return bootlegType !== null && bootlegType !== void 0 ? bootlegType : this._wikidata.getDomain(entityId);
     }
     /**
      * Add property to domain
@@ -500,19 +483,11 @@ async function main() {
         help: 'Enable wikidata alternative labels as annotations.',
         default: false
     });
-    parser.add_argument('--bootleg-types-path', {
+    parser.add_argument('--bootleg-db', {
         required: false,
-        default: 'bootleg-types.json'
-    });
-    parser.add_argument('--bootleg-type-canonicals-path', {
-        required: false,
-        default: 'bootleg-type-canonicals.json'
+        default: 'bootleg.sqlite'
     });
     const args = parser.parse_args();
-    args.paths = {
-        'bootlegTypes': args.bootleg_types_path,
-        'bootlegTypeCanonicals': args.bootleg_type_canonicals_path
-    };
     const generator = new ManifestGenerator(args);
     generator.generate();
 }
