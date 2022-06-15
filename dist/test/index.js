@@ -33,7 +33,7 @@ async function main() {
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: undefined, timezone: undefined });
     (0, assert_1.default)(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new converter_1.default(classDef, { cache: 'wikidata_cache.sqlite' });
+    const converter = new converter_1.default(classDef, { cache: 'wikidata_cache.sqlite', bootleg_db: 'bootleg.sqlite' });
     const tokenizer = new genie_toolkit_1.I18n.LanguagePack('en').getTokenizer();
     const tests = fs.readFileSync('./test/tests.txt').toString('utf-8').split('====');
     const index = parseInt(process.argv[2]);

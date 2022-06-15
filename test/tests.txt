@@ -275,4 +275,4 @@ ASK WHERE {
     FILTER(?date1 < ?date2) 
 }
 TT:
-[ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ( " bay of pigs invasion " ) ) ] of @org.wikidata . political_crisis ( ) filter id == " Q128160 " ^^org.wikidata:political_crisis ( " cuban missile crisis " ) ;
+[ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ( " bay of pigs invasion " ) ) ] of @org.wikidata . crisis ( ) filter id == " Q128160 " ^^org.wikidata:crisis ( " cuban missile crisis " ) ;

@@ -1,11 +1,13 @@
 import { Ast } from 'thingtalk';
 interface SPARQLToThingTalkConverterOptions {
     cache: string;
+    bootleg_db: string;
 }
 export default class SPARQLToThingTalkConverter {
     private _schema;
     private _parser;
     private _wikidata;
+    private _bootleg;
     private _tokenizer;
     private _keywords;
     private _tables;
@@ -40,6 +42,12 @@ export default class SPARQLToThingTalkConverter {
      * @param domain the QID of the domain
      */
     private _setDomain;
+    /**
+     * Get the domain of a entity
+     * @param entityId QID of an entity
+     * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
+     */
+    private _getDomain;
     /**
      * Convert a value in SPARQL into a ThingTalk value
      * @param value a value in the SPARQL triple

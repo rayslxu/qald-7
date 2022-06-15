@@ -3,4 +3,5 @@ parameter-datasets.tsv
 parameter-datasets
 manifest.tt
 wikidata_cache.sqlite
+bootleg.sqlite
 

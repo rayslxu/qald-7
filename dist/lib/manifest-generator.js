@@ -62,6 +62,9 @@ class ManifestGenerator {
      */
     async _getEntityType(entityId) {
         const bootlegType = await this._bootleg.getType(entityId);
+        const wikidataType = await this._wikidata.getDomain(entityId);
+        if (wikidataType === 'Q5')
+            return wikidataType;
         return bootlegType !== null && bootlegType !== void 0 ? bootlegType : this._wikidata.getDomain(entityId);
     }
     /**

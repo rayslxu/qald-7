@@ -48,6 +48,7 @@ import { ENTITY_SPAN_OVERRIDE, MANUAL_CONVERSION } from './utils/qald';
 import WikidataUtils from './utils/wikidata';
 import { WikiSchema } from './schema';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
+import BootlegUtils from './utils/bootleg';
 
 
 interface Projection {
@@ -73,12 +74,14 @@ interface Table {
 
 interface SPARQLToThingTalkConverterOptions {
     cache : string;
+    bootleg_db : string;
 }
 
 export default class SPARQLToThingTalkConverter {
     private _schema : WikiSchema;
     private _parser : SparqlParser;
     private _wikidata : WikidataUtils;
+    private _bootleg : BootlegUtils;
     private _tokenizer : I18n.BaseTokenizer;
     private _keywords : string[];
     private _tables : Record<string, Table>;
@@ -88,6 +91,7 @@ export default class SPARQLToThingTalkConverter {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
         this._wikidata = new WikidataUtils(options.cache);
+        this._bootleg = new BootlegUtils(options.bootleg_db);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
         this._comparison = [];
@@ -141,6 +145,19 @@ export default class SPARQLToThingTalkConverter {
     private _setDomain(subject : string, domain : string) {
         this._initTable(subject);
         this._tables[subject].domain = this._schema.getTable(domain);
+    }
+
+    /**
+     * Get the domain of a entity
+     * @param entityId QID of an entity
+     * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
+     */
+    private async _getDomain(entityId : string) : Promise<string|null> {
+        const bootlegType = await this._bootleg.getType(entityId);
+        const wikidataType = await this._wikidata.getDomain(entityId);
+        if (wikidataType === 'Q5')
+            return wikidataType;
+        return  bootlegType ?? this._wikidata.getDomain(entityId);
     }
      
     /**
@@ -233,7 +250,7 @@ export default class SPARQLToThingTalkConverter {
         const object = triple.object.value;
         // if subject is an entity, create an id filter
         if (isWikidataEntityNode(triple.subject)) {
-            const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
+            const domain = await this._getDomain(subject.slice(ENTITY_PREFIX.length));
             assert(domain);
             const table = this._schema.getTable(domain);
             assert(table);
@@ -288,7 +305,7 @@ export default class SPARQLToThingTalkConverter {
 
         // if subject is an entity, create an id filter first
         if (isWikidataEntityNode(triple.subject)) {
-            const domain = await this._wikidata.getDomain(subject.slice(ENTITY_PREFIX.length));
+            const domain = await this._getDomain(subject.slice(ENTITY_PREFIX.length));
             assert(domain);
             const table = this._schema.getTable(domain);
             assert(table);
@@ -881,6 +898,10 @@ async function main() {
         required: false,
         default: 'wikidata_cache.sqlite'
     });
+    parser.add_argument('--bootleg-db', {
+        required: false,
+        default: 'bootleg.sqlite'
+    });
     parser.add_argument('-i', '--input', {
         required: true,
         type: fs.createReadStream
@@ -909,7 +930,7 @@ async function main() {
     const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
     assert(library instanceof Ast.Library && library.classes.length === 1);
     const classDef = library.classes[0];
-    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache });
+    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache, bootleg_db: args.bootleg_db });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
