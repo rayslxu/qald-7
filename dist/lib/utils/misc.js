@@ -3,8 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSpans = exports.closest = exports.similarity = exports.waitFinish = exports.cleanName = exports.removeEndPunctuation = exports.removeAccent = exports.snakeCase = void 0;
+exports.getSpans = exports.closest = exports.similarity = exports.waitEnd = exports.waitFinish = exports.loadJson = exports.cleanName = exports.removeEndPunctuation = exports.removeAccent = exports.snakeCase = void 0;
 const en_stemmer_1 = __importDefault(require("en-stemmer"));
+const fs_1 = __importDefault(require("fs"));
+const JSONStream_1 = __importDefault(require("JSONStream"));
 const stopword_1 = require("stopword");
 function snakeCase(v) {
     return v.trim().replace(/[() _-]+/g, '_').toLowerCase();
@@ -31,6 +33,17 @@ function cleanName(v) {
     return v;
 }
 exports.cleanName = cleanName;
+async function loadJson(file) {
+    const data = {};
+    const pipeline = fs_1.default.createReadStream(file).pipe(JSONStream_1.default.parse('$*'));
+    pipeline.on('data', (item) => {
+        data[item.key] = item.value;
+    });
+    pipeline.on('error', (error) => console.error(error));
+    await waitEnd(pipeline);
+    return data;
+}
+exports.loadJson = loadJson;
 function waitFinish(stream) {
     return new Promise((resolve, reject) => {
         stream.once('finish', resolve);
@@ -38,6 +51,13 @@ function waitFinish(stream) {
     });
 }
 exports.waitFinish = waitFinish;
+function waitEnd(stream) {
+    return new Promise((resolve, reject) => {
+        stream.once('end', resolve);
+        stream.on('error', reject);
+    });
+}
+exports.waitEnd = waitEnd;
 // similarity by word-level similarity
 function similarity(s1, s2, algorithm = 'f1') {
     function clean(s) {

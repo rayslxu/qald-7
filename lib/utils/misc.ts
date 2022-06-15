@@ -1,4 +1,6 @@
 import stemmer from 'en-stemmer';
+import fs from 'fs';
+import JSONStream from 'JSONStream';
 import { removeStopwords } from 'stopword';
 
 export function snakeCase(v : string) {
@@ -26,9 +28,27 @@ export function cleanName(v : string) {
     return v;
 }
 
+export async function loadJson(file : string) : Promise<Record<string, any>> {
+    const data : Record<string, any> = {};
+    const pipeline = fs.createReadStream(file).pipe(JSONStream.parse('$*'));
+    pipeline.on('data', (item : { key : string, value : any}) => {
+        data[item.key] = item.value;
+    });
+    pipeline.on('error', (error : Error) => console.error(error));
+    await waitEnd(pipeline);
+    return data;
+}
+
 export function waitFinish(stream : NodeJS.WritableStream) : Promise<void> {
     return new Promise((resolve, reject) => {
         stream.once('finish', resolve);
+        stream.on('error', reject);
+    });
+}
+
+export function waitEnd(stream : NodeJS.ReadableStream) : Promise<void> {
+    return new Promise((resolve, reject) => {
+        stream.once('end', resolve);
         stream.on('error', reject);
     });
 }
