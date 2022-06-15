@@ -68,6 +68,7 @@ class WikidataUtils {
                 db.exec(SQLITE_SCHEMA);
         });
         this._cache = db;
+        this._cacheLoaded = true;
     }
     /**
      * Get cache
