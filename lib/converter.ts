@@ -48,7 +48,6 @@ import { ENTITY_SPAN_OVERRIDE, MANUAL_CONVERSION } from './utils/qald';
 import WikidataUtils from './utils/wikidata';
 import { WikiSchema } from './schema';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
-import BootlegUtils from './utils/bootleg';
 
 
 interface Projection {
@@ -81,7 +80,6 @@ export default class SPARQLToThingTalkConverter {
     private _schema : WikiSchema;
     private _parser : SparqlParser;
     private _wikidata : WikidataUtils;
-    private _bootleg : BootlegUtils;
     private _tokenizer : I18n.BaseTokenizer;
     private _keywords : string[];
     private _tables : Record<string, Table>;
@@ -90,8 +88,7 @@ export default class SPARQLToThingTalkConverter {
     constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._schema = new WikiSchema(classDef);
         this._parser = new Parser();
-        this._wikidata = new WikidataUtils(options.cache);
-        this._bootleg = new BootlegUtils(options.bootleg_db);
+        this._wikidata = new WikidataUtils(options.cache, options.bootleg_db);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
         this._comparison = [];
@@ -153,11 +150,7 @@ export default class SPARQLToThingTalkConverter {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     private async _getDomain(entityId : string) : Promise<string|null> {
-        const bootlegType = await this._bootleg.getType(entityId);
-        const wikidataType = await this._wikidata.getDomain(entityId);
-        if (wikidataType === 'Q5')
-            return wikidataType;
-        return  bootlegType ?? this._wikidata.getDomain(entityId);
+        return this._wikidata.getDomain(entityId);
     }
      
     /**

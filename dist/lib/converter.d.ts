@@ -7,7 +7,6 @@ export default class SPARQLToThingTalkConverter {
     private _schema;
     private _parser;
     private _wikidata;
-    private _bootleg;
     private _tokenizer;
     private _keywords;
     private _tables;

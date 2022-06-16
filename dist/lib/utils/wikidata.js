@@ -28,6 +28,7 @@ const sqlite3 = __importStar(require("sqlite3"));
 const fs = __importStar(require("fs"));
 const wikibase_sdk_1 = __importDefault(require("wikibase-sdk"));
 const thingtalk_1 = require("thingtalk");
+const bootleg_1 = __importDefault(require("./bootleg"));
 const URL = 'https://query.wikidata.org/sparql';
 exports.ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
 exports.PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
@@ -47,9 +48,10 @@ function normalizeURL(url) {
     return url.trim().replace(/\s+/g, ' ');
 }
 class WikidataUtils {
-    constructor(cachePath) {
+    constructor(cachePath, bootlegPath) {
         this._cachePath = cachePath;
         this._wdk = (0, wikibase_sdk_1.default)({ instance: 'https://www.wikidata.org' });
+        this._bootleg = new bootleg_1.default(bootlegPath);
         this._cacheLoaded = false;
         this._properties = {};
         this.qualifiers = {
@@ -168,10 +170,13 @@ class WikidataUtils {
         const domains = await this.getPropertyValue(entityId, 'P31');
         if (domains.length === 0)
             return null;
-        if (domains.length === 1)
-            return domains[0];
         if (domains.includes('Q5'))
             return 'Q5';
+        const bootlegType = await this._bootleg.getType(entityId);
+        if (bootlegType)
+            return bootlegType;
+        if (domains.length === 1)
+            return domains[0];
         if (domains.includes('Q16521'))
             return 'Q16521';
         const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {

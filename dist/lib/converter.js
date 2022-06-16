@@ -40,13 +40,11 @@ const qald_1 = require("./utils/qald");
 const wikidata_2 = __importDefault(require("./utils/wikidata"));
 const schema_1 = require("./schema");
 const genie_toolkit_1 = require("genie-toolkit");
-const bootleg_1 = __importDefault(require("./utils/bootleg"));
 class SPARQLToThingTalkConverter {
     constructor(classDef, options) {
         this._schema = new schema_1.WikiSchema(classDef);
         this._parser = new sparqljs_1.Parser();
-        this._wikidata = new wikidata_2.default(options.cache);
-        this._bootleg = new bootleg_1.default(options.bootleg_db);
+        this._wikidata = new wikidata_2.default(options.cache, options.bootleg_db);
         this._tokenizer = new genie_toolkit_1.I18n.LanguagePack('en').getTokenizer();
         this._tables = {};
         this._comparison = [];
@@ -102,11 +100,7 @@ class SPARQLToThingTalkConverter {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     async _getDomain(entityId) {
-        const bootlegType = await this._bootleg.getType(entityId);
-        const wikidataType = await this._wikidata.getDomain(entityId);
-        if (wikidataType === 'Q5')
-            return wikidataType;
-        return bootlegType !== null && bootlegType !== void 0 ? bootlegType : this._wikidata.getDomain(entityId);
+        return this._wikidata.getDomain(entityId);
     }
     /**
      * Convert a value in SPARQL into a ThingTalk value

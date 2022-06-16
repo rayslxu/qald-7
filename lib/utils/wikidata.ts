@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
 import { Type } from 'thingtalk';
+import BootlegUtils from './bootleg';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -42,13 +43,15 @@ export default class WikidataUtils {
     private _wdk : wikibaseSdk;
     private _cachePath : string;
     private _cache ! : sqlite3.Database;
+    private _bootleg : BootlegUtils;
     private _cacheLoaded : boolean;
     private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
     public qualifiers : Record<string, Qualifier>; // all qualifiers to include
 
-    constructor(cachePath : string) {
+    constructor(cachePath : string, bootlegPath : string) {
         this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
+        this._bootleg = new BootlegUtils(bootlegPath);
         this._cacheLoaded = false;
         this._properties = {};
         this.qualifiers = {
@@ -173,13 +176,17 @@ export default class WikidataUtils {
         const domains = await this.getPropertyValue(entityId, 'P31');
         if (domains.length === 0)
             return null;
-        if (domains.length === 1)
-            return domains[0];
         if (domains.includes('Q5'))
             return 'Q5';
+            
+        const bootlegType = await this._bootleg.getType(entityId);
+        if (bootlegType)
+            return bootlegType;
+
+        if (domains.length === 1)
+            return domains[0];
         if (domains.includes('Q16521'))
             return 'Q16521';
-        
         const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
             wd:${entityId} wdt:P31 ?v.
             ?s wdt:P31 ?v.

@@ -10,10 +10,11 @@ export default class WikidataUtils {
     private _wdk;
     private _cachePath;
     private _cache;
+    private _bootleg;
     private _cacheLoaded;
     private _properties;
     qualifiers: Record<string, Qualifier>;
-    constructor(cachePath: string);
+    constructor(cachePath: string, bootlegPath: string);
     /**
      * Load or create sqlite database for caching
      */

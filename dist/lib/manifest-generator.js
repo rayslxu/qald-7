@@ -33,14 +33,12 @@ const sparqljs_2 = require("./utils/sparqljs");
 const qald_1 = require("./utils/qald");
 const misc_1 = require("./utils/misc");
 const thingtalk_2 = require("./utils/thingtalk");
-const bootleg_1 = __importDefault(require("./utils/bootleg"));
 const wikidata_1 = __importDefault(require("./utils/wikidata"));
 const wikidata_2 = require("./utils/wikidata");
 class ManifestGenerator {
     constructor(options) {
         this._experiment = options.experiment;
-        this._wikidata = new wikidata_1.default(options.cache);
-        this._bootleg = new bootleg_1.default(options.bootleg_db);
+        this._wikidata = new wikidata_1.default(options.cache, options.bootleg_db);
         this._parser = new sparqljs_1.Parser();
         this._tokenizer = new genie_toolkit_1.I18n.LanguagePack('en-US').getTokenizer();
         this._examples = (0, qald_1.preprocessQALD)(options.experiment);
@@ -61,11 +59,7 @@ class ManifestGenerator {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     async _getEntityType(entityId) {
-        const bootlegType = await this._bootleg.getType(entityId);
-        const wikidataType = await this._wikidata.getDomain(entityId);
-        if (wikidataType === 'Q5')
-            return wikidataType;
-        return bootlegType !== null && bootlegType !== void 0 ? bootlegType : this._wikidata.getDomain(entityId);
+        return this._wikidata.getDomain(entityId);
     }
     /**
      * Add property to domain

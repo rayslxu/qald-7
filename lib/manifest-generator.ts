@@ -9,7 +9,6 @@ import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, waitFinish } from './utils/misc';
 import { idArgument, elemType } from './utils/thingtalk';
-import BootlegUtils from './utils/bootleg';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
@@ -38,7 +37,6 @@ interface ManifestGeneratorOptions {
 class ManifestGenerator {
     private _experiment : 'qald7'|'qald9';
     private _wikidata : WikidataUtils;
-    private _bootleg : BootlegUtils;
     private _parser : SparqlParser;
     private _tokenizer : I18n.BaseTokenizer;
     private _examples : Example[];
@@ -69,8 +67,7 @@ class ManifestGenerator {
 
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
-        this._wikidata = new WikidataUtils(options.cache);
-        this._bootleg = new BootlegUtils(options.bootleg_db);
+        this._wikidata = new WikidataUtils(options.cache, options.bootleg_db);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD(options.experiment);
@@ -93,11 +90,7 @@ class ManifestGenerator {
      * @returns its domain, i.e., heuristically the best entity among values of P31 (instance of)
      */
     private async _getEntityType(entityId : string) : Promise<string|null> {
-        const bootlegType = await this._bootleg.getType(entityId);
-        const wikidataType = await this._wikidata.getDomain(entityId);
-        if (wikidataType === 'Q5')
-            return wikidataType;
-        return  bootlegType ?? this._wikidata.getDomain(entityId);
+        return this._wikidata.getDomain(entityId);
     }
 
     /**
