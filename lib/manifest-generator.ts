@@ -27,6 +27,7 @@ interface PropertyValues {
 
 interface ManifestGeneratorOptions {
     experiment : 'qald7'|'qald9',
+    type_system : 'flat' | 'hierarchical'
     cache : string,
     output : fs.WriteStream,
     exclude_non_entity_properties : boolean,
@@ -36,6 +37,7 @@ interface ManifestGeneratorOptions {
 
 class ManifestGenerator {
     private _experiment : 'qald7'|'qald9';
+    private _typeSystem : 'flat' | 'hierarchical';
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
     private _tokenizer : I18n.BaseTokenizer;
@@ -67,6 +69,7 @@ class ManifestGenerator {
 
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
+        this._typeSystem = options.type_system;
         this._wikidata = new WikidataUtils(options.cache, options.bootleg_db);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
@@ -209,18 +212,29 @@ class ManifestGenerator {
     }
 
     /**
-     * Add an entity to entities.json
+     * Add an entity type to entities.json, if the entity type already exists, 
+     * update the subtype_of field if needed
      * @param type the entity type 
      * @param name the name of the entity
+     * @param subtype_of parent types 
      */
-    private _addEntity(type : string, name : string) {
-        if (!(type in this._entities)) {
+    private _addEntity(type : string, name : string, subtype_of : string[]|null = null) {
+        if (type in this._entities) {
+            if (!subtype_of)
+                return;
+            if (!this._entities[type].subtype_of)
+                this._entities[type].subtype_of = []; 
+            for (const parent of subtype_of) {
+                if (!this._entities[type].subtype_of?.includes(parent))
+                    this._entities[type].subtype_of?.push(parent);
+            }
+        } else {
             this._entities[type] = {
                 type: `org.wikidata:${type}`,
                 name, 
                 is_well_known: false,
                 has_ner_support: true,
-                subtype_of : type === 'entity' ? null : ['org.wikidata:entity']
+                subtype_of 
             };
         }
     }
@@ -307,7 +321,6 @@ class ManifestGenerator {
                 }
             );
             args.push(argumentDef);
-            this._addEntity(`p_${pname}`, label);
             if (!(property in this._properties))
                 this._properties[property] = argumentDef;
             // TODO: separate property values by domain
@@ -317,11 +330,30 @@ class ManifestGenerator {
             if (vtype instanceof Type.Entity) {
                 if (!(pname in this._propertyValues.entities))
                     this._propertyValues.entities[pname] = {};
+                const valueTypes : Set<string> = new Set();
                 for (const value of values) {
                     if (value in this._propertyValues.entities[pname])
                         continue;
+                    if (!this._wikidata.isEntity(value))
+                        continue;
                     this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
+
+                    if (this._typeSystem === 'flat')
+                        continue; 
+                    const type = await this._getEntityType(value);
+                    if (type) {
+                        const typeLabel = await this._wikidata.getLabel(type);
+                        if (typeLabel) {
+                            valueTypes.add(`org.wikidata:${cleanName(typeLabel)}`);
+                            this._addEntity(cleanName(typeLabel), typeLabel, ['org.wikidata:entity']);
+                        }
+                    }
                 }
+                this._addEntity(
+                    `p_${pname}`, 
+                    label, 
+                    this._typeSystem === 'flat' ? ['org.wikidata:entity'] : [...valueTypes]
+                );
             }
             if (vtype === Type.String) {
                 if (!(pname in this._propertyValues.strings))
@@ -342,7 +374,7 @@ class ManifestGenerator {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
-        this._addEntity(fname, domainLabel);
+        this._addEntity(fname, domainLabel, ['org.wikidata:entity']);
         const samples = await this._wikidata.getEntitiesByDomain(domain); 
         const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
         this._domainSamples[fname] = sampleLabels;
@@ -539,6 +571,14 @@ async function main() {
     parser.add_argument('--experiment', {
         required: false,
         default: 'qald7'
+    });
+    parser.add_argument('--type-system', {
+        required: false,
+        choices: ['flat', 'hierarchical'],
+        help: 'design choices for the type system:\n' +
+            'flat: one entity type per property\n' +
+            'hierarchical: one entity type for each value, and the property type is the supertype of all types of its values\n',
+        default: 'hierarchical'
     });
     parser.add_argument('--cache', {
         required: false,
