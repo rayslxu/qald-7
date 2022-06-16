@@ -168,7 +168,11 @@ export default class WikidataUtils {
     /**
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
-     * we skip this on human (Q5) and taxon (Q16521) domain, since the query will timeout 
+     * we skip this on 
+     *   human (Q5) 
+     *   taxon (Q16521) 
+     *   scholar article (Q13442814)
+     * since the query will timeout 
      * @param entityId QID of an entity
      * @returns 
      */
@@ -185,8 +189,11 @@ export default class WikidataUtils {
 
         if (domains.length === 1)
             return domains[0];
-        if (domains.includes('Q16521'))
-            return 'Q16521';
+        for (const domain of ['Q16521', 'Q13442814']) {
+            if (domains.includes(domain))
+                return domain;
+        }
+        
         const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
             wd:${entityId} wdt:P31 ?v.
             ?s wdt:P31 ?v.
