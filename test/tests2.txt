@@ -99,3 +99,13 @@ ASK WHERE {
 }
 TT: 
 [ contains~ ( spouse , " mary " ) ] of @org.wikidata . human ( ) filter id == " Q91 " ^^org.wikidata:human ;
+
+====
+Utterance: How many countries are there in Europe ? 
+SPARQL: 
+SELECT (COUNT(DISTINCT ?uri) as ?c) WHERE {
+     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . 
+     ?uri <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q46> . 
+}
+TT: 
+count ( @org.wikidata . country ( ) filter contains ( continent , " Q46 " ^^org.wikidata:p_continent ) ) ;

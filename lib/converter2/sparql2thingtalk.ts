@@ -34,6 +34,11 @@ export interface Projection {
     type ?: string
 }
 
+export interface Aggregation {
+    op : 'count',
+    variable : string
+}
+
 // comparison is used for making comparison between two tables
 // lhs and rhs should be the variable name used for the comparison in SPARQL
 export interface Comparison {
@@ -107,21 +112,19 @@ class QueryGenerator {
     }
 
     private _generateSelectQuery(query : SelectQuery) : Ast.Expression {
-        const projectionsBySubject = this._converter.helper.parseVariables(query.variables);
-        if (projectionsBySubject.size === 0)
+        const projectionsAndAggregationsBySubject = this._converter.helper.parseVariables(query.variables);
+        if (projectionsAndAggregationsBySubject.size === 0)
             throw new Error('No variable found in SPARQL');
-        if (projectionsBySubject.size > 1)
+        if (projectionsAndAggregationsBySubject.size > 1)
             throw new Error('Unsupported: projections over multiple tables');
-
-        const subject = projectionsBySubject.keys[0];
-        const projections = projectionsBySubject.get(subject);
-
+        
+        const subject = projectionsAndAggregationsBySubject.keys[0];
         const table = this._converter.tables[subject];
         let expression : Ast.Expression = baseQuery(table.name);
         expression = this._converter.helper.addFilters(expression, table.filters);
-        expression = this._converter.helper.addProjections(expression, projections);
         expression = this._converter.helper.addOrdering(expression, table, query.order);
         expression = this._converter.helper.addLimit(expression, query.limit);
+        expression = this._converter.helper.addProjectionsAndAggregations(expression, projectionsAndAggregationsBySubject.get(subject));
         return expression;
     }
 

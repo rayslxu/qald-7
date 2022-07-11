@@ -2,6 +2,7 @@ import { ENTITY_PREFIX, PROPERTY_PREFIX } from './wikidata';
 import { 
     IriTerm,
     VariableTerm,
+    VariableExpression,
     LiteralTerm,
     PropertyPath,
     BgpPattern,
@@ -29,6 +30,10 @@ export function isWikidataPropertyNode(node : any, pid ?: string) : node is IriT
 
 export function isVariable(node : any) : node is VariableTerm {
     return 'termType' in node && node.termType === 'Variable';
+}
+
+export function isVariableExpression(node : any) : node is VariableExpression {
+    return 'variable' in node && isVariable(node.variable) && 'expression' in node;
 }
 
 export function isLiteral(node : any) : node is LiteralTerm {

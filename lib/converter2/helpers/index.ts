@@ -12,7 +12,9 @@ import {
 } from 'sparqljs';
 import {
     isVariable,
-    isBasicGraphPattern
+    isVariableExpression,
+    isBasicGraphPattern,
+    isAggregateExpression
 } from '../../utils/sparqljs-typeguard';
 import {
     PROPERTY_PREFIX
@@ -29,9 +31,14 @@ import FilterParser from './filter';
 import ValueConverter from './value';
 import GroupParser from './group';
 import {
-    Table
+    Table,
+    Aggregation
 } from '../sparql2thingtalk';
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
+
+function isAggregation(v : any) : v is Aggregation {
+    return typeof v === 'object' && 'op' in v && 'variable' in v;
+}
 
 export default class ConverterHelper {
     private _converter : SPARQLToThingTalkConverter;
@@ -130,17 +137,25 @@ export default class ConverterHelper {
         
     }
 
-    addProjections(base : Ast.Expression, projections : Array<string|Ast.PropertyPathSequence>) {
-        if ((projections.length === 1 && projections[0] === 'id') || projections.length === 0) {
-            return base; 
-        } else {
-            return new Ast.ProjectionExpression2(
+    addProjectionsAndAggregations(base : Ast.Expression, projectionsAndAggregations : Array<string|Ast.PropertyPathSequence|Aggregation>) {
+        const projections = projectionsAndAggregations.filter((v) => !isAggregation(v)) as Array<string|Ast.PropertyPathSequence>;
+        const aggregations = projectionsAndAggregations.filter(isAggregation) as Aggregation[];
+        let expression = base;
+        if (projections.length > 0 && !(projections.length === 1 && projections[0] === 'id')) {
+            expression = new Ast.ProjectionExpression2(
                 null, 
-                base, 
+                expression, 
                 projections.map((p) => new Ast.ProjectionElement(p, null, [])), 
                 null
             );
         }
+        if (aggregations.length > 0) {
+            assert(aggregations.length === 1);
+            const aggregation = aggregations[0];
+            assert(aggregation.op === 'count');
+            expression = new Ast.AggregationExpression(null, expression, '*', 'count', null);
+        }
+        return expression;
     }
 
     addOrdering(base : Ast.Expression, table : Table, ordering ?: Ordering[]) : Ast.Expression {
@@ -183,19 +198,26 @@ export default class ConverterHelper {
         return new Ast.BooleanQuestionExpression(null, base, verification, null);
     }
 
-    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<string|Ast.PropertyPathSequence> {
-        const projectionsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence>();
+    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<string|Ast.PropertyPathSequence|Aggregation> {
+        const projectionsOrAggregationsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence|Aggregation>();
         for (const variable of variables) {
-            assert(isVariable(variable));
-            for (const [subject, table] of Object.entries(this._converter.tables)) {
-                if (subject === variable.value) 
-                    projectionsBySubject.add(subject, 'id');
-                for (const projection of table.projections) {
-                    if (projection.variable === variable.value)
-                        projectionsBySubject.add(subject, projection.property);
+            if (isVariable(variable)) {
+                for (const [subject, table] of Object.entries(this._converter.tables)) {
+                    if (subject === variable.value) 
+                        projectionsOrAggregationsBySubject.add(subject, 'id');
+                    for (const projection of table.projections) {
+                        if (projection.variable === variable.value)
+                            projectionsOrAggregationsBySubject.add(subject, projection.property);
+                    }
                 }
+            } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression, 'count')) {
+                const expression = variable.expression.expression;
+                assert(isVariable(expression));
+                projectionsOrAggregationsBySubject.add(expression.value, { op: 'count', variable: expression.value });
+            } else {
+                throw new Error('Unsupported type of variable: ' + variable);
             }
         }
-        return projectionsBySubject;
+        return projectionsOrAggregationsBySubject;
     }
 }

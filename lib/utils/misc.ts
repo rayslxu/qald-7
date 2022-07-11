@@ -136,7 +136,7 @@ export class ArrayCollection<T> {
     }
 
     get(key : string) : T[] {
-        return this._values[key];
+        return this._values[key] ?? [];
     }
 
     *iterate() : Generator<[string, T[]]> {
