@@ -13,7 +13,7 @@ import {
 } from '../../utils/sparqljs-typeguard';
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 
-export default class GroupConverter {
+export default class GroupParser {
     private _converter : SPARQLToThingTalkConverter;
 
     constructor(converter : SPARQLToThingTalkConverter) {
@@ -31,7 +31,7 @@ export default class GroupConverter {
         );
     }
 
-    async convert(having : Expression, group : Grouping)  {
+    async parse(having : Expression, group : Grouping)  {
         assert(isVariable(group.expression));
         const subject = group.expression.value;
         if (!(subject in this._converter.tables)) 

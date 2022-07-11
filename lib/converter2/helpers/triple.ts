@@ -24,7 +24,7 @@ import {
 import SPARQLToThingTalkConverter from "../sparql2thingtalk";
 import ValueConverter from './value';
 
-export default class TripleConverter {
+export default class TripleParser {
     private _converter : SPARQLToThingTalkConverter;
     private _values : ValueConverter;
 
@@ -38,7 +38,7 @@ export default class TripleConverter {
      * @param triple a parsed Triple for SPARQL
      * @returns the subject and the ThingTalk filter
      */
-    private async _convertBasicTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+    private async _parseBasicTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         assert(isNamedNode(triple.predicate));
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
         const filters : Ast.BooleanExpression[] = [];
@@ -98,19 +98,19 @@ export default class TripleConverter {
         return filtersBySubject;
     }
 
-    private async _convertSequencePathTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+    private async _parseSequencePathTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         assert(isPropertyPath(triple.predicate));
         throw new Error('TODO: handle property path');
     }
         
-    async convert(pattern : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+    async parse(pattern : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
         for (const triple of pattern.triples) {
             triple.predicate = postprocessPropertyPath(triple.predicate);
             if (isPropertyPath(triple.predicate))
-                filtersBySubject.merge(await this._convertSequencePathTriple(triple));
+                filtersBySubject.merge(await this._parseSequencePathTriple(triple));
             else 
-                filtersBySubject.merge(await this._convertBasicTriple(triple));
+                filtersBySubject.merge(await this._parseBasicTriple(triple));
         }
         return filtersBySubject;
     }

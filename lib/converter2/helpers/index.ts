@@ -24,10 +24,10 @@ import {
     ArrayCollection
 } from '../../utils/misc';
 import { parseSpecialUnion } from '../../utils/sparqljs';
-import TripleConverter from './triple';
-import FilterConverter from './filter';
+import TripleParser from './triple';
+import FilterParser from './filter';
 import ValueConverter from './value';
-import GroupConverter from './group';
+import GroupParser from './group';
 import {
     Table
 } from '../sparql2thingtalk';
@@ -35,44 +35,44 @@ import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 
 export default class ConverterHelper {
     private _converter : SPARQLToThingTalkConverter;
-    private _triple : TripleConverter;
-    private _filter : FilterConverter;
+    private _triple : TripleParser;
+    private _filter : FilterParser;
     private _value : ValueConverter;
-    private _group : GroupConverter;
+    private _group : GroupParser;
 
     constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
-        this._triple = new TripleConverter(converter);
-        this._filter = new FilterConverter(converter);
+        this._triple = new TripleParser(converter);
+        this._filter = new FilterParser(converter);
         this._value = new ValueConverter(converter);
-        this._group = new GroupConverter(converter);
+        this._group = new GroupParser(converter);
     }
 
     async convertValue(value : any, type : Type) {
         return this._value.toThingTalkValue(value, type);
     }
 
-    async convertGroup(having : Expression, group : Grouping) {
-        return this._group.convert(having, group);
+    async parseGroup(having : Expression, group : Grouping) {
+        return this._group.parse(having, group);
     }
 
-    async convertTriples(clause : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
-        return this._triple.convert(clause);
+    async parseTriples(clause : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+        return this._triple.parse(clause);
     }
 
-    async convertFilter(clause : FilterPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
-        return this._filter.convert(clause);
+    async parseFilter(clause : FilterPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+        return this._filter.parse(clause);
     }
 
-    async convertUnion(clause : UnionPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+    async parseUnion(clause : UnionPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         const triple = parseSpecialUnion(clause);
         if (triple) 
-            return this.convertTriples({ type: 'bgp', triples: [triple] });
+            return this.parseTriples({ type: 'bgp', triples: [triple] });
         
         const results : Array<ArrayCollection<Ast.BooleanExpression>> = [];
         for (const pattern of clause.patterns) {
             assert(isBasicGraphPattern(pattern));
-            results.push(await this.convertTriples(pattern));
+            results.push(await this.parseTriples(pattern));
         }
         let existedSubject : string|null = null;
         const operands : Ast.BooleanExpression[] = [];

@@ -75,11 +75,11 @@ class QueryParser {
 
     private async _parseWhereClause(clause : Pattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         if (isBasicGraphPattern(clause))
-            return this._converter.helper.convertTriples(clause);
+            return this._converter.helper.parseTriples(clause);
         if (isFilterPattern(clause)) 
-            return this._converter.helper.convertFilter(clause);
+            return this._converter.helper.parseFilter(clause);
         if (isUnionPattern(clause)) 
-            return this._converter.helper.convertUnion(clause);
+            return this._converter.helper.parseUnion(clause);
         throw new Error(`Unsupported where clause ${JSON.stringify(clause)}`);
     }
 
@@ -87,7 +87,7 @@ class QueryParser {
         if (group.length > 1)
             throw new Error('Unsupported: group by with multiple fields');
         for (const clause of having ?? []) 
-            await this._converter.helper.convertGroup(clause, group[0]);
+            await this._converter.helper.parseGroup(clause, group[0]);
     }
 
     async parse(query : SelectQuery|AskQuery) {
