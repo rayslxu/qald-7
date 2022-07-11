@@ -222,7 +222,7 @@ ASK WHERE {
     ?uri rdfs:label "Battle Chess"@en 
 }
 TT: 
-[ id =~ " battle chess " ] of @org.wikidata . video_game ( ) ;
+[ count >= 1 ] of count ( @org.wikidata . video_game ( ) filter id =~ " battle chess " ) ;
 
 ====
 Utterance: Give me the websites of companies with more than 500000 employees.
