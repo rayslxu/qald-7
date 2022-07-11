@@ -7,7 +7,9 @@ import {
     BgpPattern,
     FilterPattern,
     UnionPattern,
-    AggregateExpression
+    AggregateExpression,
+    SelectQuery,
+    AskQuery
 } from 'sparqljs';
 
 export function isNamedNode(node : any) : node is IriTerm {
@@ -62,4 +64,12 @@ export function isAggregateExpression(node : any, aggregation ?: string) : node 
     if (aggregation)
         return 'type' in node && node.type === 'aggregate' && node.aggregation === aggregation;
     return 'type' in node && node.type === 'aggregate';
+}
+
+export function isSelectQuery(node : any) : node is SelectQuery {
+    return 'queryType' in node && node.queryType === 'SELECT';
+}
+
+export function isAskQuery(node : any) : node is AskQuery {
+    return 'queryType' in node && node.queryType === 'ASK';
 }

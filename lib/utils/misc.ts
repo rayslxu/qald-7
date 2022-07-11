@@ -106,3 +106,52 @@ export function getSpans(s : string) : string[] {
     }
     return spans;
 }
+
+export class ArrayCollection<T> {
+    private _values : Record<string, T[]>; 
+
+    constructor(values ?: Record<string, T[]>) {
+        this._values = values ?? {};
+    }
+
+    get size() : number {
+        return Object.keys(this._values).length;
+    }
+
+    get keys() : string[] {
+        return Object.keys(this._values);
+    }
+
+    add(key : string, ...values : T[]) {
+        if (!(key in this._values))
+            this._values[key] = [];
+        for (const value of values)
+            this._values[key].push(value);
+    }
+
+    reset(key : string, replacement ?: T[]) {
+        this._values[key] = replacement ?? [];
+    }
+
+    get(key : string) : T[] {
+        return this._values[key];
+    }
+
+    *iterate() : Generator<[string, T[]]> {
+        for (const entry of Object.entries(this._values))
+            yield entry;
+    }
+
+    merge(collection : ArrayCollection<T>) {
+        for (const [key, values] of collection.iterate()) {
+            if (!(key in this._values)) {
+                this._values[key] = values;
+            } else {
+                for (const value of values) {
+                    if (!(value in this._values[key]))
+                        this._values[key].push(value);
+                }
+            }
+        }  
+    }  
+}
