@@ -11,7 +11,8 @@ import {
     isWikidataEntityNode,
     isWikidataPropertyNode,
     isLiteral,
-    isVariable
+    isVariable,
+    isUnaryPropertyPath
 } from '../../utils/sparqljs-typeguard';
 import { 
     ENTITY_PREFIX,
@@ -23,6 +24,9 @@ import {
 } from '../../utils/misc';
 import SPARQLToThingTalkConverter from "../sparql2thingtalk";
 import ValueConverter from './value';
+import {
+    elemType
+} from '../../utils/thingtalk';
 
 export default class TripleParser {
     private _converter : SPARQLToThingTalkConverter;
@@ -106,7 +110,63 @@ export default class TripleParser {
 
     private async _parseSequencePathTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         assert(isPropertyPath(triple.predicate));
-        throw new Error('TODO: handle property path');
+        const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
+        const filters : Ast.BooleanExpression[] = [];
+        const subject = triple.subject.value;
+        const predicate = triple.predicate;
+        const object = triple.object.value;
+        
+        // if subject is an entity, create an id filter
+        if (isWikidataEntityNode(triple.subject) && !(subject in this._converter.tables)) {
+            const domain = await this._converter.kb.getDomain(subject.slice(ENTITY_PREFIX.length));
+            assert(domain);
+            const table = this._converter.schema.getTable(domain);
+            assert(table);
+            filters.push(new Ast.AtomBooleanExpression(
+                null,
+                'id',
+                '==',
+                await this._values.toThingTalkValue(subject, new Type.Entity(`org.wikidata:${table}`)),
+                null
+            ));
+            this._converter.updateTable(subject, domain);
+        }
+
+        const sequence : Ast.PropertyPathSequence = [];
+        if (predicate.items.length === 1) {
+            assert(isNamedNode(predicate.items[0]));
+            const property = this._converter.schema.getProperty(predicate.items[0].value.slice(PROPERTY_PREFIX.length));
+            sequence.push(new Ast.PropertyPathElement(property, predicate.pathType as '*'|'+'));
+        } else {
+            // sequence property path
+            assert(predicate.pathType === '/');
+            for (const element of predicate.items) {
+                if (isWikidataPropertyNode(element)) {
+                    const property = this._converter.schema.getProperty(element.value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property));
+                } else if (isUnaryPropertyPath(element)) {
+                    assert(element.items.length === 1 && isNamedNode(element.items[0]));
+                    const property = this._converter.schema.getProperty(element.items[0].value.slice(PROPERTY_PREFIX.length));
+                    sequence.push(new Ast.PropertyPathElement(property, element.pathType as '*'|'+'));
+                }
+            }
+        }
+        const lastPropertyType = this._converter.schema.getPropertyType(sequence[sequence.length - 1].property);
+        if (isVariable(triple.object)) {
+            this._converter.updateTable(subject, { property : sequence, variable : object });
+        } else {
+            const value = await this._values.toThingTalkValue(object, elemType(lastPropertyType));
+            const filter = new Ast.PropertyPathBooleanExpression(
+                null, 
+                sequence, 
+                lastPropertyType instanceof Type.Array ? 'contains' : '==',
+                value, 
+                null
+            );
+            filters.push(filter);
+        }
+        filtersBySubject.add(subject, ...filters);
+        return filtersBySubject;
     }
         
     async parse(pattern : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
