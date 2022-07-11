@@ -81,7 +81,13 @@ export default class TripleParser {
         } else if (isVariable(triple.object)) {
             // if predicate is label, add a new projection with suffix "Label" for the property 
             if (predicate === LABEL) {
-                throw new Error('TODO: handle label projection');
+                for (const [subj, table] of Object.entries(this._converter.tables)) {
+                    const projection = table.projections.find((proj) => proj.variable === subject);
+                    if (projection) {
+                        this._converter.updateTable(subj, { variable : object, property : projection.property + 'Label' });
+                        break;
+                    }
+                }
             } else {
                 const property = this._converter.schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
                 this._converter.updateTable(subject, { variable: object, property });

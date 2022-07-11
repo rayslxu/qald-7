@@ -89,9 +89,7 @@ export default class ConverterHelper {
                 throw new Error('Unsupported: multiple subjects in a union');
             operands.push(filter);
         }
-        const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
-        filtersBySubject.add(existedSubject!, new Ast.OrBooleanExpression(null, operands));
-        return filtersBySubject;
+        return new ArrayCollection(existedSubject!, new Ast.OrBooleanExpression(null, operands));
     }
 
     async makeAtomBooleanExpression(property : string, 

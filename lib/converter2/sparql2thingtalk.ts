@@ -198,6 +198,10 @@ export default class SPARQLToThingTalkConverter {
             this._tables[subject].projections.push(update);
     }
 
+    addCrossTableComparison(comp : Comparison) {
+        this._crossTableComparison.push(comp);
+    }
+
     private _init(sparql : string, utterance : string) {
         this._sparql = sparql;
         this._utterance = utterance;

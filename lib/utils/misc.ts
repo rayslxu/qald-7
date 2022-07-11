@@ -110,8 +110,10 @@ export function getSpans(s : string) : string[] {
 export class ArrayCollection<T> {
     private _values : Record<string, T[]>; 
 
-    constructor(values ?: Record<string, T[]>) {
-        this._values = values ?? {};
+    constructor(subject ?: string, value ?: T) {
+        this._values = {};
+        if (subject && value)
+            this._values[subject] = [value];
     }
 
     get size() : number {
