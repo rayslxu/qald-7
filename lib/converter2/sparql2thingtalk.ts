@@ -1,4 +1,3 @@
-import assert from 'assert';
 import { Ast } from 'thingtalk';
 import { I18n } from 'genie-toolkit';
 import {  
@@ -6,14 +5,15 @@ import {
     SparqlParser,
     SelectQuery,
     AskQuery,
-    Pattern
+    Pattern,
+    Expression,
+    Grouping
 } from 'sparqljs';
 import {
     isFilterPattern,
     isBasicGraphPattern,
     isUnionPattern,
-    isSelectQuery,
-    isVariable
+    isSelectQuery
 } from '../utils/sparqljs-typeguard';
 import ConverterHelper from './helpers';
 import { 
@@ -83,9 +83,19 @@ class QueryParser {
         throw new Error(`Unsupported where clause ${JSON.stringify(clause)}`);
     }
 
+    private async _parseHaving(group : Grouping[], having ?: Expression[]) {
+        if (group.length > 1)
+            throw new Error('Unsupported: group by with multiple fields');
+        for (const clause of having ?? []) 
+            await this._converter.helper.convertGroup(clause, group[0]);
+    }
+
     async parse(query : SelectQuery|AskQuery) {
         if (query.where)
             await this._parseWhere(query.where);
+        
+        if (isSelectQuery(query) && query.group)
+            await this._parseHaving(query.group, query.having);
     }
 }
 
@@ -97,18 +107,7 @@ class QueryGenerator {
     }
 
     private _generateSelectQuery(query : SelectQuery) : Ast.Expression {
-        const projectionsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence>();
-        for (const variable of query.variables) {
-            assert(isVariable(variable));
-            for (const [subject, table] of Object.entries(this._converter.tables)) {
-                if (subject === variable.value) 
-                    projectionsBySubject.add(subject, 'id');
-                for (const projection of table.projections) {
-                    if (projection.variable === variable.value)
-                        projectionsBySubject.add(subject, projection.property);
-                }
-            }
-        }
+        const projectionsBySubject = this._converter.helper.parseVariables(query.variables);
         if (projectionsBySubject.size === 0)
             throw new Error('No variable found in SPARQL');
         if (projectionsBySubject.size > 1)
@@ -119,16 +118,11 @@ class QueryGenerator {
 
         const table = this._converter.tables[subject];
         let expression : Ast.Expression = baseQuery(table.name);
-        if (table.filters.length > 0)
-            expression = new Ast.FilterExpression(null, expression, new Ast.AndBooleanExpression(null, table.filters), null);
-        if (projections.length === 1 && projections[0] === 'id')
-            return expression;
-        return new Ast.ProjectionExpression2(
-            null, 
-            expression, 
-            projections.map((p) => new Ast.ProjectionElement(p, null, [])), 
-            null
-        );
+        expression = this._converter.helper.addFilters(expression, table.filters);
+        expression = this._converter.helper.addProjections(expression, projections);
+        expression = this._converter.helper.addOrdering(expression, table, query.order);
+        expression = this._converter.helper.addLimit(expression, query.limit);
+        return expression;
     }
 
     private _generateAskQuery(query : AskQuery) : Ast.Expression {
@@ -137,18 +131,8 @@ class QueryGenerator {
 
         const table = Object.values(this._converter.tables)[0];
         let expression : Ast.Expression = baseQuery(table.name);
-        let idFilter : Ast.AtomBooleanExpression|null = null;
-        const operands = [];
-        for (const filter of table.filters) {
-            if (filter instanceof Ast.AtomBooleanExpression && filter.name === 'id')
-                idFilter = filter;
-            else 
-                operands.push(filter);
-        }
-        if (idFilter)
-            expression = new Ast.FilterExpression(null, expression, idFilter, null);
-        const verification = operands.length > 1 ? new Ast.AndBooleanExpression(null, operands) : operands[0];
-        return new Ast.BooleanQuestionExpression(null, expression, verification, null);
+        expression = this._converter.helper.addVerification(expression, table.filters);
+        return expression;
     }
 
     generate(query : SelectQuery|AskQuery) : Ast.Program {
@@ -203,14 +187,6 @@ export default class SPARQLToThingTalkConverter {
         return this._tables;
     }
 
-    private _init(sparql : string, utterance : string) {
-        this._sparql = sparql;
-        this._utterance = utterance;
-        this._tables = {};
-        this._crossTableComparison = [];
-        this._keywords = getSpans(this._utterance);
-    }
-
     updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
         if (!(subject in this._tables))
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
@@ -220,6 +196,14 @@ export default class SPARQLToThingTalkConverter {
             this._tables[subject].name = this._schema.getTable(update);
         else
             this._tables[subject].projections.push(update);
+    }
+
+    private _init(sparql : string, utterance : string) {
+        this._sparql = sparql;
+        this._utterance = utterance;
+        this._tables = {};
+        this._crossTableComparison = [];
+        this._keywords = getSpans(this._utterance);
     }
 
     async convert(sparql : string, utterance : string) : Promise<Ast.Program> {

@@ -45,3 +45,23 @@ ASK WHERE {
 TT: 
 [ contains ( award_received , " Q844804 " ^^org.wikidata:p_award_received ) ] of @org.wikidata . human ( ) filter id == " Q276186 " ^^org.wikidata:human ;
 
+====
+Utterance: Which countries have more than two official languages?
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . 
+    ?uri <http://www.wikidata.org/prop/direct/P37> ?language . 
+} GROUP BY ?uri HAVING(COUNT(?language)>2)
+TT: 
+@org.wikidata . country ( ) filter count ( official_language ) >= 2 ;
+
+====
+Utterance: What is the highest mountain in Australia?
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502> . 
+    ?uri <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q3960> . 
+    ?uri <http://www.wikidata.org/prop/direct/P2044> ?height. 
+} ORDER BY DESC(?height) LIMIT 1
+TT: 
+sort ( elevation_above_sea_level desc of @org.wikidata . mountain ( ) filter contains ( continent , " Q3960 " ^^org.wikidata:p_continent ) ) [ 1 ] ;

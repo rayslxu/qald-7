@@ -8,6 +8,7 @@ import {
     FilterPattern,
     UnionPattern,
     AggregateExpression,
+    OperationExpression,
     SelectQuery,
     AskQuery
 } from 'sparqljs';
@@ -64,6 +65,10 @@ export function isAggregateExpression(node : any, aggregation ?: string) : node 
     if (aggregation)
         return 'type' in node && node.type === 'aggregate' && node.aggregation === aggregation;
     return 'type' in node && node.type === 'aggregate';
+}
+
+export function isOperationExpression(node : any) : node is OperationExpression {
+    return 'type' in node && node.type === 'operation';
 }
 
 export function isSelectQuery(node : any) : node is SelectQuery {
