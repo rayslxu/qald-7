@@ -17,6 +17,7 @@ import {
     isAggregateExpression
 } from '../../utils/sparqljs-typeguard';
 import {
+    ENTITY_PREFIX,
     PROPERTY_PREFIX
 } from '../../utils/wikidata';
 import {
@@ -34,7 +35,8 @@ import ValueConverter from './value';
 import GroupParser from './group';
 import {
     Table,
-    Aggregation
+    Aggregation,
+    Projection
 } from '../sparql2thingtalk';
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 
@@ -101,54 +103,40 @@ export default class ConverterHelper {
         return new ArrayCollection(existedSubject!, new Ast.OrBooleanExpression(null, operands));
     }
 
-    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<string|Ast.PropertyPathSequence|Aggregation> {
-        const projectionsOrAggregationsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence|Aggregation>();
+    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<Projection|Aggregation> {
+        const projectionsOrAggregationsBySubject = new ArrayCollection<Projection|Aggregation>();
         for (const variable of variables) {
             if (isVariable(variable)) {
                 for (const [subject, table] of Object.entries(this._converter.tables)) {
-                    if (subject === variable.value) 
-                        projectionsOrAggregationsBySubject.add(subject, 'id');
+                    if (subject === variable.value) {
+                        projectionsOrAggregationsBySubject.add(subject, { 
+                            property: 'id', 
+                            variable: variable.value 
+                        });
+                    }
                     for (const projection of table.projections) {
-                        if (projection.variable === variable.value)
-                            projectionsOrAggregationsBySubject.add(subject, projection.property);
+                        if (projection.variable === variable.value) {
+                            projectionsOrAggregationsBySubject.add(subject, { 
+                                property: projection.property, 
+                                variable: variable.value 
+                            });
+                        }
                     }
                 }
             } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression, 'count')) {
                 const expression = variable.expression.expression;
                 assert(isVariable(expression));
-                projectionsOrAggregationsBySubject.add(expression.value, { op: 'count', variable: expression.value });
+                projectionsOrAggregationsBySubject.add(expression.value, { 
+                    op: 'count', 
+                    variable: expression.value 
+                });
             } else {
                 throw new Error('Unsupported type of variable: ' + variable);
             }
         }
         return projectionsOrAggregationsBySubject;
     }
-
-    async makeAtomBooleanExpression(property : string, 
-                                    value : any, 
-                                    operator ?: string, 
-                                    valueType ?: Type) : Promise<Ast.AtomBooleanExpression> {
-        let propertyLabel;
-        if (property.startsWith(PROPERTY_PREFIX)) {
-            property = property.slice(PROPERTY_PREFIX.length);
-            propertyLabel = this._converter.schema.getProperty(property);
-        } else {
-            propertyLabel = property;
-        }
-        const propertyType = this._converter.schema.getPropertyType(propertyLabel);
-        if (operator === '>' || operator === '<') 
-            operator = operator + '=';
-        if (valueType === Type.String) 
-            operator = propertyType instanceof Type.Array ? 'contains~' : '=~';
-        return new Ast.AtomBooleanExpression(
-            null,
-            propertyLabel,
-            operator ?? (propertyType instanceof Type.Array ? 'contains' : '=='),
-            await this._value.toThingTalkValue(value, valueType ?? elemType(propertyType)),
-            null
-        );
-    }
-
+    
     addFilters(base : Ast.Expression, filters : Ast.BooleanExpression[]) : Ast.Expression {
         if (filters.length === 0)
             return base;
@@ -157,15 +145,21 @@ export default class ConverterHelper {
         
     }
 
-    addProjectionsAndAggregations(base : Ast.Expression, projectionsAndAggregations : Array<string|Ast.PropertyPathSequence|Aggregation>) {
-        const projections = projectionsAndAggregations.filter((v) => !isAggregation(v)) as Array<string|Ast.PropertyPathSequence>;
+    addProjectionsAndAggregations(base : Ast.Expression, projectionsAndAggregations : Array<Projection|Aggregation>) {
+        const projections = projectionsAndAggregations.filter((v) => !isAggregation(v)) as Projection[];
         const aggregations = projectionsAndAggregations.filter(isAggregation) as Aggregation[];
         let expression = base;
-        if (projections.length > 0 && !(projections.length === 1 && projections[0] === 'id')) {
+        if (projections.length > 0 && !(projections.length === 1 && projections[0].property === 'id')) {
             expression = new Ast.ProjectionExpression2(
                 null, 
                 expression, 
-                projections.map((p) => new Ast.ProjectionElement(p, null, [])), 
+                projections.map((p) => 
+                    new Ast.ProjectionElement(
+                        p.property, 
+                        null, 
+                        p.type ? [new Type.Entity(`org.wikidata:${p.type}`)] : []
+                    )
+                ),
                 null
             );
         }
@@ -219,6 +213,36 @@ export default class ConverterHelper {
     }
 
     /**
+     * Preprocess tables to simplify the conversion 
+     */
+    preprocessTables(projectionsAndAggregationsBySubject : ArrayCollection<Projection|Aggregation>) {
+        // check tables with only domain information, it can potentially be resolved with a type annotation
+        // on another table's projection
+        // only apply to selection not verification
+        for (const [subject, table] of Object.entries(this._converter.tables)) {
+            if (subject.startsWith(ENTITY_PREFIX))
+                continue;
+            let isProjected = false;
+            if (table.name !== 'entity' && table.filters.length === 0 && table.projections.length === 0 ) {
+                for (const [subject2, ] of projectionsAndAggregationsBySubject.iterate()) {
+                    if (subject === subject2)
+                        continue;
+                    const projectionsAndAggregations = projectionsAndAggregationsBySubject.get(subject2);
+                    const proj = projectionsAndAggregations.find((p) => 
+                        !isAggregation(p) && p.variable === subject
+                    ) as Projection;
+                    if (proj) {
+                        isProjected = true;
+                        proj.type = table.name;
+                    }
+                }
+            }
+            if (isProjected)
+                this._converter.removeTable(subject);
+        }
+    }
+
+    /**
      * Find the main subject among tables, which will be the main function 
      * for ThingTalk, other tables will be added as subqueries
      * @param queryType the type of the query
@@ -231,14 +255,11 @@ export default class ConverterHelper {
         // if there are multiple tables:
         // if a table does not have any projection, it should not be the main subject
         // for ASK query, the main subject should have ID filter
-        // for SELECT query, the main subject should not have ID filter, and it should have a projection in variables
         const candidates = [];
         for (const [subject, table] of Object.entries(this._converter.tables)) {
             if (table.projections.length === 0)
                 continue;
             if (!table.filters.some(isIdFilter) && queryType === 'ASK')
-                continue;
-            if (table.filters.some(isIdFilter) && queryType === 'SELECT')
                 continue;
             candidates.push(subject);
         }
@@ -248,17 +269,12 @@ export default class ConverterHelper {
             throw new Error('Multiple candidates for main subject');
         return candidates[0];
     }
-
-    private _tableToSubquery(table : Table) : Ast.Expression {
-        const base= baseQuery(table.name);
-        return this.addFilters(base, table.filters);
-    }
     
     makeSubquery(mainSubject : string, subquerySubject : string) : Ast.BooleanExpression {
         const tables = this._converter.tables;
         const mainTable = tables[mainSubject];
         const subqueryTable = tables[subquerySubject];
-        const subquery = this._tableToSubquery(subqueryTable);
+        const subquery = this.addFilters(baseQuery(subqueryTable.name), subqueryTable.filters);
 
         // handle comparison of two entities with subquery  
         if (this._converter.comparison.length === 1) {
@@ -305,5 +321,30 @@ export default class ConverterHelper {
             );
         } 
         throw new Error('Failed to generate subquery');
+    }
+
+    async makeAtomBooleanExpression(property : string, 
+                                    value : any, 
+                                    operator ?: string, 
+                                    valueType ?: Type) : Promise<Ast.AtomBooleanExpression> {
+        let propertyLabel;
+        if (property.startsWith(PROPERTY_PREFIX)) {
+            property = property.slice(PROPERTY_PREFIX.length);
+            propertyLabel = this._converter.schema.getProperty(property);
+        } else {
+            propertyLabel = property;
+        }
+        const propertyType = this._converter.schema.getPropertyType(propertyLabel);
+        if (operator === '>' || operator === '<') 
+            operator = operator + '=';
+        if (valueType === Type.String) 
+            operator = propertyType instanceof Type.Array ? 'contains~' : '=~';
+        return new Ast.AtomBooleanExpression(
+            null,
+            propertyLabel,
+            operator ?? (propertyType instanceof Type.Array ? 'contains' : '=='),
+            await this._value.toThingTalkValue(value, valueType ?? elemType(propertyType)),
+            null
+        );
     }
 }

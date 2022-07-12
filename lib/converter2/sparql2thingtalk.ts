@@ -115,16 +115,21 @@ class QueryGenerator {
         const projectionsAndAggregationsBySubject = this._converter.helper.parseVariables(query.variables);
         if (projectionsAndAggregationsBySubject.size === 0)
             throw new Error('No variable found in SPARQL');
-        if (projectionsAndAggregationsBySubject.size > 1)
-            throw new Error('Unsupported: projections over multiple tables');
-        
-        const subject = projectionsAndAggregationsBySubject.keys[0];
-        const table = this._converter.tables[subject];
+            
+        this._converter.helper.preprocessTables(projectionsAndAggregationsBySubject);
+        const mainSubject = this._converter.helper.getMainSubject('SELECT');
+        const table = this._converter.tables[mainSubject];
+        const filters = [...table.filters];
+        for (const subject in this._converter.tables) {
+            if (subject === mainSubject)
+                continue;
+            filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
+        }
         let expression : Ast.Expression = baseQuery(table.name);
-        expression = this._converter.helper.addFilters(expression, table.filters);
+        expression = this._converter.helper.addFilters(expression, filters);
         expression = this._converter.helper.addOrdering(expression, table, query.order);
         expression = this._converter.helper.addLimit(expression, query.limit);
-        expression = this._converter.helper.addProjectionsAndAggregations(expression, projectionsAndAggregationsBySubject.get(subject));
+        expression = this._converter.helper.addProjectionsAndAggregations(expression, projectionsAndAggregationsBySubject.get(mainSubject));
         return expression;
     }
 
@@ -205,6 +210,10 @@ export default class SPARQLToThingTalkConverter {
             this._tables[subject].name = this._schema.getTable(update);
         else
             this._tables[subject].projections.push(update);
+    }
+    
+    removeTable(subject : string) {
+        delete this._tables[subject];
     }
 
     addCrossTableComparison(comp : Comparison) {
