@@ -309,18 +309,29 @@ export default class ConverterHelper {
             return Object.keys(tables)[0];
 
         // if there are multiple tables:
+        if (isSelectQuery(query)) {
         // (1) if there exist an ordering, the table project to the ordering should be chosen
-        if (isSelectQuery(query) && query.order && query.order.length === 1) {
-            const order = query.order[0];
-            const expression = order.expression;
-            assert(isVariable(expression));
-            for (const [subject, table] of Object.entries(tables)) {
-                if (table.projections.some((p) => p.variable === expression.value))
-                    return subject;
+            if (query.order && query.order.length === 1) {
+                const order = query.order[0];
+                const expression = order.expression;
+                assert(isVariable(expression));
+                for (const [subject, table] of Object.entries(tables)) {
+                    if (table.projections.some((p) => p.variable === expression.value))
+                        return subject;
+                }
+            }
+        // (2) if select variable is in some table's projection, it should be chosen
+            for (const variable of query.variables) {
+                if (!isVariable(variable))
+                    continue;
+                for (const [subject, table] of Object.entries(tables)) {
+                    if (table.projections.some((p) => p.variable === variable.value))
+                        return subject;
+                }
             }
         }
-        // (2) if a table does not have any projection, it should not be the main subject
-        // (3) for ASK query, the main subject should have ID filter
+        // (3) if a table does not have any projection, it should not be the main subject
+        // (4) for ASK query, the main subject should have ID filter
         const candidates = [];
         for (const [subject, table] of Object.entries(tables)) {
             if (table.projections.length === 0)
@@ -331,7 +342,7 @@ export default class ConverterHelper {
         }
         if (candidates.length === 0)
             throw new Error('Failed to find the main subject');
-        // (4) if there are still multiple candidates, sort by complexity
+        // (5) if there are still multiple candidates, sort by complexity
         function complexity(subject : string) : number {
             const table = tables[subject];
             return table.filters.length + table.projections.length;
