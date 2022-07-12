@@ -210,10 +210,20 @@ export default class ConverterHelper {
             else 
                 operands.push(filter);
         }
-        if (idFilter)
+        if (idFilter) {
             base = new Ast.FilterExpression(null, base, idFilter, null);
-        const verification = operands.length > 1 ? new Ast.AndBooleanExpression(null, operands) : operands[0];
-        return new Ast.BooleanQuestionExpression(null, base, verification, null);
+            const verification = operands.length > 1 ? new Ast.AndBooleanExpression(null, operands) : operands[0];
+            return new Ast.BooleanQuestionExpression(null, base, verification, null);
+        } else {
+            const filterdTable = this.addFilters(base, operands);
+            const aggregatedTable = new Ast.AggregationExpression(null, filterdTable, '*', 'count', null);
+            return new Ast.BooleanQuestionExpression(
+                null,
+                aggregatedTable,
+                new Ast.AtomBooleanExpression(null, 'count', '>=', new Ast.Value.Number(1), null),
+                null
+            );
+        }
     }
 
     /**

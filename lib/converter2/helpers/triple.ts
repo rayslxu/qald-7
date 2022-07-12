@@ -77,9 +77,13 @@ export default class TripleParser {
                 this._converter.updateTable(subject, object.slice(ENTITY_PREFIX.length));
                 return filtersBySubject;
             }
-            const valueType = isLiteral(triple.object) ? Type.String : undefined;
-            const filter = await this._converter.helper.makeAtomBooleanExpression(predicate, object, undefined, valueType);
-            filters.push(filter);
+            if (predicate === LABEL) {
+                filters.push(new Ast.AtomBooleanExpression(null, 'id', '=~', new Ast.Value.String(object), null));
+            } else {  
+                const valueType = isLiteral(triple.object) ? Type.String : undefined; 
+                const filter = await this._converter.helper.makeAtomBooleanExpression(predicate, object, undefined, valueType);
+                filters.push(filter);
+            }
 
         // Case 2: if object is an variable, create a projection
         } else if (isVariable(triple.object)) {
