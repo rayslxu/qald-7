@@ -142,7 +142,7 @@ class QueryGenerator {
                 continue;
             filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
         }
-        return this._converter.helper.addVerification(baseQuery(table.name), filters);
+        return this._converter.helper.addVerification(baseQuery(table.name), filters, table.projections);
     }
 
     generate(query : SelectQuery|AskQuery) : Ast.Program {

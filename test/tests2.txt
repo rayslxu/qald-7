@@ -222,3 +222,45 @@ ASK WHERE {
 }
 TT: 
 [ count >= 1 ] of count ( @org.wikidata . video_game ( ) filter id =~ " battle chess " ) ;
+
+====
+Utterance: Give me the websites of companies with more than 500000 employees.
+SPARQL:
+SELECT DISTINCT ?string WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31>/(<http://www.wikidata.org/prop/direct/P279>*) <http://www.wikidata.org/entity/Q4830453> . 
+    ?uri <http://www.wikidata.org/prop/direct/P1128> ?number . 
+    FILTER(?number > 500000) . 
+    ?uri <http://www.wikidata.org/prop/direct/P856> ?string . 
+}
+TT:
+[ official_website ] of @org.wikidata . business ( ) filter employees >= 500000 ;
+
+====
+Utterance: Is Lake Baikal bigger than the Great Bear Lake?
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?area1 . 
+    <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?area2 . 
+    FILTER(?area1 > ?area2) 
+}
+TT: 
+[ area >= any ( [ area ] of @org.wikidata . lake ( ) filter id == " Q5525 " ^^org.wikidata:lake ) ] of @org.wikidata . lake ( ) filter id == " Q5513 " ^^org.wikidata:lake ;
+
+====
+Utterance: Was U.S. president Jackson involved in a war?
+SPARQL: 
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?uri . 
+}
+TT:
+[ ! ( count ( conflict ) == 0 ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ;
+
+====
+Utterance: How many people live in the capital of Australia?
+SPARQL: 
+SELECT DISTINCT ?number WHERE { 
+    <http://www.wikidata.org/entity/Q408> <http://www.wikidata.org/prop/direct/P36> ?uri . 
+    ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
+}
+TT:
+[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ( " australia " ) ) ) ;
