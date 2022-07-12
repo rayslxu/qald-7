@@ -46,6 +46,8 @@ export default class ValueConverter {
             assert(wikidataLabel);
             return new Ast.Value.Enum(wikidataLabel); 
         }
+        if (type instanceof Type.Measure) 
+            return new Ast.Value.Measure(parseFloat(value), type.unit);
         if (type === Type.Number)
             return new Ast.Value.Number(parseFloat(value));
         if (type === Type.String) 

@@ -113,7 +113,7 @@ export default class FilterParser {
                     operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
                     booleanExpression = await this._converter.helper.makeAtomBooleanExpression(property, rhs.value, operator, Type.String);
                 } else {
-                    booleanExpression = await this._converter.helper.makeAtomBooleanExpression(projection.property, rhs.value, operator, Type.Number);
+                    booleanExpression = await this._converter.helper.makeAtomBooleanExpression(projection.property, rhs.value, operator);
                 }
                 if (negate)
                     booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
