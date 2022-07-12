@@ -53,11 +53,6 @@ export interface Table {
     filters : Ast.BooleanExpression[]
 }
 
-interface SPARQLToThingTalkConverterOptions {
-    cache : string;
-    bootleg_db : string;
-}
-
 class QueryParser {
     private _converter : SPARQLToThingTalkConverter;
 
@@ -151,6 +146,13 @@ class QueryGenerator {
     }
 }
 
+
+interface SPARQLToThingTalkConverterOptions {
+    cache : string;
+    bootleg_db : string;
+    exclude_entity_display : boolean
+}
+
 export default class SPARQLToThingTalkConverter {
     private _sparqlParser : SparqlParser;
     private _schema : WikidataSchema;
@@ -169,7 +171,7 @@ export default class SPARQLToThingTalkConverter {
         this._sparqlParser = new Parser();
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db);
-        this._helper = new ConverterHelper(this);
+        this._helper = new ConverterHelper(this, options);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._parser = new QueryParser(this);
         this._generator = new QueryGenerator(this);

@@ -65,12 +65,16 @@ async function main() {
         action: 'store_true',
         default: false
     });
+    parser.add_argument('--exclude-entity-display', {
+        action: 'store_true',
+        default: false
+    });
     const args = parser.parse_args();
 
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
     const classDef = await schemas.getFullMeta('org.wikidata');
-    const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache, bootleg_db: args.bootleg_db });
+    const converter = new SPARQLToThingTalkConverter(classDef, args);
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
     const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));

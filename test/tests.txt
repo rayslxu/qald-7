@@ -211,7 +211,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q31> . 
 }
 TT: 
-@org.wikidata . organization ( ) filter contains ( industry , " Q418 " ^^org.wikidata:p_industry ( " telecommunications " ) ) && contains ( country , " Q31 " ^^org.wikidata:p_country ( " belgium " ) ) ;
+@org.wikidata . organization ( ) filter contains ( country , " Q31 " ^^org.wikidata:p_country ( " belgium " ) ) && contains ( industry , " Q418 " ^^org.wikidata:p_industry ( " telecommunications " ) ) ;
 
 ====
 Utterance: Is there a video game called Battle Chess?

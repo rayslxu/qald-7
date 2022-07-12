@@ -48,6 +48,10 @@ function isAggregation(v : any) : v is Aggregation {
     return typeof v === 'object' && 'op' in v && 'variable' in v;
 }
 
+interface ConverterHelperOptions {
+    exclude_entity_display : boolean
+}
+
 export default class ConverterHelper {
     private _converter : SPARQLToThingTalkConverter;
     private _triple : TripleParser;
@@ -55,11 +59,11 @@ export default class ConverterHelper {
     private _value : ValueConverter;
     private _group : GroupParser;
 
-    constructor(converter : SPARQLToThingTalkConverter) {
+    constructor(converter : SPARQLToThingTalkConverter, options : ConverterHelperOptions) {
         this._converter = converter;
         this._triple = new TripleParser(converter);
         this._filter = new FilterParser(converter);
-        this._value = new ValueConverter(converter);
+        this._value = new ValueConverter(converter, options);
         this._group = new GroupParser(converter);
     }
 
