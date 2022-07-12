@@ -1,16 +1,15 @@
 import * as fs from 'fs';
-import { promises as pfs } from 'fs';
 import assert from 'assert';
+import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { ThingTalkUtils, EntityUtils, I18n } from 'genie-toolkit';
 
 import { SPARQLToThingTalkConverter } from '../lib/converter';
 
 async function main() {
-    const manifest = await pfs.readFile('./manifest.tt', { encoding: 'utf8' });
-    const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: undefined, timezone: undefined });
-    assert(library instanceof ThingTalk.Ast.Library && library.classes.length === 1);
-    const classDef = library.classes[0];
+    const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
+    const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
+    const classDef = await schemas.getFullMeta('org.wikidata');
     const converter = new SPARQLToThingTalkConverter(classDef, { cache: 'wikidata_cache.sqlite', bootleg_db: 'bootleg.sqlite' });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
     const tests = fs.readFileSync('./test/tests-qid-only.txt').toString('utf-8').split('====');
@@ -24,6 +23,7 @@ async function main() {
         const expected = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length).trim();     
         const preprocessed = tokenizer.tokenize(utterance).tokens.join(' ');
         const converted = await converter.convert(sparql, preprocessed);
+        converted.typecheck(schemas);
         const thingtalk = ThingTalkUtils.serializePrediction(
             converted, 
             preprocessed,

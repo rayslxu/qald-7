@@ -1,11 +1,9 @@
 
 import * as fs from 'fs';
-import { promises as pfs } from 'fs';
-import assert from 'assert';
 import * as stream from 'stream';
 import JSONStream from 'JSONStream';
 import * as argparse from 'argparse';
-import { Ast } from 'thingtalk';
+import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { MANUAL_CONVERSION } from '../utils/qald';
@@ -69,10 +67,9 @@ async function main() {
     });
     const args = parser.parse_args();
 
-    const manifest = await pfs.readFile(args.manifest, { encoding: 'utf8' });
-    const library = ThingTalk.Syntax.parse(manifest, ThingTalk.Syntax.SyntaxType.Normal, { locale: args.locale, timezone: args.timezone });
-    assert(library instanceof Ast.Library && library.classes.length === 1);
-    const classDef = library.classes[0];
+    const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
+    const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
+    const classDef = await schemas.getFullMeta('org.wikidata');
     const converter = new SPARQLToThingTalkConverter(classDef, { cache: args.cache, bootleg_db: args.bootleg_db });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
@@ -91,6 +88,7 @@ async function main() {
                 output.write({ id: item.id, preprocessed, target_code: MANUAL_CONVERSION[item.query.sparql] });
             } else { 
                 const program = await converter.convert(item.query.sparql, preprocessed);
+                program.typecheck(schemas);
                 const target_code = ThingTalkUtils.serializePrediction(
                     program, 
                     preprocessed,
