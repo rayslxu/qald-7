@@ -20,7 +20,9 @@ import {
     PROPERTY_PREFIX
 } from '../../utils/wikidata';
 import {
-    elemType
+    baseQuery,
+    elemType,
+    isIdFilter
 } from '../../utils/thingtalk';
 import {
     ArrayCollection
@@ -99,23 +101,41 @@ export default class ConverterHelper {
         return new ArrayCollection(existedSubject!, new Ast.OrBooleanExpression(null, operands));
     }
 
+    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<string|Ast.PropertyPathSequence|Aggregation> {
+        const projectionsOrAggregationsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence|Aggregation>();
+        for (const variable of variables) {
+            if (isVariable(variable)) {
+                for (const [subject, table] of Object.entries(this._converter.tables)) {
+                    if (subject === variable.value) 
+                        projectionsOrAggregationsBySubject.add(subject, 'id');
+                    for (const projection of table.projections) {
+                        if (projection.variable === variable.value)
+                            projectionsOrAggregationsBySubject.add(subject, projection.property);
+                    }
+                }
+            } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression, 'count')) {
+                const expression = variable.expression.expression;
+                assert(isVariable(expression));
+                projectionsOrAggregationsBySubject.add(expression.value, { op: 'count', variable: expression.value });
+            } else {
+                throw new Error('Unsupported type of variable: ' + variable);
+            }
+        }
+        return projectionsOrAggregationsBySubject;
+    }
+
     async makeAtomBooleanExpression(property : string, 
                                     value : any, 
                                     operator ?: string, 
                                     valueType ?: Type) : Promise<Ast.AtomBooleanExpression> {
-        let propertyLabel, propertyType;
-        if (property === 'id') {
-            propertyLabel = property;
-            propertyType = valueType!;
+        let propertyLabel;
+        if (property.startsWith(PROPERTY_PREFIX)) {
+            property = property.slice(PROPERTY_PREFIX.length);
+            propertyLabel = this._converter.schema.getProperty(property);
         } else {
-            if (property.startsWith(PROPERTY_PREFIX)) {
-                property = property.slice(PROPERTY_PREFIX.length);
-                propertyLabel = this._converter.schema.getProperty(property);
-            } else {
-                propertyLabel = property;
-            }
-            propertyType = this._converter.schema.getPropertyType(propertyLabel);
+            propertyLabel = property;
         }
+        const propertyType = this._converter.schema.getPropertyType(propertyLabel);
         if (operator === '>' || operator === '<') 
             operator = operator + '=';
         if (valueType === Type.String) 
@@ -184,10 +204,10 @@ export default class ConverterHelper {
     }
 
     addVerification(base : Ast.Expression, filters : Ast.BooleanExpression[]) : Ast.Expression {
-        let idFilter : Ast.AtomBooleanExpression|null = null;
+        let idFilter : Ast.BooleanExpression|null = null;
         const operands = [];
         for (const filter of filters) {
-            if (filter instanceof Ast.AtomBooleanExpression && filter.name === 'id')
+            if (isIdFilter(filter))
                 idFilter = filter;
             else 
                 operands.push(filter);
@@ -198,26 +218,92 @@ export default class ConverterHelper {
         return new Ast.BooleanQuestionExpression(null, base, verification, null);
     }
 
-    parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<string|Ast.PropertyPathSequence|Aggregation> {
-        const projectionsOrAggregationsBySubject = new ArrayCollection<string|Ast.PropertyPathSequence|Aggregation>();
-        for (const variable of variables) {
-            if (isVariable(variable)) {
-                for (const [subject, table] of Object.entries(this._converter.tables)) {
-                    if (subject === variable.value) 
-                        projectionsOrAggregationsBySubject.add(subject, 'id');
-                    for (const projection of table.projections) {
-                        if (projection.variable === variable.value)
-                            projectionsOrAggregationsBySubject.add(subject, projection.property);
-                    }
-                }
-            } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression, 'count')) {
-                const expression = variable.expression.expression;
-                assert(isVariable(expression));
-                projectionsOrAggregationsBySubject.add(expression.value, { op: 'count', variable: expression.value });
-            } else {
-                throw new Error('Unsupported type of variable: ' + variable);
-            }
+    /**
+     * Find the main subject among tables, which will be the main function 
+     * for ThingTalk, other tables will be added as subqueries
+     * @param queryType the type of the query
+     */
+    getMainSubject(queryType : 'ASK'|'SELECT') : string {
+        // if there is only one table, return it
+        if (Object.keys(this._converter.tables).length === 1)
+            return Object.keys(this._converter.tables)[0];
+
+        // if there are multiple tables:
+        // if a table does not have any projection, it should not be the main subject
+        // for ASK query, the main subject should have ID filter
+        // for SELECT query, the main subject should not have ID filter, and it should have a projection in variables
+        const candidates = [];
+        for (const [subject, table] of Object.entries(this._converter.tables)) {
+            if (table.projections.length === 0)
+                continue;
+            if (!table.filters.some(isIdFilter) && queryType === 'ASK')
+                continue;
+            if (table.filters.some(isIdFilter) && queryType === 'SELECT')
+                continue;
+            candidates.push(subject);
         }
-        return projectionsOrAggregationsBySubject;
+        if (candidates.length === 0)
+            throw new Error('Failed to find the main subject');
+        if (candidates.length > 1)
+            throw new Error('Multiple candidates for main subject');
+        return candidates[0];
+    }
+
+    private _tableToSubquery(table : Table) : Ast.Expression {
+        const base= baseQuery(table.name);
+        return this.addFilters(base, table.filters);
+    }
+    
+    makeSubquery(mainSubject : string, subquerySubject : string) : Ast.BooleanExpression {
+        const tables = this._converter.tables;
+        const mainTable = tables[mainSubject];
+        const subqueryTable = tables[subquerySubject];
+        const subquery = this._tableToSubquery(subqueryTable);
+
+        // handle comparison of two entities with subquery  
+        if (this._converter.comparison.length === 1) {
+            const comp = this._converter.comparison[0];
+            const mainProperty = mainTable.projections.find((proj) => 
+                proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+            )!.property as string;
+            const subqueryProperty = subqueryTable.projections.find((proj) => 
+                proj.variable && (proj.variable === comp.lhs || proj.variable === comp.rhs)
+            )!.property as string;
+            return new Ast.ComparisonSubqueryBooleanExpression(
+                null,
+                new Ast.Value.VarRef(mainProperty),
+                comp.operator,
+                new Ast.ProjectionExpression(null, subquery, [subqueryProperty], [], [], null),
+                null
+            );
+
+        } 
+        if (mainTable.projections.some((proj) => proj.variable === subquerySubject)) {
+            const projection = mainTable.projections.find((proj) => proj.variable === subquerySubject);
+            const property = projection!.property;
+            if (typeof property !== 'string')
+                throw new Error(`Subquery on property path not supported`);
+            return new Ast.ComparisonSubqueryBooleanExpression(
+                null,
+                new Ast.Value.VarRef(property),
+                this._converter.schema.getPropertyType(property) instanceof Type.Array ? 'contains' : '==',
+                new Ast.ProjectionExpression(null, subquery, ['id'], [], [], null),
+                null
+            );
+        } 
+        if (subqueryTable.projections.some((proj) => proj.variable === mainSubject)) {
+            const projection = subqueryTable.projections.find((proj) => proj.variable === mainSubject);
+            const property = projection!.property;
+            if (typeof property !== 'string')
+                throw new Error(`Subquery on property path not supported`);
+            return new Ast.ComparisonSubqueryBooleanExpression(
+                null,
+                new Ast.Value.VarRef('id'),
+                this._converter.schema.getPropertyType(property) instanceof Type.Array ? 'in_array' : '==',
+                subquery,
+                null
+            );
+        } 
+        throw new Error('Failed to generate subquery');
     }
 }

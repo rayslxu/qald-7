@@ -11,6 +11,10 @@ export function idArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
+export function isIdFilter(filter : Ast.BooleanExpression) : boolean {
+    return filter instanceof Ast.AtomBooleanExpression && filter.name === 'id' && filter.operator === '==';
+}
+
 /**
  * A shortcut for quickly creating a basic query
  * @param domain the name of a domain

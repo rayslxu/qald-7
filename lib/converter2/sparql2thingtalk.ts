@@ -129,18 +129,20 @@ class QueryGenerator {
     }
 
     private _generateAskQuery(query : AskQuery) : Ast.Expression {
-        if (Object.keys(this._converter.tables).length > 1)
-            throw new Error('TODO: handle multiple tables in verification questions');
-
-        const table = Object.values(this._converter.tables)[0];
-        let expression : Ast.Expression = baseQuery(table.name);
-        expression = this._converter.helper.addVerification(expression, table.filters);
-        return expression;
+        const mainSubject = this._converter.helper.getMainSubject('ASK');
+        const table = this._converter.tables[mainSubject];
+        const filters : Ast.BooleanExpression[] = [...table.filters];
+        for (const subject in this._converter.tables) {
+            if (subject === mainSubject)
+                continue;
+            filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
+        }
+        return this._converter.helper.addVerification(baseQuery(table.name), filters);
     }
 
     generate(query : SelectQuery|AskQuery) : Ast.Program {
         const expression = isSelectQuery(query) ? this._generateSelectQuery(query) : this._generateAskQuery(query);
-        return makeProgram(expression);
+        return makeProgram(expression).optimize();
     }
 }
 
@@ -188,6 +190,10 @@ export default class SPARQLToThingTalkConverter {
 
     get tables() : Record<string, Table> {
         return this._tables;
+    }
+
+    get comparison() : Comparison[] {
+        return this._crossTableComparison;
     }
 
     updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
