@@ -397,7 +397,7 @@ export default class ConverterHelper {
                 null,
                 new Ast.Value.VarRef('id'),
                 this._converter.schema.getPropertyType(property) instanceof Type.Array ? 'in_array' : '==',
-                subquery,
+                new Ast.ProjectionExpression(null, subquery, [property], [], [], null),
                 null
             );
         } 
