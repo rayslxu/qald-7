@@ -4,7 +4,7 @@ import assert from 'assert';
 import * as ThingTalk from 'thingtalk';
 import { ThingTalkUtils, EntityUtils, I18n } from 'genie-toolkit';
 
-import { SPARQLToThingTalkConverter } from '../lib/converter2';
+import { SPARQLToThingTalkConverter } from '../lib/converter';
 
 async function main() {
     const manifest = await pfs.readFile('./manifest.tt', { encoding: 'utf8' });
@@ -13,7 +13,7 @@ async function main() {
     const classDef = library.classes[0];
     const converter = new SPARQLToThingTalkConverter(classDef, { cache: 'wikidata_cache.sqlite', bootleg_db: 'bootleg.sqlite' });
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
-    const tests = fs.readFileSync('./test/tests2.txt').toString('utf-8').split('====');
+    const tests = fs.readFileSync('./test/tests-qid-only.txt').toString('utf-8').split('====');
 
     const index = parseInt(process.argv[2]);
     const start = index ? (index > 0 ? index - 1 : tests.length + index) : 0;

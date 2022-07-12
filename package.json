@@ -3,7 +3,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./lib ",
     "prepare": "tsc --build",
-    "test": "node dist/test/index.js"
+    "test": "node dist/test/sparql2thingtalk.js"
   },
   "dependencies": {
     "JSONStream": "^1.3.5",
