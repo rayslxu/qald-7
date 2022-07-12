@@ -263,4 +263,15 @@ SELECT DISTINCT ?number WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
 }
 TT:
-[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ( " australia " ) ) ) ;
+[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ) ) ;
+
+====
+Utterance: Was the Cuban Missile Crisis earlier than the Bay of Pigs Invasion?
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q128160> <http://www.wikidata.org/prop/direct/P582> ?date1 . 
+    <http://www.wikidata.org/entity/Q191721> <http://www.wikidata.org/prop/direct/P580> ?date2 . 
+    FILTER(?date1 < ?date2) 
+}
+TT:
+[ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ) ] of @org.wikidata . crisis ( ) filter id == " Q128160 " ^^org.wikidata:crisis ;

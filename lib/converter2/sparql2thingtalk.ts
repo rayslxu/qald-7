@@ -201,6 +201,18 @@ export default class SPARQLToThingTalkConverter {
         return this._crossTableComparison;
     }
 
+    get keywords() : string[] {
+        return this._keywords;
+    }
+
+    get sparql() : string|undefined {
+        return this._sparql;
+    }
+
+    get utterance() : string|undefined {
+        return this._utterance;
+    }
+
     updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
         if (!(subject in this._tables))
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
@@ -225,7 +237,7 @@ export default class SPARQLToThingTalkConverter {
         this._utterance = utterance;
         this._tables = {};
         this._crossTableComparison = [];
-        this._keywords = getSpans(this._utterance);
+        this._keywords = getSpans(this._tokenizer.tokenize(this._utterance).rawTokens.join(' '));
     }
 
     async convert(sparql : string, utterance : string) : Promise<Ast.Program> {
