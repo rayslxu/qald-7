@@ -8,13 +8,17 @@ import {
     UnionPattern,
     Variable,
     Wildcard,
-    Ordering
+    Ordering,
+    SelectQuery,
+    AskQuery
 } from 'sparqljs';
 import {
     isVariable,
     isVariableExpression,
     isBasicGraphPattern,
-    isAggregateExpression
+    isAggregateExpression,
+    isAskQuery,
+    isSelectQuery
 } from '../../utils/sparqljs-typeguard';
 import {
     ENTITY_PREFIX,
@@ -247,26 +251,41 @@ export default class ConverterHelper {
      * for ThingTalk, other tables will be added as subqueries
      * @param queryType the type of the query
      */
-    getMainSubject(queryType : 'ASK'|'SELECT') : string {
+    getMainSubject(query : SelectQuery|AskQuery) : string {
+        const tables = this._converter.tables;
         // if there is only one table, return it
-        if (Object.keys(this._converter.tables).length === 1)
-            return Object.keys(this._converter.tables)[0];
+        if (Object.keys(tables).length === 1)
+            return Object.keys(tables)[0];
 
         // if there are multiple tables:
-        // if a table does not have any projection, it should not be the main subject
-        // for ASK query, the main subject should have ID filter
+        // (1) if there exist an ordering, the table project to the ordering should be chosen
+        if (isSelectQuery(query) && query.order && query.order.length === 1) {
+            const order = query.order[0];
+            const expression = order.expression;
+            assert(isVariable(expression));
+            for (const [subject, table] of Object.entries(tables)) {
+                if (table.projections.some((p) => p.variable === expression.value))
+                    return subject;
+            }
+        }
+        // (2) if a table does not have any projection, it should not be the main subject
+        // (3) for ASK query, the main subject should have ID filter
         const candidates = [];
-        for (const [subject, table] of Object.entries(this._converter.tables)) {
+        for (const [subject, table] of Object.entries(tables)) {
             if (table.projections.length === 0)
                 continue;
-            if (!table.filters.some(isIdFilter) && queryType === 'ASK')
+            if (!table.filters.some(isIdFilter) && isAskQuery(query))
                 continue;
             candidates.push(subject);
         }
         if (candidates.length === 0)
             throw new Error('Failed to find the main subject');
-        if (candidates.length > 1)
-            throw new Error('Multiple candidates for main subject');
+        // (4) if there are still multiple candidates, sort by complexity
+        function complexity(subject : string) : number {
+            const table = tables[subject];
+            return table.filters.length + table.projections.length;
+        }
+        candidates.sort((a, b) => complexity(b) - complexity(a));
         return candidates[0];
     }
     

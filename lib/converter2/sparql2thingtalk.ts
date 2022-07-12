@@ -117,7 +117,7 @@ class QueryGenerator {
             throw new Error('No variable found in SPARQL');
             
         this._converter.helper.preprocessTables(projectionsAndAggregationsBySubject);
-        const mainSubject = this._converter.helper.getMainSubject('SELECT');
+        const mainSubject = this._converter.helper.getMainSubject(query);
         const table = this._converter.tables[mainSubject];
         const filters = [...table.filters];
         for (const subject in this._converter.tables) {
@@ -134,7 +134,7 @@ class QueryGenerator {
     }
 
     private _generateAskQuery(query : AskQuery) : Ast.Expression {
-        const mainSubject = this._converter.helper.getMainSubject('ASK');
+        const mainSubject = this._converter.helper.getMainSubject(query);
         const table = this._converter.tables[mainSubject];
         const filters : Ast.BooleanExpression[] = [...table.filters];
         for (const subject in this._converter.tables) {
