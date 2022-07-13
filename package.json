@@ -15,8 +15,11 @@
     "stopword": "^1.0.11",
     "thingpedia": "^2.10.0-alpha.6",
     "thingtalk": "github:stanford-oval/thingtalk#wip/qald",
+    "thingtalk-units": "^0.2.1",
     "typescript": "^4.5.2",
-    "wikibase-sdk": "^7.14.2"
+    "wikibase-sdk": "^7.14.2",
+    "words-to-number": "^1.1.0",
+    "words-to-numbers": "^1.5.1"
   },
   "devDependencies": {
     "@types/argparse": "^2.0.10",
