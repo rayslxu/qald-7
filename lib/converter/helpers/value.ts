@@ -34,9 +34,15 @@ export default class ValueConverter {
         const display = closest(wikidataLabel, this._converter.keywords);
         if (display)
             return display;
+        const wikidataAltLabels = await this._converter.kb.getAltLabels(qid);
+        for (const altLabel of wikidataAltLabels) {
+            const display = closest(altLabel, this._converter.keywords);
+            if (display)
+                return display;
+        }
         if (qid in ENTITY_SPAN_OVERRIDE)
             return ENTITY_SPAN_OVERRIDE[qid];
-        throw new Error(`Failed to find matching span for entity ${display}(${qid})`);
+        throw new Error(`Failed to find matching span for entity ${wikidataLabel}(${qid})`);
     }
 
     private _getMeasure(value : number, baseUnit : string) : [number, string] {

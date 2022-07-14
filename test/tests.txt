@@ -199,7 +199,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q53696> <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q10908> . 
 }
 TT:
-[ contains ( < parent_taxon * > , " Q10908 " ^^org.wikidata:p_parent_taxon ( " amphibian " ) ) ] of @org.wikidata . taxon ( ) filter id == " Q53696 " ^^org.wikidata:taxon ( " tree frog " ) ;
+[ contains ( < parent_taxon * > , " Q10908 " ^^org.wikidata:p_parent_taxon ( " amphibian " ) ) ] of @org.wikidata . taxon ( ) filter id == " Q53696 " ^^org.wikidata:taxon ( " tree frogs " ) ;
 
 ====
 Utterance: Which telecommunications organizations are located in Belgium?
@@ -276,3 +276,23 @@ ASK WHERE {
 }
 TT:
 [ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ( " bay of pigs invasion " ) ) ] of @org.wikidata . crisis ( ) filter id == " Q128160 " ^^org.wikidata:crisis ( " cuban missile crisis " ) ;
+
+====
+Utterance: Show me all basketball players that are higher than 2 meters .
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q3665646> . 
+    ?uri <http://www.wikidata.org/prop/direct/P2048> ?height .  
+    FILTER(?height > 200)
+}
+TT: 
+@org.wikidata . entity ( ) filter contains ( occupation , " Q3665646 " ^^org.wikidata:p_occupation ( " basketball players " ) ) && height >= 2 m ;
+
+====
+Utterance: in which u . s . state is mount mckinley located ?
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?uri
+}
+TT: 
+[ located_in_the_administrative_territorial_entity ] of @org.wikidata . mountain ( ) filter id == " Q130018 " ^^org.wikidata:mountain ( " mount mckinley " ) ;

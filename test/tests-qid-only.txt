@@ -286,3 +286,12 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 @org.wikidata . entity ( ) filter contains ( occupation , " Q3665646 " ^^org.wikidata:p_occupation ) && height >= 2 m ;
+
+====
+Utterance: in which u . s . state is mount mckinley located ?
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?uri
+}
+TT: 
+[ located_in_the_administrative_territorial_entity ] of @org.wikidata . mountain ( ) filter id == " Q130018 " ^^org.wikidata:mountain ;
