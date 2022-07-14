@@ -295,3 +295,14 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 [ located_in_the_administrative_territorial_entity ] of @org.wikidata . mountain ( ) filter id == " Q130018 " ^^org.wikidata:mountain ;
+
+====
+Utterance: which indian company has the most employees ?
+SPARQL: 
+SELECT DISTINCT ?uri WHERE { 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>  . 
+    ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q668> . 
+    ?uri <http://www.wikidata.org/prop/direct/P1128> ?employees . 
+} ORDER BY DESC(?employees) LIMIT 1
+TT: 
+sort ( employees desc of @org.wikidata . business ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ) ) [ 1 ] ;

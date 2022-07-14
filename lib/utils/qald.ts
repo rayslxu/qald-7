@@ -51,7 +51,10 @@ export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
     "Q53696": "tree frog",
     "Q10908" : "amphibian",
     "Q183" : "german",
-    "Q4830453": "companies"
+    "Q4830453": "companies",
+    "Q668": "indian",
+    "Q16": "canadians",
+    "Q33946": "czech"
 };
 
 
