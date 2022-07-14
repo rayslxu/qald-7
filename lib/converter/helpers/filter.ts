@@ -31,6 +31,15 @@ export default class FilterParser {
         throw new Error(`Unsupported: filters with more than two arguments`);
     }
 
+    private _findProperty(variable : string) : [string, string|Ast.PropertyPathSequence]|null {
+        for (const [subject, table] of Object.entries(this._converter.tables)) {
+            const match = table.projections.find((proj) => proj.variable === variable);
+            if (match)
+                return [subject, match.property];
+        } 
+        return null;
+    }
+
     /**
      * Parse a filter expression where the operation is a unary operation
      * @param expression a filter expression
@@ -38,41 +47,33 @@ export default class FilterParser {
      */
     private async _parseUnaryOperation(expression : OperationExpression, negate : boolean) {
         const arg = expression.args[0];
-        let subject, booleanExpression;
         if (expression.operator === 'bound') {
             assert(isVariable(arg));
-            let match;
-            for (const [s, t] of Object.entries(this._converter.tables)) {
-                match = t.projections.find((proj) => proj.variable === arg.value);
-                if (match) {
-                    subject = s;
-                    break;
-                }
-            } 
+            const match = this._findProperty(arg.value);
             if (!match)
                 throw new Error(`Cannot find projection ${arg.value}`);
-            if (typeof match.property === 'string') {
-                const propertyType = this._converter.schema.getPropertyType(match.property);
+            const [subject, property] = match;
+            let booleanExpression;
+            if (typeof property === 'string') {
+                const propertyType = this._converter.schema.getPropertyType(property);
                 if (propertyType instanceof Type.Array) {
                     booleanExpression = new Ast.ComputeBooleanExpression(
                         null,
-                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(match.property)]),
+                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(property)]),
                         '==',
                         new Ast.Value.Number(0)
                     );
                 } else {
-                    booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+                    booleanExpression = new Ast.AtomBooleanExpression(null, property, '==', new Ast.Value.Null, null);
                 }
             } else {
-                booleanExpression = new Ast.PropertyPathBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
+                booleanExpression = new Ast.PropertyPathBooleanExpression(null, property, '==', new Ast.Value.Null, null);
             }
-            
+            if (negate)
+                booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
+            return new ArrayCollection<Ast.BooleanExpression>(subject, booleanExpression);
         }
-        if (!booleanExpression || !subject)
-            throw new Error(`Unsupported operator ${expression.operator}`);
-        if (negate)
-            booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
-        return new ArrayCollection<Ast.BooleanExpression>(subject, booleanExpression);
+        throw new Error(`Unsupported operator ${expression.operator}`);
     }
 
 
@@ -97,32 +98,29 @@ export default class FilterParser {
             return new ArrayCollection<Ast.BooleanExpression>();
         } else if (isLiteral(rhs)) {
             const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
-            for (const [subject, table] of Object.entries(this._converter.tables)) {
-                const projection = table.projections.find((proj) => proj.variable === lhs.value);
-                if (!projection)
-                    continue;
+            const match = this._findProperty(lhs.value);
+            if (!match)
+                throw new Error(`Cannot find projection ${lhs.value}`);
+            const [subject, property] = match;
+            if (typeof property !== 'string')
+                throw new Error(`Join on property path not supported`);
 
-                if (typeof projection.property !== 'string')
-                    throw new Error(`Join on property path not supported`);
-                
-                let booleanExpression;
-                if (projection.property.endsWith('Label')) {
-                    assert(operator === 'regex');
-                    const property = projection.property.slice(0, -'Label'.length);
-                    const propertyType = this._converter.schema.getPropertyType(property);
-                    operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
-                    booleanExpression = await this._converter.helper.makeAtomBooleanExpression(property, rhs.value, operator, Type.String);
-                } else {
-                    booleanExpression = await this._converter.helper.makeAtomBooleanExpression(projection.property, rhs.value, operator);
-                }
-                if (negate)
-                    booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
-                filtersBySubject.add(subject, booleanExpression);
+            let booleanExpression;
+            if (property.endsWith('Label')) {
+                assert(operator === 'regex');
+                const prop = property.slice(0, -'Label'.length);
+                const propertyType = this._converter.schema.getPropertyType(prop);
+                operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
+                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(prop, rhs.value, operator, Type.String);
+            } else {
+                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(property, rhs.value, operator);
             }
+            if (negate)
+                booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
+            filtersBySubject.add(subject, booleanExpression);
             return filtersBySubject;
-        } else {
-            throw new Error(`Unsupported binary operation ${expression.operator} with value ${rhs}`);
-        }
+        } 
+        throw new Error(`Unsupported binary operation ${expression.operator} with value ${rhs}`);
     }
 
     async parse(filter : FilterPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
