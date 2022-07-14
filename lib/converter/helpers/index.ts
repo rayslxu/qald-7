@@ -56,8 +56,8 @@ export default class ConverterHelper {
     private _converter : SPARQLToThingTalkConverter;
     private _triple : TripleParser;
     private _filter : FilterParser;
-    private _value : ValueConverter;
     private _group : GroupParser;
+    private _value : ValueConverter;
 
     constructor(converter : SPARQLToThingTalkConverter, options : ConverterHelperOptions) {
         this._converter = converter;

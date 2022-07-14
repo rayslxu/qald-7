@@ -23,18 +23,15 @@ import {
     ArrayCollection
 } from '../../utils/misc';
 import SPARQLToThingTalkConverter from "../sparql2thingtalk";
-import ValueConverter from './value';
 import {
     elemType
 } from '../../utils/thingtalk';
 
 export default class TripleParser {
     private _converter : SPARQLToThingTalkConverter;
-    private _values : ValueConverter;
 
     constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
-        this._values = new ValueConverter(converter);
     }
 
     /**
@@ -64,7 +61,7 @@ export default class TripleParser {
                 null,
                 'id',
                 '==',
-                await this._values.toThingTalkValue(subject, new Type.Entity(`org.wikidata:${table}`)),
+                await this._converter.helper.convertValue(subject, new Type.Entity(`org.wikidata:${table}`)),
                 null
             ));
             this._converter.updateTable(subject, domain);
@@ -130,7 +127,7 @@ export default class TripleParser {
                 null,
                 'id',
                 '==',
-                await this._values.toThingTalkValue(subject, new Type.Entity(`org.wikidata:${table}`)),
+                await this._converter.helper.convertValue(subject, new Type.Entity(`org.wikidata:${table}`)),
                 null
             ));
             this._converter.updateTable(subject, domain);
@@ -159,7 +156,7 @@ export default class TripleParser {
         if (isVariable(triple.object)) {
             this._converter.updateTable(subject, { property : sequence, variable : object });
         } else {
-            const value = await this._values.toThingTalkValue(object, elemType(lastPropertyType));
+            const value = await this._converter.helper.convertValue(object, elemType(lastPropertyType));
             const filter = new Ast.PropertyPathBooleanExpression(
                 null, 
                 sequence, 
