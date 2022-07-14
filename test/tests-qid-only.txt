@@ -306,3 +306,13 @@ SELECT DISTINCT ?uri WHERE {
 } ORDER BY DESC(?employees) LIMIT 1
 TT: 
 sort ( employees desc of @org.wikidata . business ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ) ) [ 1 ] ;
+
+====
+Utterance: how many children do US president have on average? 
+SPARQL: 
+SELECT (AVG(?x) as ?avg) WHERE {
+    ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q11696> . 
+    ?uri <http://www.wikidata.org/prop/direct/P1971> ?x
+}
+TT:
+avg ( number_of_children of @org.wikidata . entity ( ) filter contains ( position_held , " Q11696 " ^^org.wikidata:p_position_held ) ) ;

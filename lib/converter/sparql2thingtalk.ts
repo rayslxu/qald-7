@@ -35,7 +35,7 @@ export interface Projection {
 }
 
 export interface Aggregation {
-    op : 'count',
+    op : string,
     variable : string
 }
 
@@ -124,7 +124,7 @@ class QueryGenerator {
         expression = this._converter.helper.addFilters(expression, filters);
         expression = this._converter.helper.addOrdering(expression, table, query.order);
         expression = this._converter.helper.addLimit(expression, query.limit);
-        expression = this._converter.helper.addProjectionsAndAggregations(expression, projectionsAndAggregationsBySubject.get(mainSubject));
+        expression = this._converter.helper.addProjectionsAndAggregations(expression, mainSubject, projectionsAndAggregationsBySubject.get(mainSubject));
         return expression;
     }
 

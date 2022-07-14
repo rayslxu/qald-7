@@ -131,13 +131,27 @@ export default class ConverterHelper {
                         }
                     }
                 }
-            } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression, 'count')) {
+            } else if (isVariableExpression(variable) && isAggregateExpression(variable.expression)) {
+                assert(['count', 'sum', 'avg', 'min', 'max'].includes(variable.expression.aggregation));
                 const expression = variable.expression.expression;
                 assert(isVariable(expression));
-                projectionsOrAggregationsBySubject.add(expression.value, { 
-                    op: 'count', 
-                    variable: expression.value 
-                });
+                for (const [subject, table] of Object.entries(this._converter.tables)) {
+                    if (subject === expression.value) {
+                        projectionsOrAggregationsBySubject.add(subject, { 
+                            op: variable.expression.aggregation, 
+                            variable: expression.value 
+                        });
+                    } 
+                    for (const projection of table.projections) {
+                        if (projection.variable === expression.value) {
+                            projectionsOrAggregationsBySubject.add(subject, { 
+                                op: variable.expression.aggregation, 
+                                variable: projection.property as string
+                            });
+                        }
+                    }
+                }
+                
             } else {
                 throw new Error('Unsupported type of variable: ' + variable);
             }
@@ -153,7 +167,7 @@ export default class ConverterHelper {
         
     }
 
-    addProjectionsAndAggregations(base : Ast.Expression, projectionsAndAggregations : Array<Projection|Aggregation>) {
+    addProjectionsAndAggregations(base : Ast.Expression, subject : string, projectionsAndAggregations : Array<Projection|Aggregation>) {
         const projections = projectionsAndAggregations.filter((v) => !isAggregation(v)) as Projection[];
         const aggregations = projectionsAndAggregations.filter(isAggregation) as Aggregation[];
         let expression = base;
@@ -174,8 +188,8 @@ export default class ConverterHelper {
         if (aggregations.length > 0) {
             assert(aggregations.length === 1);
             const aggregation = aggregations[0];
-            assert(aggregation.op === 'count');
-            expression = new Ast.AggregationExpression(null, expression, '*', 'count', null);
+            const field = aggregation.variable === subject ? '*' : aggregation.variable;
+            expression = new Ast.AggregationExpression(null, expression, field, aggregation.op, null);
         }
         return expression;
     }
