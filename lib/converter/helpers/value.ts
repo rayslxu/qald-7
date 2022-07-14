@@ -61,6 +61,11 @@ export default class ValueConverter {
         throw new Error(`Failed to find matching measure in the utterance: ${value} ${baseUnit}`);
     }
 
+    private _toThingTalkDate(value : string) : Ast.DateValue {
+        const date = new Date(value);
+        return new Ast.DateValue(new Ast.DatePiece(date.getUTCFullYear(), date.getUTCMonth() + 1 , date.getUTCDate(), null));
+    }
+
     async toThingTalkValue(value : any, type : Type) : Promise<Ast.Value> {
         if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(this._prefix));
@@ -83,9 +88,10 @@ export default class ValueConverter {
             return new Ast.Value.Number(parseFloat(value));
         if (type === Type.String) 
             return new Ast.Value.String(value);
+        if (type === Type.Date)
+            return this._toThingTalkDate(value);
         if (type instanceof Type.Compound)
             return this.toThingTalkValue(value, type.fields.value.type);
-
         throw new Error('Unsupported value type: ' + type);
     }
 }
