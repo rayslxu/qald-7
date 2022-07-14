@@ -722,7 +722,7 @@
         }
       ],
       "query": {
-        "sparql": "prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>  SELECT DISTINCT * WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P2046> ?area . ?uri rdfs:label ?label } ORDER BY DESC(?area) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P2046> ?area .} ORDER BY DESC(?area) LIMIT 1"
       },
       "answers": [
         {
@@ -15309,7 +15309,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q55> <http://www.wikidata.org/prop/direct/P35> ?uri . ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q2045066> . }"
+        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q2045066> . }"
       },
       "answers": [
         {
