@@ -12,7 +12,8 @@ import {
     isWikidataPropertyNode,
     isLiteral,
     isVariable,
-    isUnaryPropertyPath
+    isUnaryPropertyPath,
+    isWikidataPredicateNode
 } from '../../utils/sparqljs-typeguard';
 import { 
     ENTITY_PREFIX,
@@ -67,8 +68,11 @@ export default class TripleParser {
             this._converter.updateTable(subject, domain);
         }
 
-        // Case 1: if subject is an variable and object is an entity, create a regular filter
-        if (isVariable(triple.subject) && (isLiteral(triple.object) || isWikidataEntityNode(triple.object))) { 
+        // Case 1: handle qualifier related triples
+        if (isWikidataPredicateNode(triple.predicate)) {
+            this._converter.helper.parsePredicate(triple);
+        // Case 2: if subject is an variable and object is an entity, create a regular filter
+        } else if (isVariable(triple.subject) && (isLiteral(triple.object) || isWikidataEntityNode(triple.object))) { 
             // for P31 triple, update the domain of the variable, do not add filter
             if (isWikidataPropertyNode(triple.predicate, 'P31')) {
                 this._converter.updateTable(subject, object.slice(ENTITY_PREFIX.length));
@@ -82,7 +86,7 @@ export default class TripleParser {
                 filters.push(filter);
             }
 
-        // Case 2: if object is an variable, create a projection
+        // Case 3: if object is an variable, create a projection
         } else if (isVariable(triple.object)) {
             // if predicate is label, add a new projection with suffix "Label" for the property 
             if (predicate === LABEL) {
@@ -98,7 +102,7 @@ export default class TripleParser {
                 this._converter.updateTable(subject, { variable: object, property });
             }
             
-        // Case 3: if both subject and object are entities, create a filter, for verification
+        // Case 4: if both subject and object are entities, create a filter, for verification
         } else if (isNamedNode(triple.subject) && isNamedNode(triple.object)) {
             const filter = await this._converter.helper.makeAtomBooleanExpression(predicate, object);
             this._converter.updateTable(subject, filter);

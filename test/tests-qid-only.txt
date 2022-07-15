@@ -328,3 +328,16 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 @org.wikidata . protest ( ) filter start_time >= new Date ( 2000 ) ;
+
+====
+Utterance: who are the US presidents since 2000? 
+SPARQL: 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT DISTINCT ?uri WHERE {
+    <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p.
+    ?p <http://www.wikidata.org/prop/statement/P6> ?uri.
+    ?p <http://www.wikidata.org/prop/qualifier/P582> ?date.
+    FILTER(?date > "2000-01-01T00:00:00Z"^^xsd:dateTime)
+}
+TT:
+[ head_of_government filter end_time >= new Date ( 2000 ) ] of @org.wikidata . sovereign_state ( ) filter id == " Q30 " ^^org.wikidata:sovereign_state ;

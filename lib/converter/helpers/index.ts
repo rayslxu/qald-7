@@ -10,7 +10,8 @@ import {
     Wildcard,
     Ordering,
     SelectQuery,
-    AskQuery
+    AskQuery,
+    Triple
 } from 'sparqljs';
 import {
     isVariable,
@@ -35,12 +36,14 @@ import {
 import { parseSpecialUnion } from '../../utils/sparqljs';
 import TripleParser from './triple';
 import FilterParser from './filter';
+import PredicateParser from './predicate';
 import ValueConverter from './value';
 import GroupParser from './group';
 import {
     Table,
     Aggregation,
-    Projection
+    Projection,
+    Predicate
 } from '../sparql2thingtalk';
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 
@@ -57,22 +60,36 @@ export default class ConverterHelper {
     private _triple : TripleParser;
     private _filter : FilterParser;
     private _group : GroupParser;
+    private _predicate : PredicateParser;
     private _value : ValueConverter;
 
     constructor(converter : SPARQLToThingTalkConverter, options : ConverterHelperOptions) {
         this._converter = converter;
         this._triple = new TripleParser(converter);
         this._filter = new FilterParser(converter);
+        this._predicate = new PredicateParser(converter);
         this._value = new ValueConverter(converter, options);
         this._group = new GroupParser(converter);
+    }
+
+    get predicates() {
+        return this._predicate.predicates;
     }
 
     async convertValue(value : any, type : Type) {
         return this._value.toThingTalkValue(value, type);
     }
 
+    async convertPredicates() {
+        return this._predicate.convert();
+    }
+
     async parseGroup(having : Expression, group : Grouping) {
         return this._group.parse(having, group);
+    }
+
+    async parsePredicate(predicate : Triple) {
+        return this._predicate.parse(predicate);
     }
 
     async parseTriples(clause : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
@@ -157,6 +174,10 @@ export default class ConverterHelper {
             }
         }
         return projectionsOrAggregationsBySubject;
+    }
+
+    updatePredicate(predicate : Predicate) {
+        this._predicate.addOrUpdatePredicate(predicate);
     }
     
     addFilters(base : Ast.Expression, filters : Ast.BooleanExpression[]) : Ast.Expression {
@@ -263,6 +284,8 @@ export default class ConverterHelper {
                 } else {   
                     isNull = new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
                 }
+            } else if (proj.property instanceof Ast.FilterValue) {
+                isNull = new Ast.ComputeBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
             } else {
                 isNull = new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
             }

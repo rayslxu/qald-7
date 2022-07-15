@@ -29,7 +29,7 @@ import {
 
 
 export interface Projection {
-    property : string|Ast.PropertyPathSequence, 
+    property : string|Ast.PropertyPathSequence|Ast.FilterValue, 
     variable ?: string,
     type ?: string
 }
@@ -47,6 +47,23 @@ export interface Comparison {
     rhs : string
 }
 
+export interface Predicate {
+    table ?: string,
+    property ?: string,
+    op ?: string
+    isVariable ?: boolean,
+    value ?: string,
+    predicate_variable ?: string,
+    qualifiers : Qualifier[],
+}
+
+export interface Qualifier {
+    property : string,
+    op : string
+    value : string,
+    isVariable : boolean,
+}
+
 export interface Table {
     name : string,
     projections : Projection[],
@@ -62,10 +79,13 @@ class QueryParser {
     
     private async _parseWhere(clauses : Pattern[]) {
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
+        // (1) parse non-filters
         for (const clause of clauses.filter((clause) => clause.type !== 'filter')) 
             filtersBySubject.merge(await this._parseWhereClause(clause));
+        // (2) parse filters
         for (const clause of clauses.filter((clause) => clause.type === 'filter')) 
             filtersBySubject.merge(await this._parseWhereClause(clause));
+        // (3) parse qualifiers
         
         for (const [subject, filters] of filtersBySubject.iterate()) {
             for (const filter of filters) 
@@ -90,10 +110,23 @@ class QueryParser {
             await this._converter.helper.parseGroup(clause, group[0]);
     }
 
-    async parse(query : SelectQuery|AskQuery) {
-        if (query.where)
-            await this._parseWhere(query.where);
+    private async _parsePredicates() {
+        if (this._converter.helper.predicates.length === 0)
+            return;
         
+        const filtersBySubject = await this._converter.helper.convertPredicates();
+        for (const [subject, filters] of filtersBySubject.iterate()) {
+            for (const filter of filters)
+                this._converter.updateTable(subject, filter);
+        }
+    }
+
+    async parse(query : SelectQuery|AskQuery) {
+        if (query.where) {
+            await this._parseWhere(query.where);
+            await this._parsePredicates();
+        }
+
         if (isSelectQuery(query) && query.group)
             await this._parseHaving(query.group, query.having);
     }
@@ -137,6 +170,7 @@ class QueryGenerator {
                 continue;
             filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
         }
+        
         return this._converter.helper.addVerification(baseQuery(table.name), filters, table.projections);
     }
 
@@ -228,6 +262,10 @@ export default class SPARQLToThingTalkConverter {
     
     removeTable(subject : string) {
         delete this._tables[subject];
+    }
+
+    addOrUpdatePredicate(predicate : Predicate) {
+
     }
 
     addCrossTableComparison(comp : Comparison) {

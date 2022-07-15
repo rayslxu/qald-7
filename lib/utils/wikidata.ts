@@ -9,6 +9,9 @@ import BootlegUtils from './bootleg';
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
 export const PROPERTY_PREFIX = 'http://www.wikidata.org/prop/direct/';
+export const PROPERTY_PREDICATE_PREFIX = 'http://www.wikidata.org/prop/';
+export const PROPERTY_STATEMENT_PREFIX = 'http://www.wikidata.org/prop/statement/';
+export const PROPERTY_QUALIFIER_PREFIX = 'http://www.wikidata.org/prop/qualifier/';
 export const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
 
 const SQLITE_SCHEMA = `

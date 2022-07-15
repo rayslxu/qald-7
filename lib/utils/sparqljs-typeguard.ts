@@ -1,4 +1,10 @@
-import { ENTITY_PREFIX, PROPERTY_PREFIX } from './wikidata';
+import { 
+    ENTITY_PREFIX, 
+    PROPERTY_PREFIX,
+    PROPERTY_PREDICATE_PREFIX,
+    PROPERTY_QUALIFIER_PREFIX,
+    PROPERTY_STATEMENT_PREFIX
+} from './wikidata';
 import { 
     IriTerm,
     VariableTerm,
@@ -27,6 +33,24 @@ export function isWikidataPropertyNode(node : any, pid ?: string) : node is IriT
         return 'termType' in node && node.termType === 'NamedNode' && node.value === PROPERTY_PREFIX + pid;
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_PREFIX);
 }
+
+export function isWikidataPredicateNode(node : any) : node is IriTerm {
+    return isWikidataPropertyStatementNode(node) || isWikidataPropertyQualifierNode(node) || isWikidataPropertyPredicateNode(node);
+}
+
+export function isWikidataPropertyStatementNode(node : any) : node is IriTerm {
+    return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_STATEMENT_PREFIX); 
+} 
+
+export function isWikidataPropertyQualifierNode(node : any) : node is IriTerm {
+    return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_QUALIFIER_PREFIX); 
+} 
+
+export function isWikidataPropertyPredicateNode(node : any) : node is IriTerm {
+    if (isWikidataPropertyNode(node) || isWikidataPropertyQualifierNode(node) || isWikidataPropertyStatementNode(node))
+        return false;
+    return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_PREDICATE_PREFIX); 
+} 
 
 export function isVariable(node : any) : node is VariableTerm {
     return 'termType' in node && node.termType === 'Variable';

@@ -1,4 +1,5 @@
 import { Ast, Type } from 'thingtalk';
+import { elemType } from './utils/thingtalk';
 
 /**
  * A class to retrieve schema information from the schema
@@ -22,6 +23,13 @@ export class WikiSchema {
                 const pid = arg.getImplementationAnnotation('wikidata_id') as string;
                 this._propertyMap[pid] = arg.name;
                 this._propertyTypeMap[arg.name] = arg.type;
+
+                // log type information for compound field, by concat property name and filed name
+                const type= elemType(arg.type, false);
+                if (type instanceof Type.Compound) {
+                    for (const field of Object.values(type.fields)) 
+                        this._propertyTypeMap[`${arg.name}.${field.name}`] = field.type;
+                }
             }
         }
     }

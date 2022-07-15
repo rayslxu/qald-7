@@ -11,6 +11,16 @@ import {
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 import { isOperationExpression } from '../../utils/sparqljs-typeguard';
 
+// type 
+// (1) basic: a standard thingtalk filter
+// (2) qualifier : a qualifier over another filter 
+// (3) predicate : a thingtalk filter with qualifier(s)
+interface FilterInfo {
+    table : string,
+    property : string|Ast.PropertyPathSequence|Ast.FilterValue,
+    type : 'basic'|'qualifier'|'predicate'
+}
+
 export default class FilterParser {
     private _converter : SPARQLToThingTalkConverter;
 
@@ -31,12 +41,20 @@ export default class FilterParser {
         throw new Error(`Unsupported: filters with more than two arguments`);
     }
 
-    private _findProperty(variable : string) : [string, string|Ast.PropertyPathSequence]|null {
+    private _findProperty(variable : string) : FilterInfo|null {
         for (const [subject, table] of Object.entries(this._converter.tables)) {
             const match = table.projections.find((proj) => proj.variable === variable);
             if (match)
-                return [subject, match.property];
+                return { table:subject, property:match.property, type: 'basic' };
         } 
+        for (const predicate of this._converter.helper.predicates) {
+            if (predicate.value === variable)
+                return { table:predicate.table!, property:predicate.property!, type: 'predicate' };
+            for (const qualifier of predicate.qualifiers) {
+                if (qualifier.value === variable)
+                    return { table:predicate.table!, property:`${predicate.property!}.${qualifier.property}`, type: 'qualifier' };
+            }
+        }
         return null;
     }
 
@@ -52,26 +70,28 @@ export default class FilterParser {
             const match = this._findProperty(arg.value);
             if (!match)
                 throw new Error(`Cannot find projection ${arg.value}`);
-            const [subject, property] = match;
+            assert(match.type === 'basic');
             let booleanExpression;
-            if (typeof property === 'string') {
-                const propertyType = this._converter.schema.getPropertyType(property);
+            if (typeof match.property === 'string') {
+                const propertyType = this._converter.schema.getPropertyType(match.property);
                 if (propertyType instanceof Type.Array) {
                     booleanExpression = new Ast.ComputeBooleanExpression(
                         null,
-                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(property)]),
+                        new Ast.Value.Computation('count', [new Ast.Value.VarRef(match.property)]),
                         '==',
                         new Ast.Value.Number(0)
                     );
                 } else {
-                    booleanExpression = new Ast.AtomBooleanExpression(null, property, '==', new Ast.Value.Null, null);
+                    booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
                 }
+            } else if (match.property instanceof Ast.FilterValue) {
+                booleanExpression = new Ast.ComputeBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
             } else {
-                booleanExpression = new Ast.PropertyPathBooleanExpression(null, property, '==', new Ast.Value.Null, null);
+                booleanExpression = new Ast.PropertyPathBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
             }
             if (negate)
                 booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
-            return new ArrayCollection<Ast.BooleanExpression>(subject, booleanExpression);
+            return new ArrayCollection<Ast.BooleanExpression>(match.table, booleanExpression);
         }
         throw new Error(`Unsupported operator ${expression.operator}`);
     }
@@ -101,23 +121,51 @@ export default class FilterParser {
             const match = this._findProperty(lhs.value);
             if (!match)
                 throw new Error(`Cannot find projection ${lhs.value}`);
-            const [subject, property] = match;
-            if (typeof property !== 'string')
+            if (typeof match.property !== 'string')
                 throw new Error(`Join on property path not supported`);
 
+            // handle qualifier related filter:
+            // do not return it directly, add it the predicates to deal with it later
+            if (match.type !== 'basic') {
+                if (match.type === 'predicate') {
+                    this._converter.helper.updatePredicate({
+                        table: match.table,
+                        property: match.property,
+                        op: operator,
+                        value: rhs.value,
+                        isVariable: false,
+                        qualifiers: []
+                    });
+                } else if (match.type === 'qualifier') {
+                    const [property, qualifier] = match.property.split('.');
+                    this._converter.helper.updatePredicate({
+                        table: match.table,
+                        property,
+                        qualifiers: [{
+                            property: qualifier,
+                            op: operator,
+                            value: rhs.value,
+                            isVariable: false,
+                        }]
+                    });
+                }
+                return filtersBySubject;
+            } 
+
+            // handle regular filters 
             let booleanExpression;
-            if (property.endsWith('Label')) {
+            if (match.property.endsWith('Label')) {
                 assert(operator === 'regex');
-                const prop = property.slice(0, -'Label'.length);
-                const propertyType = this._converter.schema.getPropertyType(prop);
+                const property = match.property.slice(0, -'Label'.length);
+                const propertyType = this._converter.schema.getPropertyType(property);
                 operator = (propertyType instanceof Type.Array) ? 'contains~' : '=~';
-                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(prop, rhs.value, operator, Type.String);
+                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(property, rhs.value, operator, Type.String);
             } else {
-                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(property, rhs.value, operator);
+                booleanExpression = await this._converter.helper.makeAtomBooleanExpression(match.property, rhs.value, operator);
             }
             if (negate)
                 booleanExpression = new Ast.NotBooleanExpression(null, booleanExpression);
-            filtersBySubject.add(subject, booleanExpression);
+            filtersBySubject.add(match.table, booleanExpression);
             return filtersBySubject;
         } 
         throw new Error(`Unsupported binary operation ${expression.operator} with value ${rhs}`);

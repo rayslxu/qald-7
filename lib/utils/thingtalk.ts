@@ -77,11 +77,12 @@ export function makeSubqueryVerificationProgram(main : Ast.Expression, subquerie
 /**
  * Get the element type of a ThingTalk type
  * @param type a ThingTalk type
+ * @param resolveCompound if true, return the `value` field type, otherwise, return the compound type
  */
-export function elemType(type : Type) : Type {
+export function elemType(type : Type, resolveCompound = true) : Type {
     if (type instanceof Type.Array)
-        return elemType(type.elem as Type);
-    if (type instanceof Type.Compound)
-        return elemType(type.fields.value.type);
+        return elemType(type.elem as Type, resolveCompound);
+    if (resolveCompound && type instanceof Type.Compound)
+        return elemType(type.fields.value.type, resolveCompound);
     return type;
 }
