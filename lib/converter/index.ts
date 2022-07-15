@@ -92,7 +92,7 @@ async function main() {
                 output.write({ id: item.id, preprocessed, target_code: MANUAL_CONVERSION[item.query.sparql] });
             } else { 
                 const program = await converter.convert(item.query.sparql, preprocessed);
-                program.typecheck(schemas);
+                await program.typecheck(schemas);
                 const target_code = ThingTalkUtils.serializePrediction(
                     program, 
                     preprocessed,

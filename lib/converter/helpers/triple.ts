@@ -70,7 +70,7 @@ export default class TripleParser {
 
         // Case 1: handle qualifier related triples
         if (isWikidataPredicateNode(triple.predicate)) {
-            this._converter.helper.parsePredicate(triple);
+            await this._converter.helper.parsePredicate(triple);
         // Case 2: if subject is an variable and object is an entity, create a regular filter
         } else if (isVariable(triple.subject) && (isLiteral(triple.object) || isWikidataEntityNode(triple.object))) { 
             // for P31 triple, update the domain of the variable, do not add filter
