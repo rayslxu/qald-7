@@ -29,7 +29,7 @@ import {
 
 
 export interface Projection {
-    property : string|Ast.PropertyPathSequence|Ast.FilterValue, 
+    property : string|Ast.PropertyPathSequence|Ast.FilterValue|Ast.ArrayFieldValue, 
     variable ?: string,
     type ?: string
 }
@@ -264,8 +264,15 @@ export default class SPARQLToThingTalkConverter {
         delete this._tables[subject];
     }
 
-    addOrUpdatePredicate(predicate : Predicate) {
-
+    removeProjection(subject : string, variable : string) {
+        const projections = this._tables[subject].projections;
+        for (let i = 0; i < projections.length; i++) {
+            const projection = projections[i];
+            if (projection.variable! === variable) {
+                projections.splice(i);
+                break;
+            }
+        }
     }
 
     addCrossTableComparison(comp : Comparison) {
@@ -277,6 +284,7 @@ export default class SPARQLToThingTalkConverter {
         this._utterance = utterance;
         this._tables = {};
         this._crossTableComparison = [];
+        this._helper.init();
         this._keywords = getSpans(this._tokenizer.tokenize(this._utterance).rawTokens.join(' '));
     }
 

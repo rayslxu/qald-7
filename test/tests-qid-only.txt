@@ -341,3 +341,15 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 [ head_of_government filter end_time >= new Date ( 2000 ) ] of @org.wikidata . sovereign_state ( ) filter id == " Q30 " ^^org.wikidata:sovereign_state ;
+
+
+====
+Utterance: when did obama start to be the us president? 
+SPARQL: 
+SELECT DISTINCT ?date WHERE {
+    <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p.
+    ?p <http://www.wikidata.org/prop/statement/P6> <http://www.wikidata.org/entity/Q76>.
+    ?p <http://www.wikidata.org/prop/qualifier/P580> ?date.
+}
+TT:
+[ start_time of ( head_of_government filter value == " Q76 " ^^org.wikidata:p_head_of_government ) ] of @org.wikidata . sovereign_state ( ) filter id == " Q30 " ^^org.wikidata:sovereign_state ;

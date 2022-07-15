@@ -76,6 +76,10 @@ export default class ConverterHelper {
         return this._predicate.predicates;
     }
 
+    init() {
+        this._predicate.reset();
+    }
+
     async convertValue(value : any, type : Type) {
         return this._value.toThingTalkValue(value, type);
     }
@@ -284,7 +288,7 @@ export default class ConverterHelper {
                 } else {   
                     isNull = new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
                 }
-            } else if (proj.property instanceof Ast.FilterValue) {
+            } else if (proj.property instanceof Ast.FilterValue || proj.property instanceof Ast.ArrayFieldValue) {
                 isNull = new Ast.ComputeBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
             } else {
                 isNull = new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);

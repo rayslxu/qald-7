@@ -17,7 +17,7 @@ import { isOperationExpression } from '../../utils/sparqljs-typeguard';
 // (3) predicate : a thingtalk filter with qualifier(s)
 interface FilterInfo {
     table : string,
-    property : string|Ast.PropertyPathSequence|Ast.FilterValue,
+    property : string|Ast.PropertyPathSequence|Ast.FilterValue|Ast.ArrayFieldValue,
     type : 'basic'|'qualifier'|'predicate'
 }
 
@@ -84,7 +84,7 @@ export default class FilterParser {
                 } else {
                     booleanExpression = new Ast.AtomBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
                 }
-            } else if (match.property instanceof Ast.FilterValue) {
+            } else if (match.property instanceof Ast.FilterValue || match.property instanceof Ast.ArrayFieldValue) {
                 booleanExpression = new Ast.ComputeBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
             } else {
                 booleanExpression = new Ast.PropertyPathBooleanExpression(null, match.property, '==', new Ast.Value.Null, null);
