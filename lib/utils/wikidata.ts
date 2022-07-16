@@ -13,6 +13,55 @@ export const PROPERTY_STATEMENT_PREFIX = 'http://www.wikidata.org/prop/statement
 export const PROPERTY_QUALIFIER_PREFIX = 'http://www.wikidata.org/prop/qualifier/';
 export const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
 
+const PROPERTY_BLACKLIST = [
+    'P31',
+    // obsolete properties
+    'P642',
+    // audio-related 
+    'P7243', // pronunciation
+    'P898', // ipa transcription
+    // external id or info
+    'P1472', // commons creator page
+    'P2888', // exact match
+    'P973', // described at
+    'P1482', // stack exchange tag
+    'P1613', // irc channel
+    'P1065', // archive url
+    'P7705', // superfamicom.org url,
+    'P1713', // biography at the bundestag of germany url,
+    'P1325', // external data available at
+    'P1421', // grin url
+    'P1348', // algae base url
+    'P1991', // lpsn url
+    'P6363', // word lift url,
+    'P953', // full work available at url
+    // kb/wikimedia metadata: 
+    'P1709', // equivalent class
+    'P5008' , // on focus list of wikimedia projects
+    'P1889', // different from
+    'P1343', // described by source
+    'P910', // topic's main categories
+    'P1424', // topic's main templates
+    'P1151', // topic's main wikimedia portals 
+    'P3831', // object has role,
+    'P1480', // sourcing circumstances,
+    'P217', // inventory number,
+    'P485', // archives at
+    'P1552', // has quality
+    'P2959', // permanent duplicate item,
+    'P2354', // has list
+    'P5125', // wikimedia outline
+    'P528', // catalog code 
+    'P972', // catalog
+    'P805', // statement is subject of
+    'P3680', // statement supported by
+    'P1957',  // wikisource index page url
+    'P8768', // online catalog
+    'P854', // reference url
+    // misc
+    'P5282', // ground level 360 degree view
+];
+
 const SQLITE_SCHEMA = `
 create table http_requests (
     url text primary key,
@@ -323,7 +372,7 @@ export default class WikidataUtils {
             } `;
             const res = await this._query(sparql);
             res.forEach((r : any) => {
-                if (r.p.value !== PROPERTY_PREFIX + 'P31') {
+                if (!PROPERTY_BLACKLIST.includes(r.p.value.slice(PROPERTY_PREFIX.length))) {
                     const property = r.p.value.slice(PROPERTY_PREFIX.length);
                     if (!(property in propertyCounter))
                         propertyCounter[property] = 0;
@@ -358,13 +407,15 @@ export default class WikidataUtils {
         res.forEach((r : any) => {
             const q = r.qualifier?.value;
             if (q) {
+                if (PROPERTY_BLACKLIST.includes(q.slice(PROPERTY_QUALIFIER_PREFIX.length)))
+                    return;
                 if (!(q in qualifierCount))
                     qualifierCount[q] = 0;
                 qualifierCount[q] += 1;
             }
         });
-        // a qualifier is included only if there are two instances among the examples
-        return Object.keys(qualifierCount).filter((q) => qualifierCount[q] >= 2);
+        // a qualifier is included only if there are 10+ instances among the examples
+        return Object.keys(qualifierCount).filter((q) => qualifierCount[q] >= 10);
     } 
 
     /**
@@ -393,7 +444,7 @@ export default class WikidataUtils {
             } `;
             const res = await this._query(sparql);
             res.forEach((r : any) => {
-                if (r.p.value === PROPERTY_PREFIX + 'P31')
+                if (PROPERTY_BLACKLIST.includes(r.p.value.slice(PROPERTY_PREFIX.length)))
                     return;
                 const property = r.p.value.slice(PROPERTY_PREFIX.length);
                 const value = r.v.value.startsWith(ENTITY_PREFIX) ? r.v.value.slice(ENTITY_PREFIX.length) : r.v.value; 
