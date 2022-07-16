@@ -58,6 +58,9 @@ const PROPERTY_BLACKLIST = [
     'P1957',  // wikisource index page url
     'P8768', // online catalog
     'P854', // reference url
+    'P373', // commons category,
+    'P935', // commons gallery
+    'P1612', // commons_institution_page
     // misc
     'P5282', // ground level 360 degree view
 ];
