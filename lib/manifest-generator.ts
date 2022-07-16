@@ -316,6 +316,8 @@ class ManifestGenerator {
         const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
+            if (label.startsWith('category for') || label.startsWith('category of'))
+                continue;
             const pname = cleanName(label);
             const ptype = await this._getPropertyType(domain, property, pname);
             if (!ptype) 
