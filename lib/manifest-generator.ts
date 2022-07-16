@@ -9,7 +9,7 @@ import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, waitFinish } from './utils/misc';
 import { idArgument, elemType } from './utils/thingtalk';
-import WikidataUtils from './utils/wikidata';
+import WikidataUtils, { PROPERTY_QUALIFIER_PREFIX } from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
 interface Entity {
@@ -127,16 +127,24 @@ class ManifestGenerator {
                 value: new Ast.ArgumentDef(null, null, 'value', elemType(type))
             };
             for (const qualifier of qualifiers) {
-                const name = this._wikidata.qualifiers[qualifier].name;
-                const qtype = this._wikidata.qualifiers[qualifier].type;
+                const pid = qualifier.slice(PROPERTY_QUALIFIER_PREFIX.length);
+                const label = (await this._wikidata.getLabel(pid))!;
+                const qname = cleanName(label);
+                const qtype = await this._getPropertyTypeHelper(pid, qname);
+                // skip if it does not has a supported type,
+                if (!qtype)
+                    continue;
                 const annotation = { 
-                    nl: { canonical: await this._generatePropertyCanonicals(qualifier, name, qtype) }, 
+                    nl: { canonical: await this._generatePropertyCanonicals(qualifier, label, qtype) }, 
                     impl: { wikidata_id: new Ast.Value.String(qualifier) } 
                 };
-                fields[qualifier] = new Ast.ArgumentDef(null, null, name, qtype, annotation);
+                fields[qname] = new Ast.ArgumentDef(null, null, qname, qtype, annotation);
             }
-            const compoundType = new Type.Compound(null, fields);
-            type = type instanceof Type.Array ? new Type.Array(compoundType) : compoundType;
+            // if there is more than 1 (value) fields, create a compound type
+            if (Object.keys(fields).length > 1) {
+                const compoundType = new Type.Compound(null, fields);
+                type = type instanceof Type.Array ? new Type.Array(compoundType) : compoundType;
+            }
         }
         this._propertyTypes[propertyId] = type;
         return type;
@@ -186,6 +194,8 @@ class ManifestGenerator {
             }
             return Type.Number;
         }
+        if (wikibaseType === 'GlobeCoordinate')
+            return Type.Location;
         if (wikibaseType === 'WikibaseItem')
             return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
         

@@ -3,7 +3,6 @@ import * as sqlite3 from 'sqlite3';
 import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
-import { Type } from 'thingtalk';
 import BootlegUtils from './bootleg';
 
 const URL = 'https://query.wikidata.org/sparql';
@@ -31,11 +30,6 @@ interface Constraint {
     value : string
 }
 
-interface Qualifier {
-    name : string, 
-    type : Type
-}
-
 type WikibaseType = 'WikibaseItem' | 'CommonsMedia' | 'String' | 'Quantity' | 'Time' | 'Monolingualtext' | 'Url' | 'Unsupported';
 
 function normalizeURL(url : string) {
@@ -49,7 +43,6 @@ export default class WikidataUtils {
     private _bootleg : BootlegUtils;
     private _cacheLoaded : boolean;
     private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
-    public qualifiers : Record<string, Qualifier>; // all qualifiers to include
 
     constructor(cachePath : string, bootlegPath : string) {
         this._cachePath = cachePath;
@@ -57,11 +50,6 @@ export default class WikidataUtils {
         this._bootleg = new BootlegUtils(bootlegPath);
         this._cacheLoaded = false;
         this._properties = {};
-        this.qualifiers = {
-            'P580': { name: 'start_time', type: Type.Date }, 
-            'P582': { name: 'end_time', type: Type.Date }, 
-            'P585': { name: 'point_in_time', type: Type.Date }, 
-        };
     }
 
     /**
@@ -348,31 +336,35 @@ export default class WikidataUtils {
     }
 
     /**
-     * Given a domain and a property, find if the property has the pre-selected qualifiers
-     * Currently, only start time, end time, and point in time 
+     * Given a domain and a property, find if the property qualifiers
      * @param domain QID
      * @param property PID
      * @returns a list of qualifiers PID 
      */
     async getQualifiersByProperty(domain : string, property : string) : Promise<string[]> {
-        const qualifierCount : Record<string, number> = Object.keys(this.qualifiers).reduce((counter, q) => 
-            Object.assign(counter, { [q]: 0 }), {}
-        );
-        const optionalStatements = Object.keys(this.qualifiers).map((q) => `OPTIONAL { ?statement pq:${q} ?${q}. }`);
-        const sparql = `SELECT DISTINCT ?entity ${Object.keys(this.qualifiers).map((q) => `?${q}`).join(' ')} WHERE {
+        const qualifierCount : Record<string, number> = {};
+        const sparql = `SELECT DISTINCT ?entity ?qualifier WHERE {
             ?entity wdt:P31 wd:${domain} .
             ?entity p:${property} ?statement .
-            ${optionalStatements.join(' ')}
+            OPTIONAL { 
+                ?statement ?qualifier ?x. 
+                FILTER(STRSTARTS(STR(?qualifier), "${PROPERTY_QUALIFIER_PREFIX}P")). 
+                BIND (IRI(replace(str(?qualifier), str(pq:), str(wd:)))  AS ?p)
+                ?p wikibase:propertyType ?type .
+                FILTER (?type != wikibase:ExternalId) .
+            }
         } LIMIT 100`;
         const res = await this._query(sparql);
         res.forEach((r : any) => {
-            for (const qualifier in this.qualifiers) {
-                if (qualifier in r)
-                    qualifierCount[qualifier] += 1;
+            const q = r.qualifier?.value;
+            if (q) {
+                if (!(q in qualifierCount))
+                    qualifierCount[q] = 0;
+                qualifierCount[q] += 1;
             }
         });
         // a qualifier is included only if there are two instances among the examples
-        return Object.keys(this.qualifiers).filter((q) => qualifierCount[q] >= 2);
+        return Object.keys(qualifierCount).filter((q) => qualifierCount[q] >= 2);
     } 
 
     /**
@@ -495,7 +487,7 @@ export default class WikidataUtils {
                 const property : string = r.p.value;
                 const type : string = r.type.value;
                 let wikibaseType = type.slice('http://wikiba.se/ontology#'.length);
-                if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url'].includes(wikibaseType))
+                if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url', 'GlobeCoordinate'].includes(wikibaseType))
                     wikibaseType = 'Unsupported';
                 this._properties[property.slice(ENTITY_PREFIX.length)] = wikibaseType as WikibaseType;
             });
