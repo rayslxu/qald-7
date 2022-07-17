@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
 import BootlegUtils from './bootleg';
+import SchemaorgUtils, { SCHEMAORG_PREFIX } from './schemaorg';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -90,17 +91,21 @@ function normalizeURL(url : string) {
  
 export default class WikidataUtils {
     private _wdk : wikibaseSdk;
+    private _schemaorg : SchemaorgUtils;
     private _cachePath : string;
     private _cache ! : sqlite3.Database;
     private _bootleg : BootlegUtils;
     private _cacheLoaded : boolean;
+    private _domains : Record<string, string>; // domains and their subdomains
     private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
 
     constructor(cachePath : string, bootlegPath : string) {
         this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
+        this._schemaorg = new SchemaorgUtils();
         this._bootleg = new BootlegUtils(bootlegPath);
         this._cacheLoaded = false;
+        this._domains = {};
         this._properties = {};
     }
 
@@ -166,6 +171,8 @@ export default class WikidataUtils {
      */
     private async _query(sparql : string) {
         const result = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
+        if (result === null)
+            return null;
         return result.results.bindings;
     }
 
@@ -547,6 +554,68 @@ export default class WikidataUtils {
             });
         }
         return this._properties[propertyId];
+    }
+
+    /**
+     * the number of entities in this domain
+     * @param domain QID of a domain
+     */
+    async getDomainSize(domain : string) : Promise<number> {
+        const query = `SELECT (COUNT(DISTINCT(?uri)) as ?count) WHERE {
+            ?uri wdt:P31/wdt:P279* wd:${domain}. 
+        }`;
+        const result = await this._query(query);
+        if (result === null) {
+            console.log(`Timeout to get domain size for ${domain}, assuming it's a big domain`);
+            return Infinity;
+        }
+        const count = result[0].count.value;
+        return count;
+    }
+
+    /**
+     * Get all the domains to include in the schema
+     * @returns the domains
+     */
+    async getAllDomains(minimum_size = 100) {
+        const schemaTypes = await this._schemaorg.types();
+        // these domains are too big, query will timeout 
+        const BIG_DOMAINS = [ 
+            'Q5',
+            'Q35120',
+            'Q36774',
+            'Q184754',
+            'Q191067',
+            'Q4026292',
+            'Q13442814',
+            'Q17334923',
+            'Q20937557',
+            'Q2424752',
+            'Q17537576',
+            'Q25416091',
+            'Q628523'
+        ];
+        if (Object.keys(this._domains).length === 0) {
+            const query = `SELECT DISTINCT ?domain ?equivalent WHERE {
+                ?domain wdt:P1709 ?equivalent.
+                FILTER(STRSTARTS(STR(?equivalent), 'https://schema.org/'))
+            }`;
+            const result = await this._query(query);
+            for (const r of result) {
+                const domain = r.domain.value.slice(ENTITY_PREFIX.length);
+                const equivalent = r.equivalent.value.slice(SCHEMAORG_PREFIX.length);
+                if (!schemaTypes.some((t) => t.name === equivalent))
+                    continue;
+                if (BIG_DOMAINS.includes(domain)) {
+                    this._domains[domain] = (await this.getLabel(domain))!;
+                } else {
+                    const domainSize = await this.getDomainSize(domain);
+                    if (domainSize >= minimum_size)
+                        this._domains[domain] = (await this.getLabel(domain))!;
+                }
+            }
+        }
+        return this._domains;
     }
 
     /**
