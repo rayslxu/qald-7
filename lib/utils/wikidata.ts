@@ -459,9 +459,9 @@ export default class WikidataUtils {
                 propertyCounter[property] += 1;
             });
         }
-        // a property is included only if at least two entities have it
+        // a property is included only if at least 10 entities have it
         Object.entries(propertyCounter).forEach(([property, count]) => {
-            if (count < 2)
+            if (count < 10)
                 delete properties[property];
         });
         return properties;
