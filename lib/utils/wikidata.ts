@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
 import BootlegUtils from './bootleg';
-import SchemaorgUtils, { SCHEMAORG_PREFIX } from './schemaorg';
+import SchemaorgUtils, { SCHEMAORG_PREFIX, SchemaorgType } from './schemaorg';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -66,6 +66,34 @@ const PROPERTY_BLACKLIST = [
     'P5282', // ground level 360 degree view
 ];
 
+// these domains are too big, querying its entities without more filters
+// will timeout (wdt:P31/wdt:P279*)
+const BIG_DOMAINS = [ 
+    'Q5',        // human
+    'Q35120',    // entity
+    'Q36774',    // web page
+    'Q184754',   // string
+    'Q191067',   // article
+    'Q4026292',  // action
+    'Q13442814', // scholarly article
+    'Q17334923', // location
+    'Q20937557', // series
+    'Q2424752',  // product
+    'Q17537576', // creative work
+    'Q25416091', // substance
+    'Q628523',   // message
+    'Q16521'     // taxon
+];
+
+// these domains are too big, even only just `wdt:P31` will time out, 
+// set their sitelinks minimum manually to get entities
+const SITELINKS_MINIMUM : Record<string, number> = {
+    'Q5': 100, // human
+    'Q16521': 100, // taxon
+    'Q3305213': 20, // painting
+    'Q13442814': 1, // scholar article
+};
+
 const SQLITE_SCHEMA = `
 create table http_requests (
     url text primary key,
@@ -96,7 +124,9 @@ export default class WikidataUtils {
     private _cache ! : sqlite3.Database;
     private _bootleg : BootlegUtils;
     private _cacheLoaded : boolean;
-    private _domains : Record<string, string>; // domains and their subdomains
+    private _domains : Record<string, SchemaorgType>; // domains and their schema.org equivalent type 
+    private _subdomains : Record<string, string[]>; // domains and their subdomains
+    private _domainSize : Record<string, number>; // number of entities for each domain
     private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
 
     constructor(cachePath : string, bootlegPath : string) {
@@ -106,7 +136,13 @@ export default class WikidataUtils {
         this._bootleg = new BootlegUtils(bootlegPath);
         this._cacheLoaded = false;
         this._domains = {};
+        this._subdomains = {};
+        this._domainSize = {};
         this._properties = {};
+    }
+
+    get subdomains() {
+        return this._subdomains;
     }
 
     /**
@@ -218,15 +254,11 @@ export default class WikidataUtils {
     /**
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
-     * we skip this on 
-     *   human (Q5) 
-     *   taxon (Q16521) 
-     *   scholar article (Q13442814)
-     * since the query will timeout 
      * @param entityId QID of an entity
      * @returns 
      */
     async getDomain(entityId : string) : Promise<string|null> {
+        await this.loadAllDomains();
         const domains = await this.getPropertyValue(entityId, 'P31');
         if (domains.length === 0)
             return null;
@@ -234,22 +266,13 @@ export default class WikidataUtils {
             return 'Q5';
             
         const bootlegType = await this._bootleg.getType(entityId);
-        if (bootlegType)
+        if (bootlegType && bootlegType in this._domains)
             return bootlegType;
 
         if (domains.length === 1)
             return domains[0];
-        for (const domain of ['Q16521', 'Q13442814']) {
-            if (domains.includes(domain))
-                return domain;
-        }
         
-        const sparql = `SELECT ?v (COUNT(?s) as ?count) WHERE {
-            wd:${entityId} wdt:P31 ?v.
-            ?s wdt:P31 ?v.
-        } GROUP BY ?v ORDER BY DESC(?count)`;
-        const res = await this._query(sparql);
-        return res[0].v.value.slice(ENTITY_PREFIX.length);
+        return (await this.getTopLevelDomains(...domains))[0];
     }
 
     /**
@@ -341,11 +364,11 @@ export default class WikidataUtils {
      */
     async getEntitiesByDomain(domain : string, limit = 100) : Promise<string[]> {
         let sparql;
-        if (['Q16521', 'Q5', 'Q3305213'].includes(domain)) {
+        if (domain in SITELINKS_MINIMUM) {
             sparql = `SELECT ?v ?sitelinks WHERE {
                 ?v wdt:P31 wd:${domain} ;
                    wikibase:sitelinks ?sitelinks . 
-                FILTER (?sitelinks > ${domain === 'Q3305213' ? 20 : 100}) .
+                FILTER (?sitelinks > ${SITELINKS_MINIMUM[domain]}) .
             } LIMIT ${limit}`;
         } else {
             sparql = `SELECT ?v WHERE {
@@ -561,41 +584,32 @@ export default class WikidataUtils {
      * @param domain QID of a domain
      */
     async getDomainSize(domain : string) : Promise<number> {
-        const query = `SELECT (COUNT(DISTINCT(?uri)) as ?count) WHERE {
-            ?uri wdt:P31/wdt:P279* wd:${domain}. 
-        }`;
-        const result = await this._query(query);
-        if (result === null) {
-            console.log(`Timeout to get domain size for ${domain}, assuming it's a big domain`);
-            return Infinity;
+        if (!this._domainSize[domain]) {
+            if (BIG_DOMAINS.includes(domain)) {
+                this._domainSize[domain] = Infinity;
+            } else {
+                const query = `SELECT (COUNT(DISTINCT(?uri)) as ?count) WHERE {
+                    ?uri wdt:P31/wdt:P279* wd:${domain}. 
+                }`;
+                const result = await this._query(query);
+                if (result === null) {
+                    console.log(`Timeout to get domain size for ${domain}, assuming it's a big domain`);
+                    this._domainSize[domain] = Infinity;
+                } else {
+                    this._domainSize[domain] = result[0].count.value;
+                }
+            }
         }
-        const count = result[0].count.value;
-        return count;
+        return this._domainSize[domain];
     }
 
     /**
      * Get all the domains to include in the schema
      * @returns the domains
      */
-    async getAllDomains(minimum_size = 100) {
-        const schemaTypes = await this._schemaorg.types();
-        // these domains are too big, query will timeout 
-        const BIG_DOMAINS = [ 
-            'Q5',
-            'Q35120',
-            'Q36774',
-            'Q184754',
-            'Q191067',
-            'Q4026292',
-            'Q13442814',
-            'Q17334923',
-            'Q20937557',
-            'Q2424752',
-            'Q17537576',
-            'Q25416091',
-            'Q628523'
-        ];
+    async loadAllDomains(minimum_size = 100) {
         if (Object.keys(this._domains).length === 0) {
+            const schemaTypes = await this._schemaorg.types();
             const query = `SELECT DISTINCT ?domain ?equivalent WHERE {
                 ?domain wdt:P1709 ?equivalent.
                 FILTER(STRSTARTS(STR(?equivalent), 'https://schema.org/'))
@@ -604,18 +618,65 @@ export default class WikidataUtils {
             for (const r of result) {
                 const domain = r.domain.value.slice(ENTITY_PREFIX.length);
                 const equivalent = r.equivalent.value.slice(SCHEMAORG_PREFIX.length);
-                if (!schemaTypes.some((t) => t.name === equivalent))
+                const equivalentType = schemaTypes.find((t) => t.name === equivalent);
+                if (!equivalentType)
                     continue;
-                if (BIG_DOMAINS.includes(domain)) {
-                    this._domains[domain] = (await this.getLabel(domain))!;
-                } else {
-                    const domainSize = await this.getDomainSize(domain);
-                    if (domainSize >= minimum_size)
-                        this._domains[domain] = (await this.getLabel(domain))!;
+                if ((await this.getDomainSize(domain)) >= minimum_size) {
+                    this._domains[domain] = equivalentType;
+                    this._subdomains[domain] = [];
                 }
             }
+            await this._loadSubdomains();
         }
-        return this._domains;
+    }
+
+    async _loadSubdomains() {
+        // get all domains that have external equivalence
+        const query = `SELECT DISTINCT ?uri WHERE { ?uri wdt:P1709 ?equivalent }`;
+        const result = await this._query(query);
+        // find their parent 
+        const subdomains = result.map((r : any) => 
+            r.uri.value.slice(ENTITY_PREFIX.length)
+        ).filter((r : string) => 
+            !(r in this._domains)
+        );
+        for (const domain of subdomains) {
+            const topLevelDomains = await this.getTopLevelDomains(domain);
+            for (const topLevelDomain of topLevelDomains)
+                this._subdomains[topLevelDomain].push(domain);
+        }
+    }
+
+    /**
+     * Return the top-level parent domains given a subdomain
+     * the returned list is ordered using some heuristics, default should be the first one
+     * @param qids a list of QIDs 
+     */
+    async getTopLevelDomains(...qids : string[]) : Promise<string[]> {
+        let candidates = [];
+        for (const qid of qids) {
+            if (qid in this._domains) {
+                candidates.push(qid);
+                continue;
+            }
+            const query = `SELECT ?uri WHERE { wd:${qid} wdt:P279+ ?uri }`;
+            const result = await this._query(query);
+            const parentDomains : string[] = result.map((r : any) => 
+                r.uri.value.slice(ENTITY_PREFIX.length)
+            ).filter((d : string) => 
+                d in this._domains 
+            );
+            candidates.push(...parentDomains);
+        }
+        const maxDepth = Math.max(...candidates.map((d) => this._domains[d].depth));
+        candidates = candidates.filter((d) => this._domains[d].depth === maxDepth);
+        if (candidates.length === 1)
+            return candidates;
+        return candidates.sort((a, b) => {
+            if (this._domainSize[a] === this._domainSize[b])
+                return b.localeCompare(a);
+            return this._domainSize[a] - this._domainSize[b];
+        });
     }
 
     /**

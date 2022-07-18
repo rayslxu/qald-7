@@ -2,9 +2,10 @@ import * as Tp from 'thingpedia';
 export const SCHEMAORG_PREFIX = 'https://schema.org/';
 
 const SCHEMA_JSON = 'https://raw.githubusercontent.com/schemaorg/schemaorg/main/data/releases/14.0/schemaorg-current-https.jsonld';
-class SchemaorgType {
+export class SchemaorgType {
     id : string;
     name : string;
+    private _depth ?: number;
     private _subclass_of : SchemaorgType[];
 
     constructor(id : string, name : string, subclass_of : SchemaorgType[]) {
@@ -29,6 +30,15 @@ class SchemaorgType {
                 return true;
         }
         return false;
+    }
+
+    get depth() : number {
+        if (this._depth)
+            return this._depth;
+        if (this.name === 'Thing')
+            return 0;
+        const parentDepths = this._subclass_of.map((t) => t.depth);
+        return Math.min(...parentDepths) + 1;
     }
 }
 
