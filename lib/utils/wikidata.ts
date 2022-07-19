@@ -268,9 +268,6 @@ export default class WikidataUtils {
         const bootlegType = await this._bootleg.getType(entityId);
         if (bootlegType && bootlegType in this._domains)
             return bootlegType;
-
-        if (domains.length === 1)
-            return domains[0];
         
         return (await this.getTopLevelDomains(...domains))[0];
     }
