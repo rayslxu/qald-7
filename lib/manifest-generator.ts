@@ -44,8 +44,10 @@ class ManifestGenerator {
     private _examples : Example[];
     private _entities : Record<string, Entity>;
     private _domainLabels : Record<string, string>; // Record<QID, domain label>
+    private _subdomains : Record<string, string[]>; // subdomains for each domain
     private _domainSamples : Record<string, Record<string, string|null>>; // Record<QID, entities> 
     private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<QID, Record<PID, property label>>
+                                                                              // only record properties in QALD examples
     /**
      * @member _properties: an object with PID as key, and argument definition as value, 
      * to record all properties in different functions, so we can add them 
@@ -75,6 +77,7 @@ class ManifestGenerator {
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD(options.experiment);
         this._domainLabels = {};
+        this._subdomains = {};
         this._domainSamples = {};
         this._entities = {};
         this._propertyLabelsByDomain = {};
@@ -395,7 +398,7 @@ class ManifestGenerator {
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
         // add missing properties needed by QALD if necessary 
-        for (const [id, label] of Object.entries(this._propertyLabelsByDomain[domain])) {
+        for (const [id, label] of Object.entries(this._propertyLabelsByDomain[domain] ?? {})) {
             const pname = cleanName(label);
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
@@ -449,7 +452,7 @@ class ManifestGenerator {
 
         // queries
         const queries : Record<string, Ast.FunctionDef> = {};
-        for (const domain in this._propertyLabelsByDomain) {
+        for (const domain in this._domainLabels) {
             const [fname, functionDef] = await this._processDomain(domain);
             queries[fname] = functionDef;
         }
@@ -548,11 +551,22 @@ class ManifestGenerator {
         await waitFinish(output);
     }
 
+    async _loadDomains() {
+        await this._wikidata.loadAllDomains();
+        this._subdomains = this._wikidata.subdomains;
+        for (const domain in this._subdomains) {
+            const domainLabel = await this._wikidata.getLabel(domain);
+            if (!domainLabel)
+                throw new Error('Failed to find label for domain: ' + domain);
+            this._domainLabels[domain] = domainLabel;
+        }
+    }
 
     /**
      * Process all examples in QALD and then generate/output the manifest and parameter datasets
      */
     async generate() {
+        await this._loadDomains();
         console.log('Start processing QALD examples ...');
         await this._processExamples();
         console.log(`Done processing QALD examples, ${Object.keys(this._domainLabels).length} domains discovered: `);
