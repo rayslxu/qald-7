@@ -244,24 +244,26 @@ export default class WikidataUtils {
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
      * @param entityId QID of an entity
+     * @param excludes a list of domains (QIDs) that we want to exclude, this is used to 
+     *                 to provide alternative domain when properties are not available
      * @returns the QID of the domain of the entity
      */
-    async getDomain(entityId : string) : Promise<string|null> {
+    async getDomain(entityId : string, excludes : string[] = []) : Promise<string|null> {
         await this.loadAllDomains();
         const domains = await this.getPropertyValue(entityId, 'P31');
         if (domains.length === 0)
             return null;
-        if (domains.includes('Q5'))
+        if (domains.includes('Q5') && !excludes.includes('Q5'))
             return 'Q5';
             
         const bootlegType = await this._bootleg.getType(entityId);
         if (bootlegType) {
-            if (bootlegType in this._domains)
+            if (bootlegType in this._domains && !excludes.includes(bootlegType))
                 return bootlegType;
-            return this.getTopLevelDomain(bootlegType);
+            return this.getTopLevelDomain([bootlegType], excludes);
         }
         
-        return this.getTopLevelDomain(...domains);
+        return this.getTopLevelDomain(domains, excludes);
     }
 
     /**
@@ -695,13 +697,14 @@ export default class WikidataUtils {
      * is used to order the candidates
      * 
      * @param qids a list of QIDs 
+     * @param excludes a list of domains (QIDs) we want to exclude from the result
      * @returns the default to-level domain 
      */
-    async getTopLevelDomain(...qids : string[]) : Promise<string|null> {
+    async getTopLevelDomain(qids : string[], excludes : string[] = []) : Promise<string|null> {
         // if no domains available, return the 'entity' domain - everything is an entity
         if (qids.length === 0)
             return 'Q35120';
-        let candidates = qids.filter((d) => d in this._domains);
+        let candidates = qids.filter((d) => d in this._domains && !excludes.includes(d));
         if (candidates.length > 0) {
             // (1) sort by domain size first, choose the more common one
             //     if there is a tie, go with alphabetical order
@@ -731,7 +734,7 @@ export default class WikidataUtils {
             return candidates[0];
         }
         const parentDomains = await this.getParentDomains(...qids);
-        return this.getTopLevelDomain(...parentDomains);
+        return this.getTopLevelDomain(parentDomains);
     }
 
     /**
