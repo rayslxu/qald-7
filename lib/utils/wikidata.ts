@@ -244,7 +244,7 @@ export default class WikidataUtils {
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
      * @param entityId QID of an entity
-     * @returns 
+     * @returns the QID of the domain of the entity
      */
     async getDomain(entityId : string) : Promise<string|null> {
         await this.loadAllDomains();
@@ -255,8 +255,11 @@ export default class WikidataUtils {
             return 'Q5';
             
         const bootlegType = await this._bootleg.getType(entityId);
-        if (bootlegType && bootlegType in this._domains)
-            return bootlegType;
+        if (bootlegType) {
+            if (bootlegType in this._domains)
+                return bootlegType;
+            return this.getTopLevelDomain(bootlegType);
+        }
         
         return this.getTopLevelDomain(...domains);
     }
@@ -694,7 +697,10 @@ export default class WikidataUtils {
      * @param qids a list of QIDs 
      * @returns the default to-level domain 
      */
-    async getTopLevelDomain(...qids : string[]) : Promise<string> {
+    async getTopLevelDomain(...qids : string[]) : Promise<string|null> {
+        // if no domains available, return the 'entity' domain - everything is an entity
+        if (qids.length === 0)
+            return 'Q35120';
         let candidates = qids.filter((d) => d in this._domains);
         if (candidates.length > 0) {
             // (1) sort by domain size first, choose the more common one

@@ -7,7 +7,10 @@ const TEST_CASES = [
     ['Q2608065', 'film'],
     ['Q23572', 'television series'],
     ['Q213959', 'sports team'],
-    ['Q128446', 'sports organization']
+    ['Q128446', 'sports organization'],
+    ['Q17527142', 'entity'],
+    ['Q125006', 'bridge'],
+    ['Q35600', 'landform']
 ];
 
 async function main() { 
