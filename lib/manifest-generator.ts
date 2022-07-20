@@ -46,8 +46,7 @@ class ManifestGenerator {
     private _domainLabels : Record<string, string>; // Record<QID, domain label>
     private _subdomains : Record<string, string[]>; // subdomains for each domain
     private _domainSamples : Record<string, Record<string, string|null>>; // Record<QID, entities> 
-    private _propertyLabelsByDomain : Record<string, Record<string, string>>; // Record<QID, Record<PID, property label>>
-                                                                              // only record properties in QALD examples
+    private _propertiesByDomainInQald : Record<string, Set<string>>; // Record<QID, Set<PID>>, domain and properties in QALD examples
     /**
      * @member _properties: an object with PID as key, and argument definition as value, 
      * to record all properties in different functions, so we can add them 
@@ -80,7 +79,7 @@ class ManifestGenerator {
         this._subdomains = {};
         this._domainSamples = {};
         this._entities = {};
-        this._propertyLabelsByDomain = {};
+        this._propertiesByDomainInQald = {};
         this._properties = {};
         this._propertyValues = { entities: {}, strings: {} };
         this._propertyTypes = {};
@@ -97,19 +96,6 @@ class ManifestGenerator {
      */
     private async _getEntityType(entityId : string) : Promise<string|null> {
         return this._wikidata.getDomain(entityId);
-    }
-
-    /**
-     * Add property to domain
-     * @param entityId QID of a domain
-     * @param propertyId PID of a property 
-     */
-    private async _updateProperties(entityId : string, propertyId : string) {
-        if (!(entityId in this._propertyLabelsByDomain)) 
-            this._propertyLabelsByDomain[entityId] = {};
-        
-        const propertyLabel = await this._wikidata.getLabel(propertyId);
-        this._propertyLabelsByDomain[entityId][propertyId] = propertyLabel ?? propertyId;
     }
     
 
@@ -272,7 +258,7 @@ class ManifestGenerator {
                     (triple.object as IriTerm).termType === 'NamedNode') {
                     const domain = triple.object.value.slice(ENTITY_PREFIX.length);
                     variables[triple.subject.value] = domain;
-                    this._domainLabels[domain] = await this._wikidata.getLabel(domain) ?? domain;
+                    this._propertiesByDomainInQald[domain] = new Set();
                 }
             }
             for (const triple of triples) {
@@ -281,14 +267,18 @@ class ManifestGenerator {
                     const domain = await this._getEntityType(entityId);
                     if (!domain)
                         continue;
-                    const domainLabel = await this._wikidata.getLabel(domain);
-                    this._domainLabels[domain] = domainLabel || domain;
-                    for (const property of extractProperties(triple.predicate)) 
-                        await this._updateProperties(domain, property);
+                    for (const property of extractProperties(triple.predicate)) {
+                        if (!(domain in this._propertiesByDomainInQald))
+                            this._propertiesByDomainInQald[domain] = new Set();
+                        this._propertiesByDomainInQald[domain].add(property);
+                    }
                 } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
                     const domain = variables[triple.subject.value];
-                    for (const property of extractProperties(triple.predicate))
-                        await this._updateProperties(domain, property);
+                    for (const property of extractProperties(triple.predicate)) {
+                        if (!(domain in this._propertiesByDomainInQald))
+                            this._propertiesByDomainInQald[domain] = new Set();
+                        this._propertiesByDomainInQald[domain].add(property);
+                    }
                 }
             }
         } catch(e) {
@@ -397,28 +387,12 @@ class ManifestGenerator {
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
-        // add missing properties needed by QALD if necessary 
-        for (const [id, label] of Object.entries(this._propertyLabelsByDomain[domain] ?? {})) {
+        // check missing properties in QALD (do not add it, just check) 
+        for (const [id, label] of Object.entries(this._propertiesByDomainInQald[domain] ?? {})) {
             const pname = cleanName(label);
             if (args.some((a) => a.name === pname) || id === 'P31')
                 continue;
             missing.push([id, label]);
-            const ptype = await this._getPropertyType(domain, id, pname);
-            if (!ptype)
-                throw new Error('Unsupported property type for property ' + pname);
-            const argumentDef = new Ast.ArgumentDef(
-                null, 
-                Ast.ArgDirection.OUT, 
-                pname,
-                ptype,
-                {
-                    nl: { canonical:  await this._generatePropertyCanonicals(id, label, ptype) },
-                    impl: { wikidata_id: new Ast.Value.String(id) }
-                }
-            );
-            args.push(argumentDef);
-            this._addEntity(`p_${pname}`, label);
-            this._properties[label] = argumentDef;
         }
         console.log(`Done sampling ${domainLabel} domain`);
         console.log(`In total ${args.length} properties sampled, ${missing.length} not covered`);
