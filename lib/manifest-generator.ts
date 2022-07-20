@@ -358,7 +358,7 @@ class ManifestGenerator {
                     const type = await this._getEntityType(value);
                     if (type) {
                         const typeLabel = await this._wikidata.getLabel(type);
-                        if (typeLabel) {
+                        if (typeLabel && typeLabel !== 'entity') {
                             valueTypes.add(`org.wikidata:${cleanName(typeLabel)}`);
                             this._addEntity(cleanName(typeLabel), typeLabel, ['org.wikidata:entity']);
                         }
@@ -453,6 +453,8 @@ class ManifestGenerator {
         // queries
         const queries : Record<string, Ast.FunctionDef> = {};
         for (const domain in this._domainLabels) {
+            if (domain === 'Q35120') // skip "entity" domain
+                continue;
             const [fname, functionDef] = await this._processDomain(domain);
             queries[fname] = functionDef;
         }
