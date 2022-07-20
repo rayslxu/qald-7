@@ -2,6 +2,19 @@ import * as Tp from 'thingpedia';
 export const SCHEMAORG_PREFIX = 'https://schema.org/';
 
 const SCHEMA_JSON = 'https://raw.githubusercontent.com/schemaorg/schemaorg/main/data/releases/14.0/schemaorg-current-https.jsonld';
+
+
+// All level 1 domains in schema.org except for Action and Intangible
+export const LEVEL1_DOMAINS = [
+    'CreativeWork',
+    'Event',
+    'MedicalEntity',
+    'Organization',
+    'Person',
+    'Place',
+    'Product'
+];
+
 export class SchemaorgType {
     id : string;
     name : string;
@@ -82,8 +95,7 @@ export default class SchemaorgUtils {
             await this._init();
         return Object.values(this._types).filter((t) => 
             t.isSubclassOf('Thing', maxDepth) && 
-            !t.isSubclassOf('Intangible') && 
-            !t.isSubclassOf('Action')
+            LEVEL1_DOMAINS.some((d) => t.isSubclassOf(d)) || t.name === 'Thing'
         );
     }
 }
