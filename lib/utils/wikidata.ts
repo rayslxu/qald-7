@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { wikibaseSdk } from 'wikibase-sdk'; 
 import wikibase from 'wikibase-sdk';
 import BootlegUtils from './bootleg';
-import SchemaorgUtils, { SCHEMAORG_PREFIX, SchemaorgType } from './schemaorg';
+import SchemaorgUtils, { SCHEMAORG_PREFIX, SchemaorgType, LEVEL1_DOMAINS } from './schemaorg';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -67,25 +67,14 @@ const PROPERTY_BLACKLIST = [
 ];
 
 // these domains are too big, querying its entities without more filters
-// will timeout (wdt:P31/wdt:P279*)
+// will timeout 
 const BIG_DOMAINS = [ 
     'Q5',        // human
-    'Q35120',    // entity
-    'Q36774',    // web page
-    'Q184754',   // string
-    'Q191067',   // article
-    'Q4026292',  // action
     'Q13442814', // scholarly article
-    'Q17334923', // location
-    'Q20937557', // series
-    'Q2424752',  // product
-    'Q17537576', // creative work
-    'Q25416091', // substance
-    'Q628523',   // message
     'Q16521'     // taxon
 ];
 
-// these domains are too big, even only just `wdt:P31` will time out, 
+// these domains are too big, sorting entities by sitelinks will time out 
 // set their sitelinks minimum manually to get entities
 const SITELINKS_MINIMUM : Record<string, number> = {
     'Q5': 100, // human
@@ -269,7 +258,7 @@ export default class WikidataUtils {
         if (bootlegType && bootlegType in this._domains)
             return bootlegType;
         
-        return (await this.getTopLevelDomains(...domains))[0];
+        return this.getTopLevelDomain(...domains);
     }
 
     /**
@@ -586,7 +575,7 @@ export default class WikidataUtils {
                 this._domainSize[domain] = Infinity;
             } else {
                 const query = `SELECT (COUNT(DISTINCT(?uri)) as ?count) WHERE {
-                    ?uri wdt:P31/wdt:P279* wd:${domain}. 
+                    ?uri wdt:P31 wd:${domain}. 
                 }`;
                 const result = await this._query(query);
                 if (result === null) {
@@ -618,7 +607,9 @@ export default class WikidataUtils {
                 const equivalentType = schemaTypes.find((t) => t.name === equivalent);
                 if (!equivalentType)
                     continue;
-                if ((await this.getDomainSize(domain)) >= minimum_size) {
+                // only add the domain if (1) it's "entity" or (2) it has at least 100 examples
+                // domain size is counted by direct class (P31 only, no P31/P279*), so entity has less than 100 examples
+                if (domain === 'Q35120' || (await this.getDomainSize(domain)) >= minimum_size) {
                     this._domains[domain] = equivalentType;
                     this._subdomains[domain] = [];
                 }
@@ -645,15 +636,15 @@ export default class WikidataUtils {
     }
 
     /**
-     * Return the top-level parent domains given a subdomain
-     * the returned list is ordered using some heuristics, default should be the first one
+     * Return the top-level parent domains given a subdomain 
+     * this only returns domains that are included in the manifest
      * @param qids a list of QIDs 
      */
     async getTopLevelDomains(...qids : string[]) : Promise<string[]> {
-        let candidates = [];
+        const domains = [];
         for (const qid of qids) {
             if (qid in this._domains) {
-                candidates.push(qid);
+                domains.push(qid);
                 continue;
             }
             const query = `SELECT ?uri WHERE { wd:${qid} wdt:P279+ ?uri }`;
@@ -663,17 +654,78 @@ export default class WikidataUtils {
             ).filter((d : string) => 
                 d in this._domains 
             );
-            candidates.push(...parentDomains);
+            domains.push(...parentDomains);
         }
-        const maxDepth = Math.max(...candidates.map((d) => this._domains[d].depth));
-        candidates = candidates.filter((d) => this._domains[d].depth === maxDepth);
-        if (candidates.length === 1)
-            return candidates;
-        return candidates.sort((a, b) => {
-            if (this._domainSize[a] === this._domainSize[b])
-                return b.localeCompare(a);
-            return this._domainSize[a] - this._domainSize[b];
-        });
+        return [...new Set(domains)];
+    }
+
+    /**
+     * Return the immediate parent domains given a subdomain
+     * this returns all domains in wikidata, including those not in the manifest
+     * @param qids a list of QIDs
+     * @returns a list of parent class QIDs 
+     */
+    async getParentDomains(...qids : string[]) : Promise<string[]> {
+        const domains = [];
+        for (const qid of qids) {
+            if (qid in this._domains) {
+                domains.push(qid);
+                continue;
+            }
+            const query = `SELECT ?uri WHERE { wd:${qid} wdt:P279 ?uri }`;
+            const result = await this._query(query);
+            const parentDomains : string[] = result.map((r : any) => 
+                r.uri.value.slice(ENTITY_PREFIX.length)
+            );
+            domains.push(...parentDomains);
+        }
+        return [...new Set(domains)];
+    }
+
+    /**
+     * Return one top-level domain given a subdomain
+     * The returned one is considered the default domain to choose a function 
+     * unless there are some properties not available for the domain
+     * 
+     * It iteratively check the immediate parent domains and find a domain that
+     * is included in the top-level domains. If there are multiple, some heuristics
+     * is used to order the candidates
+     * 
+     * @param qids a list of QIDs 
+     * @returns the default to-level domain 
+     */
+    async getTopLevelDomain(...qids : string[]) : Promise<string> {
+        let candidates = qids.filter((d) => d in this._domains);
+        if (candidates.length > 0) {
+            // (1) sort by domain size first, choose the more common one
+            //     if there is a tie, go with alphabetical order
+            candidates.sort((a, b) => {
+                if (this._domainSize[a] === this._domainSize[b])
+                    return b.localeCompare(a);
+                return this._domainSize[a] - this._domainSize[b];
+            });
+            
+            // (2) within the 1st level schema domain, sort by depth, choose the more specific one
+            //     if there is a tie, choose the one that has a larger domain size
+            for (const domain of LEVEL1_DOMAINS) {
+                if (this._domains[candidates[0]].isSubclassOf(domain)) {
+                    candidates = candidates.filter((d) => this._domains[d].isSubclassOf(domain));
+                    if (candidates.length === 1 && this._domains[candidates[0]].name === domain)
+                        return candidates[0];
+                    candidates = candidates.filter((d) => this._domains[d].name !== domain);
+                    const maxDepth = Math.max(...candidates.map((d) => this._domains[d].depth));
+                    candidates = candidates.filter((d) => this._domains[d].depth === maxDepth);
+                    candidates.sort((a, b) => {
+                        if (this._domainSize[a] === this._domainSize[b])
+                            return b.localeCompare(a);
+                        return this._domainSize[b] - this._domainSize[a];
+                    });
+                }
+            }
+            return candidates[0];
+        }
+        const parentDomains = await this.getParentDomains(...qids);
+        return this.getTopLevelDomain(...parentDomains);
     }
 
     /**
