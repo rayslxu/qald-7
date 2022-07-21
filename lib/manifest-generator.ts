@@ -124,10 +124,10 @@ class ManifestGenerator {
                 if (!qtype)
                     continue;
                 const annotation = { 
-                    nl: { canonical: await this._generatePropertyCanonicals(pid, label, qtype) }, 
+                    nl: { canonical: await this._generatePropertyCanonicals(pid, label, elemType(qtype)) }, 
                     impl: { wikidata_id: new Ast.Value.String(pid) } 
                 };
-                fields[qname] = new Ast.ArgumentDef(null, null, qname, qtype, annotation);
+                fields[qname] = new Ast.ArgumentDef(null, null, qname, elemType(qtype), annotation);
             }
             // if there is more than 1 (value) fields, create a compound type
             if (Object.keys(fields).length > 1) {
