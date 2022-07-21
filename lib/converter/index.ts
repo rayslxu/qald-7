@@ -96,8 +96,13 @@ async function main() {
                 const target_code = ThingTalkUtils.serializePrediction(
                     program, 
                     preprocessed,
-                    EntityUtils.makeDummyEntities(preprocessed),
-                    { locale: 'en', timezone: undefined, includeEntityValue: args.include_entity_value }
+                    EntityUtils.makeDummyEntities(preprocessed), 
+                    { 
+                        locale: 'en', 
+                        timezone: undefined, 
+                        includeEntityValue: args.include_entity_value, 
+                        excludeEntityDisplay: args.exclude_entity_display
+                    }
                 ).join(' ');
                 output.write({ id: item.id, preprocessed, target_code });
             }
