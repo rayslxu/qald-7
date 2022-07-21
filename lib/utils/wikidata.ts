@@ -709,7 +709,7 @@ export default class WikidataUtils {
      * @param excludes a list of domains (QIDs) we want to exclude from the result
      * @returns the default to-level domain 
      */
-    async getTopLevelDomain(qids : string[], excludes : string[] = []) : Promise<string|null> {
+    async getTopLevelDomain(qids : string[], excludes : string[] = []) : Promise<string> {
         // if no domains available, return the 'entity' domain - everything is an entity
         if (qids.length === 0)
             return 'Q35120';
