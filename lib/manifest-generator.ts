@@ -124,8 +124,8 @@ class ManifestGenerator {
                 if (!qtype)
                     continue;
                 const annotation = { 
-                    nl: { canonical: await this._generatePropertyCanonicals(qualifier, label, qtype) }, 
-                    impl: { wikidata_id: new Ast.Value.String(qualifier) } 
+                    nl: { canonical: await this._generatePropertyCanonicals(pid, label, qtype) }, 
+                    impl: { wikidata_id: new Ast.Value.String(pid) } 
                 };
                 fields[qname] = new Ast.ArgumentDef(null, null, qname, qtype, annotation);
             }
