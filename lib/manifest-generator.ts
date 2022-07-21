@@ -8,7 +8,7 @@ import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs'
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, waitFinish } from './utils/misc';
-import { idArgument, elemType } from './utils/thingtalk';
+import { idArgument, elemType, instanceOfArgument } from './utils/thingtalk';
 import WikidataUtils, { PROPERTY_QUALIFIER_PREFIX } from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
 
@@ -302,7 +302,7 @@ class ManifestGenerator {
      * @param entityType snake cased label of the domain
      */
     private async _processDomainProperties(domain : string, entityType : string) {
-        const args = [idArgument(cleanName(entityType))];
+        const args = [idArgument(cleanName(entityType)), instanceOfArgument(entityType)];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
         const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
@@ -435,7 +435,7 @@ class ManifestGenerator {
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
             is_monitorable: false
-        }, [idArgument('entity'), ...Object.values(this._properties)], {
+        }, [idArgument('entity'), instanceOfArgument('entity'), ...Object.values(this._properties)], {
             nl: { canonical: ['entity'] },
             impl : {
                 handle_thingtalk: new Ast.Value.Boolean(true),
@@ -478,6 +478,22 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
+                if (display) {
+                    const tokenized = this._tokenizer.tokenize(display);
+                    data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
+                }
+            }
+            paramDataset.end(JSON.stringify(data, undefined, 2));
+            await waitFinish(paramDataset);
+        }
+        // write entity dataset for instanceof 
+        for (const [domain, values] of Object.entries(this._wikidata.subdomains)) {
+            const fname = cleanName(this._domainLabels[domain]);
+            index.write(`entity\ten-US\torg.wikidata:${fname}_subdomain\tparameter-datasets/${fname}.json\n`);
+            const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}_subdomain.json`);
+            const data : Record<string, any> = { result: "ok", data: [] };
+            for (const value of values) {
+                const display = await this._wikidata.getLabel(value);
                 if (display) {
                     const tokenized = this._tokenizer.tokenize(display);
                     data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });

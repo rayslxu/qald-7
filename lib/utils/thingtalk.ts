@@ -11,6 +11,19 @@ export function idArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
+export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
+    return new Ast.ArgumentDef(
+        null,
+        Ast.ArgDirection.OUT,
+        'instance_of',
+        new Type.Entity(`org.wikidata:${entityType}_subdomain`),
+        { 
+            nl: { canonical: { npi: ['#'] } },
+            impl: { wikidata_id: new Ast.Value.String('P31') }
+        }
+    );
+}
+
 export function isIdFilter(filter : Ast.BooleanExpression) : boolean {
     return filter instanceof Ast.AtomBooleanExpression && filter.name === 'id' && filter.operator === '==';
 }
