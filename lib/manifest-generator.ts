@@ -348,9 +348,10 @@ class ManifestGenerator {
                     const type = await this._getEntityType(value);
                     if (type) {
                         const typeLabel = await this._wikidata.getLabel(type);
-                        if (typeLabel && typeLabel !== 'entity') {
+                        if (typeLabel) {
+                            const parentClasses = typeLabel === 'entity' ? [] : ['org.wikidata:entity'];
                             valueTypes.add(`org.wikidata:${cleanName(typeLabel)}`);
-                            this._addEntity(cleanName(typeLabel), typeLabel, ['org.wikidata:entity']);
+                            this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
                         }
                     }
                 }
@@ -375,15 +376,18 @@ class ManifestGenerator {
      * @param domain QID of a domain
      * @returns A function definition of this domain
      */
-    private async _processDomain(domain : string) : Promise<[string, Ast.FunctionDef]> {
+    private async _processDomain(domain : string) : Promise<[string, Ast.FunctionDef|null]> {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
-        this._addEntity(fname, domainLabel, ['org.wikidata:entity']);
+        this._addEntity(fname, domainLabel, fname === 'entity' ? [] : ['org.wikidata:entity']);
         const samples = await this._wikidata.getEntitiesByDomain(domain); 
         const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
         this._domainSamples[fname] = sampleLabels;
-        
+
+        if (fname === 'entity') // skip the rest for "entity" domain
+            return [fname, null];
+
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
         const missing = [];
@@ -427,10 +431,9 @@ class ManifestGenerator {
         // queries
         const queries : Record<string, Ast.FunctionDef> = {};
         for (const domain in this._domainLabels) {
-            if (domain === 'Q35120') // skip "entity" domain
-                continue;
             const [fname, functionDef] = await this._processDomain(domain);
-            queries[fname] = functionDef;
+            if (functionDef)
+                queries[fname] = functionDef;
         }
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
@@ -456,7 +459,7 @@ class ManifestGenerator {
 
         console.log('Start writing device manifest ...');
         const whitelist =  new Ast.Value.Array(
-            Object.keys(queries).filter((qname) => qname !== 'entity').map((qname) => new Ast.Value.String(qname))
+            Object.keys(queries).map((qname) => new Ast.Value.String(qname))
         );
         return new Ast.ClassDef(null, 'org.wikidata', null, {
             imports, queries, entities
