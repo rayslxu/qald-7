@@ -1,4 +1,4 @@
-import { Ast } from 'thingtalk';
+import { Ast, Type } from 'thingtalk';
 import { I18n } from 'genie-toolkit';
 import {  
     Parser, 
@@ -20,7 +20,7 @@ import {
     getSpans,
     ArrayCollection
 } from '../utils/misc';
-import WikidataUtils from '../utils/wikidata';
+import WikidataUtils, { ENTITY_PREFIX } from '../utils/wikidata';
 import { WikiSchema as WikidataSchema } from '../schema';
 import {
     makeProgram,
@@ -89,7 +89,7 @@ class QueryParser {
         
         for (const [subject, filters] of filtersBySubject.iterate()) {
             for (const filter of filters) 
-                this._converter.updateTable(subject, filter);
+                await this._converter.updateTable(subject, filter);
         }
     }
 
@@ -117,7 +117,7 @@ class QueryParser {
         const filtersBySubject = await this._converter.helper.convertPredicates();
         for (const [subject, filters] of filtersBySubject.iterate()) {
             for (const filter of filters)
-                this._converter.updateTable(subject, filter);
+                await this._converter.updateTable(subject, filter);
         }
     }
 
@@ -249,15 +249,30 @@ export default class SPARQLToThingTalkConverter {
         return this._utterance;
     }
 
-    updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
-        if (!(subject in this._tables))
+    async updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
+        if (!(subject in this._tables)) 
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
-        if (update instanceof Ast.BooleanExpression) 
+        if (update instanceof Ast.BooleanExpression) { 
             this._tables[subject].filters.push(update);
-        else if (typeof update === 'string')
-            this._tables[subject].name = this._schema.getTable(update);
-        else
+        } else if (typeof update === 'string') {
+            const domain = await this._kb.getTopLevelDomain([update]);
+            this._tables[subject].name = this._schema.getTable(domain);
+            if (domain !== update) {
+                const display = await this._helper.convertValue(
+                    ENTITY_PREFIX + update, 
+                    new Type.Entity(`org.wikidata:${this._tables[subject].name}_subdomain`)
+                );
+                this._tables[subject].filters.push(new Ast.AtomBooleanExpression(
+                    null,
+                    'instance_of',
+                    '==',
+                    display,
+                    null
+                ));
+            }
+        } else {
             this._tables[subject].projections.push(update);
+        }
     }
     
     removeTable(subject : string) {

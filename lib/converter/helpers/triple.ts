@@ -65,7 +65,7 @@ export default class TripleParser {
                 await this._converter.helper.convertValue(subject, new Type.Entity(`org.wikidata:${table}`)),
                 null
             ));
-            this._converter.updateTable(subject, domain);
+            await this._converter.updateTable(subject, domain);
         }
 
         // Case 1: handle qualifier related triples
@@ -75,7 +75,7 @@ export default class TripleParser {
         } else if (isVariable(triple.subject) && (isLiteral(triple.object) || isWikidataEntityNode(triple.object))) { 
             // for P31 triple, update the domain of the variable, do not add filter
             if (isWikidataPropertyNode(triple.predicate, 'P31')) {
-                this._converter.updateTable(subject, object.slice(ENTITY_PREFIX.length));
+                await this._converter.updateTable(subject, object.slice(ENTITY_PREFIX.length));
                 return filtersBySubject;
             }
             if (predicate === LABEL) {
@@ -93,19 +93,19 @@ export default class TripleParser {
                 for (const [subj, table] of Object.entries(this._converter.tables)) {
                     const projection = table.projections.find((proj) => proj.variable === subject);
                     if (projection) {
-                        this._converter.updateTable(subj, { variable : object, property : projection.property + 'Label' });
+                        await this._converter.updateTable(subj, { variable : object, property : projection.property + 'Label' });
                         break;
                     }
                 }
             } else {
                 const property = this._converter.schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
-                this._converter.updateTable(subject, { variable: object, property });
+                await this._converter.updateTable(subject, { variable: object, property });
             }
             
         // Case 4: if both subject and object are entities, create a filter, for verification
         } else if (isNamedNode(triple.subject) && isNamedNode(triple.object)) {
             const filter = await this._converter.helper.makeAtomBooleanExpression(predicate, object);
-            this._converter.updateTable(subject, filter);
+            await this._converter.updateTable(subject, filter);
         } else {
             throw new Error('Unexpected triple: ' + triple);
         }

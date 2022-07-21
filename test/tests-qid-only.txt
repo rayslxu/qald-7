@@ -4,7 +4,7 @@ SELECT DISTINCT ?x WHERE {
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
 }
 TT: 
-@org.wikidata . art_museum ( ) ;
+@org.wikidata . entity ( ) filter instance_of == " Q207694 " ^^org.wikidata:entity_subdomain ;
 
 ====
 Utterance: show me museums named after louvre palace
@@ -14,7 +14,7 @@ SELECT DISTINCT ?x WHERE {
        <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
 TT: 
-@org.wikidata . art_museum ( ) filter contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ) ;
+@org.wikidata . entity ( ) filter contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ) && instance_of == " Q207694 " ^^org.wikidata:entity_subdomain ;
 
 ====
 Utterance: show me the owner of museums named after louvre palace
@@ -25,7 +25,7 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P127> ?y.
 }
 TT: 
-[ owned_by ] of @org.wikidata . art_museum ( ) filter contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ) ;
+[ owned_by ] of @org.wikidata . entity ( ) filter instance_of == " Q207694 " ^^org.wikidata:entity_subdomain && contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ) ;
 
 ====
 Utterance: Who was the doctoral supervisor of Albert Einstein
@@ -147,7 +147,7 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q36> <http://www.wikidata.org/prop/direct/P85>/<http://www.wikidata.org/prop/direct/P676> ?uri . 
 }
 TT:
-[ < anthem / lyrics_by > ] of @org.wikidata . sovereign_state ( ) filter id == " Q36 " ^^org.wikidata:sovereign_state ;
+[ < anthem / lyrics_by > ] of @org.wikidata . country ( ) filter id == " Q36 " ^^org.wikidata:country ;
 
 ====
 Utterance: Which writers studied in Istanbul?
@@ -233,7 +233,7 @@ SELECT DISTINCT ?string WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P856> ?string . 
 }
 TT:
-[ official_website ] of @org.wikidata . business ( ) filter employees >= 500000 ;
+[ official_website ] of @org.wikidata . organization ( ) filter instance_of == " Q4830453 " ^^org.wikidata:organization_subdomain && employees >= 500000 ;
 
 ====
 Utterance: Is Lake Baikal bigger than the Great Bear Lake?
@@ -263,7 +263,7 @@ SELECT DISTINCT ?number WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
 }
 TT:
-[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . sovereign_state ( ) filter id == " Q408 " ^^org.wikidata:sovereign_state ) ) ;
+[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . country ( ) filter id == " Q408 " ^^org.wikidata:country ) ) ;
 
 ====
 Utterance: Was the Cuban Missile Crisis earlier than the Bay of Pigs Invasion?
@@ -274,7 +274,7 @@ ASK WHERE {
     FILTER(?date1 < ?date2) 
 }
 TT:
-[ end_time <= any ( [ start_time ] of @org.wikidata . landing_operation ( ) filter id == " Q191721 " ^^org.wikidata:landing_operation ) ] of @org.wikidata . crisis ( ) filter id == " Q128160 " ^^org.wikidata:crisis ;
+[ end_time <= any ( [ start_time ] of @org.wikidata . entity ( ) filter id == " Q191721 " ^^org.wikidata:entity ) ] of @org.wikidata . entity ( ) filter id == " Q128160 " ^^org.wikidata:entity ;
 
 ====
 Utterance: Show me all basketball players that are higher than 2 meters .
@@ -305,7 +305,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1128> ?employees . 
 } ORDER BY DESC(?employees) LIMIT 1
 TT: 
-sort ( employees desc of @org.wikidata . business ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ) ) [ 1 ] ;
+sort ( employees desc of @org.wikidata . organization ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ) && instance_of == " Q4830453 " ^^org.wikidata:organization_subdomain ) [ 1 ] ;
 
 ====
 Utterance: how many children do US president have on average? 
@@ -327,8 +327,7 @@ SELECT DISTINCT ?uri WHERE {
     FILTER(?date > "2000-01-01T00:00:00Z"^^xsd:dateTime)
 }
 TT: 
-@org.wikidata . protest ( ) filter start_time >= new Date ( 2000 ) ;
-
+@org.wikidata . entity ( ) filter instance_of == " Q273120 " ^^org.wikidata:entity_subdomain && start_time >= new Date ( 2000 ) ;
 ====
 Utterance: who are the US presidents since 2000? 
 SPARQL: 
@@ -340,8 +339,7 @@ SELECT DISTINCT ?uri WHERE {
     FILTER(?date > "2000-01-01T00:00:00Z"^^xsd:dateTime)
 }
 TT:
-[ head_of_government filter end_time >= new Date ( 2000 ) ] of @org.wikidata . sovereign_state ( ) filter id == " Q30 " ^^org.wikidata:sovereign_state ;
-
+[ head_of_government filter end_time >= new Date ( 2000 ) ] of @org.wikidata . country ( ) filter id == " Q30 " ^^org.wikidata:country ;
 
 ====
 Utterance: when did obama start to be the us president? 
@@ -352,4 +350,4 @@ SELECT DISTINCT ?date WHERE {
     ?p <http://www.wikidata.org/prop/qualifier/P580> ?date.
 }
 TT:
-[ start_time of ( head_of_government filter value == " Q76 " ^^org.wikidata:p_head_of_government ) ] of @org.wikidata . sovereign_state ( ) filter id == " Q30 " ^^org.wikidata:sovereign_state ;
+[ start_time of ( head_of_government filter value == " Q76 " ^^org.wikidata:p_head_of_government ) ] of @org.wikidata . country ( ) filter id == " Q30 " ^^org.wikidata:country ;

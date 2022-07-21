@@ -134,7 +134,7 @@ export default class PredicateParser {
             const filters = [];
             for (const qualifier of predicate.qualifiers) {
                 if (qualifier.isVariable) {
-                    this._converter.updateTable(predicate.table, {
+                    await this._converter.updateTable(predicate.table, {
                         property: `${predicate.property}.${qualifier.property}`,
                         variable: qualifier.value
                     });
@@ -154,7 +154,7 @@ export default class PredicateParser {
                     new Ast.VarRefValue(predicate.property),
                     filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
                 );
-                this._converter.updateTable(predicate.table, {
+                await this._converter.updateTable(predicate.table, {
                     property: proj,
                     variable: predicate.value
                 });
@@ -172,7 +172,7 @@ export default class PredicateParser {
                     filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
                 );
                 const [field, variable] = this._getAndDeleteFieldProjection(predicate.table, predicate.property)!;
-                this._converter.updateTable(predicate.table, {
+                await this._converter.updateTable(predicate.table, {
                     property: new Ast.ArrayFieldValue(proj, field!),
                     variable
                 });
@@ -192,7 +192,7 @@ export default class PredicateParser {
         } else {
             for (const qualifier of predicate.qualifiers) {
                 if (qualifier.isVariable) {
-                    this._converter.updateTable(predicate.table, {
+                    await this._converter.updateTable(predicate.table, {
                         property: `${predicate.property}.${qualifier.property}`,
                         variable: qualifier.value
                     });
