@@ -2,6 +2,7 @@ import stemmer from 'en-stemmer';
 import fs from 'fs';
 import JSONStream from 'JSONStream';
 import { removeStopwords } from 'stopword';
+import { Syntax } from 'thingtalk';
 
 export function snakeCase(v : string) {
     return v.trim().replace(/[() _-]+/g, '_').toLowerCase();
@@ -27,6 +28,8 @@ export function cleanName(v : string) {
     v = v.replace(/[^1-9a-zA-Z]/g, '_').replace(/__/g, '_');
     // in case v starts with a char that is not letter or _ (e.g., number), prepend a '_'
     if (!/^[a-z_]/.test(v))
+        v = '_' + v;
+    if (Syntax.KEYWORDS.has(v))
         v = '_' + v;
     return v;
 }
