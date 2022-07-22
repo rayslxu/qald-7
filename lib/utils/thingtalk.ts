@@ -99,3 +99,23 @@ export function elemType(type : Type, resolveCompound = true) : Type {
         return elemType(type.fields.value.type, resolveCompound);
     return type;
 }
+
+
+/**
+ * Given a filter return the properties used for the table
+ * @param filter a filter
+ */
+export function getPropertiesInFilter(filter : Ast.BooleanExpression) : string[] {
+    const properties = [];
+    if (filter instanceof Ast.AtomBooleanExpression)
+        properties.push(filter.name);
+    else if (filter instanceof Ast.AndBooleanExpression || filter instanceof Ast.OrBooleanExpression)
+        properties.push(...filter.operands.map(getPropertiesInFilter).flat());
+    else if (filter instanceof Ast.NotBooleanExpression)
+        properties.push(...getPropertiesInFilter(filter.expr));
+    else if (filter instanceof Ast.PropertyPathBooleanExpression) 
+        properties.push(filter.path[0].property);
+    else if (filter instanceof Ast.ComparisonSubqueryBooleanExpression)
+        properties.push((filter.lhs as Ast.VarRefValue).name);
+    return properties;
+}

@@ -28,6 +28,7 @@ import {
 import {
     baseQuery,
     elemType,
+    getPropertiesInFilter,
     isIdFilter
 } from '../../utils/thingtalk';
 import {
@@ -359,6 +360,55 @@ export default class ConverterHelper {
                 value,
                 null
             ));
+        }
+
+        // if there is property not available in the domain, use 'entity' domain 
+        for (const table of Object.values(this._converter.tables)) {
+            const properties = [];
+            for (const filter of table.filters) 
+                properties.push(...getPropertiesInFilter(filter));
+            for (const proj of table.projections) {
+                const prop = proj.property;
+                if (typeof prop === 'string') {
+                    if (prop.endsWith('Label')) 
+                        continue;
+                    if (prop.includes('.'))
+                        continue;
+                    properties.push(prop);
+                } else if (prop instanceof Ast.FilterValue) {
+                    properties.push((prop.value as Ast.VarRefValue).name);
+                } else if (prop instanceof Ast.ArrayFieldValue) {
+                    const filterValue = prop.value as Ast.FilterValue;
+                    properties.push((filterValue.value as Ast.VarRefValue).name);
+                } else { 
+                    properties.push(prop[0].property);
+                }
+            }
+
+            const query = this._converter.class.getFunction('query', table.name)!; 
+            if (properties.some((prop) => !query.args.includes(prop))) {
+                table.name = 'entity';
+                if (table.filters.some((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'instance_of'))
+                    continue;
+                const idFilter = table.filters.find((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'id');
+                if (idFilter) {
+                    const value = (idFilter as Ast.AtomBooleanExpression).value;
+                    (value as Ast.EntityValue).type = 'org.wikidata:entity';
+                    continue;
+                }
+                const qid = query.getImplementationAnnotation('wikidata_subject');
+                const value = await this._converter.helper.convertValue(
+                    ENTITY_PREFIX + qid, 
+                    new Type.Entity(`org.wikidata:entity_subdomain`)
+                );
+                table.filters.push(new Ast.AtomBooleanExpression(
+                    null,
+                    'instance_of', 
+                    '==',
+                    value,
+                    null
+                ));
+            }
         }
     }
 

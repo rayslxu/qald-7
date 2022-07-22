@@ -39,7 +39,7 @@ export default class ValueConverter {
         }
         if (qid in ENTITY_SPAN_OVERRIDE) 
             return closest(ENTITY_SPAN_OVERRIDE[qid], this._converter.keywords);
-        throw new Error(`Failed to find matching span for entity ${wikidataLabel}(${qid})`);
+        return null;
     }
 
     private _getMeasure(value : number, baseUnit : string) : [number, string] {

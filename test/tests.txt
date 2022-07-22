@@ -308,3 +308,12 @@ SELECT DISTINCT ?uri WHERE {
 } ORDER BY DESC(?employees) LIMIT 1
 TT: 
 sort ( employees desc of @org.wikidata . organization ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ( " indian " ) ) && instance_of == " Q4830453 " ^^org.wikidata:organization_subdomain ( " company " ) ) [ 1 ] ;
+
+====
+Utterance: What is the highest place of the Urals?
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q35600> <http://www.wikidata.org/prop/direct/P610> ?uri . 
+}
+TT:
+[ highest_point ] of @org.wikidata . entity ( ) filter id == " Q35600 " ^^org.wikidata:entity ( " urals " ) ;

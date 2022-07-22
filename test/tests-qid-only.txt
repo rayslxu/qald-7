@@ -361,3 +361,12 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT: 
 [ < has_parts / location > : Entity ( org.wikidata:art_museum ) ] of @org.wikidata . entity ( ) filter id == " Q471379 " ^^org.wikidata:entity ;
+
+====
+Utterance: What is the highest place of the Urals?
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q35600> <http://www.wikidata.org/prop/direct/P610> ?uri . 
+}
+TT:
+[ highest_point ] of @org.wikidata . entity ( ) filter id == " Q35600 " ^^org.wikidata:entity ;

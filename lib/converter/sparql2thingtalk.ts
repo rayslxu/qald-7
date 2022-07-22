@@ -188,6 +188,7 @@ interface SPARQLToThingTalkConverterOptions {
 
 export default class SPARQLToThingTalkConverter {
     private _sparqlParser : SparqlParser;
+    private _class : Ast.ClassDef;
     private _schema : WikidataSchema;
     private _kb : WikidataUtils;
     private _helper : ConverterHelper;
@@ -202,6 +203,7 @@ export default class SPARQLToThingTalkConverter {
 
     constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._sparqlParser = new Parser();
+        this._class = classDef;
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db);
         this._helper = new ConverterHelper(this);
@@ -215,6 +217,10 @@ export default class SPARQLToThingTalkConverter {
         this._crossTableComparison = [];
         this._keywords = [];
     } 
+
+    get class() : Ast.ClassDef {
+        return this._class;
+    }
     
     get kb() : WikidataUtils {
         return this._kb;
