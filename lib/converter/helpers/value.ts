@@ -13,18 +13,15 @@ const unitsMapper : Record<string, string> = {
 };
 
 export interface ValueConverterOptions {
-    exclude_entity_display : boolean,
     prefix ?: string
 }
 
 export default class ValueConverter {
     private _converter : SPARQLToThingTalkConverter;
-    private _excludeEntityValue : boolean;
     private _prefix : string;
 
     constructor(converter : SPARQLToThingTalkConverter, options ?: ValueConverterOptions) {
         this._converter = converter;
-        this._excludeEntityValue = options?.exclude_entity_display ?? false;
         this._prefix = options?.prefix ?? ENTITY_PREFIX;
     }
 
@@ -70,7 +67,7 @@ export default class ValueConverter {
         if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(this._prefix));
             const qid = value.slice(this._prefix.length);
-            const display = this._excludeEntityValue ? null : await this._getEntityDisplay(qid);
+            const display = await this._getEntityDisplay(qid);
             return new Ast.Value.Entity(qid, type.type, display); 
         } 
         if (type instanceof Type.Enum) {

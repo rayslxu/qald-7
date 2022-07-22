@@ -184,7 +184,6 @@ class QueryGenerator {
 interface SPARQLToThingTalkConverterOptions {
     cache : string;
     bootleg_db : string;
-    exclude_entity_display : boolean
 }
 
 export default class SPARQLToThingTalkConverter {
@@ -198,6 +197,7 @@ export default class SPARQLToThingTalkConverter {
     private _keywords : string[];
     private _tables : Record<string, Table>;
     private _crossTableComparison : Comparison[];
+    private _subdomainLabels : Record<string, string>;
     private _parser : QueryParser;
     private _generator : QueryGenerator;
 
@@ -205,7 +205,7 @@ export default class SPARQLToThingTalkConverter {
         this._sparqlParser = new Parser();
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db);
-        this._helper = new ConverterHelper(this, options);
+        this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._parser = new QueryParser(this);
         this._generator = new QueryGenerator(this);
@@ -215,6 +215,7 @@ export default class SPARQLToThingTalkConverter {
         this._tables = {};
         this._crossTableComparison = [];
         this._keywords = [];
+        this._subdomainLabels = {};
     } 
     
     get kb() : WikidataUtils {
@@ -249,6 +250,10 @@ export default class SPARQLToThingTalkConverter {
         return this._utterance;
     }
 
+    get subdomainLabels() : Record<string, string> {
+        return this._subdomainLabels;
+    }
+
     async updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
         if (!(subject in this._tables)) 
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
@@ -258,17 +263,18 @@ export default class SPARQLToThingTalkConverter {
             const domain = await this._kb.getTopLevelDomain([update]);
             this._tables[subject].name = this._schema.getTable(domain);
             if (domain !== update) {
-                const display = await this._helper.convertValue(
+                const value = await this._helper.convertValue(
                     ENTITY_PREFIX + update, 
                     new Type.Entity(`org.wikidata:${this._tables[subject].name}_subdomain`)
-                );
+                ) as Ast.EntityValue ;
                 this._tables[subject].filters.push(new Ast.AtomBooleanExpression(
                     null,
                     'instance_of',
                     '==',
-                    display,
+                    value,
                     null
                 ));
+                this._subdomainLabels[value.value!] = (await this._kb.getLabel(value.value!))!;
             }
         } else {
             this._tables[subject].projections.push(update);

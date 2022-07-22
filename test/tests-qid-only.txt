@@ -351,3 +351,13 @@ SELECT DISTINCT ?date WHERE {
 }
 TT:
 [ start_time of ( head_of_government filter value == " Q76 " ^^org.wikidata:p_head_of_government ) ] of @org.wikidata . country ( ) filter id == " Q30 " ^^org.wikidata:country ;
+
+====
+Utterance: Which museum exhibits The Scream by Munch?
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q471379> <http://www.wikidata.org/prop/direct/P527>/<http://www.wikidata.org/prop/direct/P276> ?uri . 
+    ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>
+}
+TT: 
+[ < has_parts / location > : Entity ( org.wikidata:art_museum ) ] of @org.wikidata . entity ( ) filter id == " Q471379 " ^^org.wikidata:entity ;

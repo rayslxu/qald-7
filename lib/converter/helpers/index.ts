@@ -31,7 +31,7 @@ import {
     isIdFilter
 } from '../../utils/thingtalk';
 import {
-    ArrayCollection
+    ArrayCollection, cleanName
 } from '../../utils/misc';
 import { parseSpecialUnion } from '../../utils/sparqljs';
 import TripleParser from './triple';
@@ -51,10 +51,6 @@ function isAggregation(v : any) : v is Aggregation {
     return typeof v === 'object' && 'op' in v && 'variable' in v;
 }
 
-interface ConverterHelperOptions {
-    exclude_entity_display : boolean
-}
-
 export default class ConverterHelper {
     private _converter : SPARQLToThingTalkConverter;
     private _triple : TripleParser;
@@ -63,12 +59,12 @@ export default class ConverterHelper {
     private _predicate : PredicateParser;
     private _value : ValueConverter;
 
-    constructor(converter : SPARQLToThingTalkConverter, options : ConverterHelperOptions) {
+    constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
         this._triple = new TripleParser(converter);
         this._filter = new FilterParser(converter);
         this._predicate = new PredicateParser(converter);
-        this._value = new ValueConverter(converter, options);
+        this._value = new ValueConverter(converter);
         this._group = new GroupParser(converter);
     }
 
@@ -322,8 +318,19 @@ export default class ConverterHelper {
         for (const [subject, table] of Object.entries(this._converter.tables)) {
             if (subject.startsWith(ENTITY_PREFIX))
                 continue;
-            let isProjected = false;
+            let domain : string|null = null;
             if (table.name !== 'entity' && table.filters.length === 0 && table.projections.length === 0 ) {
+                domain = table.name;
+            } else if (table.projections.length === 0 && table.filters.length === 1) {
+                const filter = table.filters[0];
+                if (filter instanceof Ast.AtomBooleanExpression && filter.name === 'instance_of') {
+                    const subdomain = (filter.value as Ast.EntityValue).value!;
+                    const subdomainLabel  = this._converter.subdomainLabels[subdomain];
+                    domain = cleanName(subdomainLabel);
+                }
+            }
+            if (domain) {
+                let isProjected = false;
                 for (const [subject2, ] of projectionsAndAggregationsBySubject.iterate()) {
                     if (subject === subject2)
                         continue;
@@ -333,12 +340,12 @@ export default class ConverterHelper {
                     ) as Projection;
                     if (proj) {
                         isProjected = true;
-                        proj.type = table.name;
+                        proj.type = domain;
                     }
                 }
+                if (isProjected)
+                    this._converter.removeTable(subject);
             }
-            if (isProjected)
-                this._converter.removeTable(subject);
         }
     }
 
