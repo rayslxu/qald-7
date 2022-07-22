@@ -31,7 +31,8 @@ import {
     isIdFilter
 } from '../../utils/thingtalk';
 import {
-    ArrayCollection, cleanName
+    ArrayCollection,
+    cleanName
 } from '../../utils/misc';
 import { parseSpecialUnion } from '../../utils/sparqljs';
 import TripleParser from './triple';
@@ -311,25 +312,17 @@ export default class ConverterHelper {
     /**
      * Preprocess tables to simplify the conversion 
      */
-    preprocessTables(projectionsAndAggregationsBySubject : ArrayCollection<Projection|Aggregation>) {
+    async preprocessTables(projectionsAndAggregationsBySubject : ArrayCollection<Projection|Aggregation>) {
         // check tables with only domain information, it can potentially be resolved with a type annotation
         // on another table's projection
         // only apply to selection not verification
         for (const [subject, table] of Object.entries(this._converter.tables)) {
             if (subject.startsWith(ENTITY_PREFIX))
                 continue;
-            let domain : string|null = null;
             if (table.name !== 'entity' && table.filters.length === 0 && table.projections.length === 0 ) {
-                domain = table.name;
-            } else if (table.projections.length === 0 && table.filters.length === 1) {
-                const filter = table.filters[0];
-                if (filter instanceof Ast.AtomBooleanExpression && filter.name === 'instance_of') {
-                    const subdomain = (filter.value as Ast.EntityValue).value!;
-                    const subdomainLabel  = this._converter.subdomainLabels[subdomain];
-                    domain = cleanName(subdomainLabel);
-                }
-            }
-            if (domain) {
+                let domain = table.name;
+                if (this._converter.kb.isEntity(table.name))
+                    domain = cleanName((await this._converter.kb.getLabel(table.name))!);
                 let isProjected = false;
                 for (const [subject2, ] of projectionsAndAggregationsBySubject.iterate()) {
                     if (subject === subject2)
@@ -346,6 +339,26 @@ export default class ConverterHelper {
                 if (isProjected)
                     this._converter.removeTable(subject);
             }
+        }
+
+        // if a table name is QID, it means its domain is not in the schema, we need to add a instance_of filter
+        for (const table of Object.values(this._converter.tables)) {
+            const subdomain = table.name;
+            if (!this._converter.kb.isEntity(table.name))
+                continue;
+            const domain = await this._converter.kb.getTopLevelDomain([subdomain]);
+            table.name = this._converter.schema.getTable(domain);
+            const value = await this._converter.helper.convertValue(
+                ENTITY_PREFIX + subdomain, 
+                new Type.Entity(`org.wikidata:${table.name}_subdomain`)
+            ) as Ast.EntityValue ;
+            table.filters.unshift(new Ast.AtomBooleanExpression(
+                null,
+                'instance_of',
+                '==',
+                value,
+                null
+            ));
         }
     }
 

@@ -1,4 +1,4 @@
-import { Ast, Type } from 'thingtalk';
+import { Ast } from 'thingtalk';
 import { I18n } from 'genie-toolkit';
 import {  
     Parser, 
@@ -20,7 +20,7 @@ import {
     getSpans,
     ArrayCollection
 } from '../utils/misc';
-import WikidataUtils, { ENTITY_PREFIX } from '../utils/wikidata';
+import WikidataUtils from '../utils/wikidata';
 import { WikiSchema as WikidataSchema } from '../schema';
 import {
     makeProgram,
@@ -89,7 +89,7 @@ class QueryParser {
         
         for (const [subject, filters] of filtersBySubject.iterate()) {
             for (const filter of filters) 
-                await this._converter.updateTable(subject, filter);
+                this._converter.updateTable(subject, filter);
         }
     }
 
@@ -117,7 +117,7 @@ class QueryParser {
         const filtersBySubject = await this._converter.helper.convertPredicates();
         for (const [subject, filters] of filtersBySubject.iterate()) {
             for (const filter of filters)
-                await this._converter.updateTable(subject, filter);
+                this._converter.updateTable(subject, filter);
         }
     }
 
@@ -139,12 +139,12 @@ class QueryGenerator {
         this._converter = converter;
     }
 
-    private _generateSelectQuery(query : SelectQuery) : Ast.Expression {
+    private async _generateSelectQuery(query : SelectQuery) : Promise<Ast.Expression> {
         const projectionsAndAggregationsBySubject = this._converter.helper.parseVariables(query.variables);
         if (projectionsAndAggregationsBySubject.size === 0)
             throw new Error('No variable found in SPARQL');
             
-        this._converter.helper.preprocessTables(projectionsAndAggregationsBySubject);
+        await this._converter.helper.preprocessTables(projectionsAndAggregationsBySubject);
         const mainSubject = this._converter.helper.getMainSubject(query);
         const table = this._converter.tables[mainSubject];
         const filters = [...table.filters];
@@ -174,8 +174,8 @@ class QueryGenerator {
         return this._converter.helper.addVerification(baseQuery(table.name), filters, table.projections);
     }
 
-    generate(query : SelectQuery|AskQuery) : Ast.Program {
-        const expression = isSelectQuery(query) ? this._generateSelectQuery(query) : this._generateAskQuery(query);
+    async generate(query : SelectQuery|AskQuery) : Promise<Ast.Program> {
+        const expression = isSelectQuery(query) ? (await this._generateSelectQuery(query)) : this._generateAskQuery(query);
         return makeProgram(expression).optimize();
     }
 }
@@ -197,7 +197,6 @@ export default class SPARQLToThingTalkConverter {
     private _keywords : string[];
     private _tables : Record<string, Table>;
     private _crossTableComparison : Comparison[];
-    private _subdomainLabels : Record<string, string>;
     private _parser : QueryParser;
     private _generator : QueryGenerator;
 
@@ -215,7 +214,6 @@ export default class SPARQLToThingTalkConverter {
         this._tables = {};
         this._crossTableComparison = [];
         this._keywords = [];
-        this._subdomainLabels = {};
     } 
     
     get kb() : WikidataUtils {
@@ -249,36 +247,16 @@ export default class SPARQLToThingTalkConverter {
     get utterance() : string|undefined {
         return this._utterance;
     }
-
-    get subdomainLabels() : Record<string, string> {
-        return this._subdomainLabels;
-    }
-
-    async updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
+     
+    updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
         if (!(subject in this._tables)) 
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
-        if (update instanceof Ast.BooleanExpression) { 
+        if (update instanceof Ast.BooleanExpression)  
             this._tables[subject].filters.push(update);
-        } else if (typeof update === 'string') {
-            const domain = await this._kb.getTopLevelDomain([update]);
-            this._tables[subject].name = this._schema.getTable(domain);
-            if (domain !== update) {
-                const value = await this._helper.convertValue(
-                    ENTITY_PREFIX + update, 
-                    new Type.Entity(`org.wikidata:${this._tables[subject].name}_subdomain`)
-                ) as Ast.EntityValue ;
-                this._tables[subject].filters.push(new Ast.AtomBooleanExpression(
-                    null,
-                    'instance_of',
-                    '==',
-                    value,
-                    null
-                ));
-                this._subdomainLabels[value.value!] = (await this._kb.getLabel(value.value!))!;
-            }
-        } else {
+        else if (typeof update === 'string') 
+            this._tables[subject].name = this._schema.getTable(update) ?? update;
+        else 
             this._tables[subject].projections.push(update);
-        }
     }
     
     removeTable(subject : string) {
