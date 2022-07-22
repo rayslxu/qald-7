@@ -554,6 +554,11 @@ class ManifestGenerator {
             if (!domainLabel)
                 throw new Error('Failed to find label for domain: ' + domain);
             this._domainLabels[domain] = domainLabel;
+            for (const subdomain of this._subdomains[domain]) {
+                const subdomainLabel = await this._wikidata.getLabel(subdomain);
+                if (subdomainLabel)
+                    this._addEntity(cleanName(subdomainLabel), subdomainLabel, ['org.wikidata:entity']);
+            }
         }
     }
 
