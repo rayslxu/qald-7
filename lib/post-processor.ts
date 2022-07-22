@@ -12,15 +12,21 @@ import { waitFinish } from './utils/misc';
 interface PostProcessorOptions {
     tpClient : Tp.BaseClient;
     schemas : ThingTalk.SchemaRetriever;
+    includeEntityValue : boolean;
+    excludeEntityDisplay : boolean;
 }
 
-class PostProcessor {
+export class PostProcessor {
     private _tpClient : Tp.BaseClient;
     private _schemas : ThingTalk.SchemaRetriever;
+    private _includeEntityValue : boolean;
+    private _excludeEntityDisplay : boolean;
 
     constructor(options : PostProcessorOptions) {
         this._tpClient = options.tpClient;
         this._schemas = options.schemas;
+        this._includeEntityValue = options.includeEntityValue;
+        this._excludeEntityDisplay = options.excludeEntityDisplay;
     }
 
     private _hasIdFilter(ast : Ast.BooleanExpression) : boolean {
@@ -97,7 +103,12 @@ class PostProcessor {
             program, 
             preprocessedUtterance, 
             entities,
-            { locale: 'en', timezone: undefined, includeEntityValue :true }
+            { 
+                locale: 'en', 
+                timezone: undefined, 
+                includeEntityValue: this._includeEntityValue, 
+                excludeEntityDisplay: this._excludeEntityDisplay 
+            }
         );
     }
 }
@@ -129,11 +140,24 @@ async function main() {
         required: true,
         type: fs.createWriteStream
     });
+    parser.add_argument('--include-entity-value', {
+        action: 'store_true',
+        default: false
+    });
+    parser.add_argument('--exclude-entity-display', {
+        action: 'store_true',
+        default: false
+    });
 
     const args = parser.parse_args();
     const tpClient = new Tp.FileClient(args);
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null);
-    const processor = new PostProcessor({ tpClient, schemas });
+    const processor = new PostProcessor({ 
+        tpClient, 
+        schemas, 
+        includeEntityValue: args.include_entity_value,
+        excludeEntityDisplay: args.exclude_entity_display
+    });
 
     args.input.setEncoding('utf8').pipe(byline())
         .pipe(new DatasetParser({ contextual: false, preserveId: true }))
