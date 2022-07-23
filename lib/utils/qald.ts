@@ -62,7 +62,7 @@ export const MANUAL_CONVERSION : Record<string, string> = {
     // qald 7 test
     // id: 8
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>  . ?cave <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q35509> . { ?cave <http://www.wikidata.org/prop/direct/P17> ?uri . }  UNION { ?cave <http://www.wikidata.org/prop/direct/P131>/<http://www.wikidata.org/prop/direct/P17> ?uri . } } GROUP BY ?uri HAVING (COUNT(DISTINCT ?cave) > 10)" : 
-    "[ country ] of count ( @org.wikidata . cave ( ) ) by country filter count >= 10 ;",
+    `[ country ] of count ( @org.wikidata . landform ( ) filter instance_of == " Q6256 " ^^org.wikidata:landform_subdomain ( " cave " ) ) by country filter count >= 10 ;`,
     // id: 14
     "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }": 
     `[ contains ( capital_of , " Q79 " ^^org.wikidata:country ( " egypts " ) ) ] of sort ( population desc of @org.wikidata . city ( ) filter contains ( country , " Q79 " ^^org.wikidata:country ( " egypts " ) ) ) ;`,
