@@ -183,8 +183,8 @@ class ManifestGenerator {
             }
             return Type.Number;
         }
-        if (wikibaseType === 'GlobeCoordinate')
-            return Type.Location;
+        // if (wikibaseType === 'GlobeCoordinate')
+        //    return Type.Location;
         if (wikibaseType === 'WikibaseItem')
             return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
         

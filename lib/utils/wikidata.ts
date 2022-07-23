@@ -562,7 +562,8 @@ export default class WikidataUtils {
                 const property : string = r.p.value;
                 const type : string = r.type.value;
                 let wikibaseType = type.slice('http://wikiba.se/ontology#'.length);
-                if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url', 'GlobeCoordinate'].includes(wikibaseType))
+                // if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url', 'GlobeCoordinate'].includes(wikibaseType))
+                if (!['WikibaseItem', 'String', 'Quantity', 'Time', 'Monolingualtext', 'Url'].includes(wikibaseType))
                     wikibaseType = 'Unsupported';
                 this._properties[property.slice(ENTITY_PREFIX.length)] = wikibaseType as WikibaseType;
             });
