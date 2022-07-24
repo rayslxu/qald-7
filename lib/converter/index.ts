@@ -6,7 +6,7 @@ import * as argparse from 'argparse';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
-import { MANUAL_CONVERSION } from '../utils/qald';
+import { MANUAL_CONVERSION_WITH_DISPLAY, MANUAL_CONVERSION_WITHOUT_DISPLAY } from '../utils/qald';
 import { waitFinish } from '../utils/misc';
 
 import SPARQLToThingTalkConverter from "./sparql2thingtalk";
@@ -81,6 +81,7 @@ async function main() {
     const output = new DatasetStringifier();
     output.pipe(args.output);
     
+    const manualConversion = args.exclude_entity_display ? MANUAL_CONVERSION_WITHOUT_DISPLAY : MANUAL_CONVERSION_WITH_DISPLAY;
     let counter = 0;
     for await (const item of input) {
         counter ++;
@@ -88,8 +89,8 @@ async function main() {
             continue;
         const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
         try {
-            if (item.query.sparql in MANUAL_CONVERSION) {
-                output.write({ id: item.id, preprocessed, target_code: MANUAL_CONVERSION[item.query.sparql] });
+            if (item.query.sparql in manualConversion) {
+                output.write({ id: item.id, preprocessed, target_code: manualConversion[item.query.sparql] });
             } else { 
                 const program = await converter.convert(item.query.sparql, preprocessed);
                 await program.typecheck(schemas);
