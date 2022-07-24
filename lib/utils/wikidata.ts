@@ -414,10 +414,9 @@ export default class WikidataUtils {
      * @param property PID
      * @returns a list of qualifiers PID 
      */
-    async getQualifiersByProperty(domain : string, property : string) : Promise<string[]> {
+    async getQualifiersByProperty(property : string) : Promise<string[]> {
         const qualifierCount : Record<string, number> = {};
         const sparql = `SELECT DISTINCT ?entity ?qualifier WHERE {
-            ?entity wdt:P31 wd:${domain} .
             ?entity p:${property} ?statement .
             OPTIONAL { 
                 ?statement ?qualifier ?x. 

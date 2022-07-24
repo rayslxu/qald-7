@@ -106,11 +106,11 @@ class ManifestGenerator {
      * @param propertyName the name of the property
      * @returns the ThingTalk type of the property
      */
-    private async _getPropertyType(domain : string, propertyId : string, propertyName : string) {
+    private async _getPropertyType(propertyId : string, propertyName : string) {
         if (propertyId in this._propertyTypes) 
             return this._propertyTypes[propertyId];
         let type = await this._getPropertyTypeHelper(propertyId, propertyName);
-        const qualifiers = await this._wikidata.getQualifiersByProperty(domain, propertyId);
+        const qualifiers = await this._wikidata.getQualifiersByProperty(propertyId);
         if (type && qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
                 value: new Ast.ArgumentDef(null, null, 'value', elemType(type))
@@ -312,7 +312,7 @@ class ManifestGenerator {
             if (label.startsWith('category for') || label.startsWith('category of'))
                 continue;
             const pname = cleanName(label);
-            const ptype = await this._getPropertyType(domain, property, pname);
+            const ptype = await this._getPropertyType(property, pname);
             if (!ptype) 
                 continue;
             const argumentDef = new Ast.ArgumentDef(
