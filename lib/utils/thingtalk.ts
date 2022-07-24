@@ -18,7 +18,7 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
         'instance_of',
         new Type.Entity(`org.wikidata:${entityType}_subdomain`),
         { 
-            nl: { canonical: { npi: ['#'] } },
+            nl: { canonical: { reverse_property: ['#'] } },
             impl: { wikidata_id: new Ast.Value.String('P31') }
         }
     );
