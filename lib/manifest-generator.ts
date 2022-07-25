@@ -422,6 +422,8 @@ class ManifestGenerator {
      * @returns the class definition 
      */
     async _generateManifest() : Promise<Ast.ClassDef> {
+        let countTotalProperties = 0;
+
         // imports
         const imports = [
             new Ast.MixinImportStmt(null, ['loader'], 'org.thingpedia.v2', []),
@@ -432,9 +434,15 @@ class ManifestGenerator {
         const queries : Record<string, Ast.FunctionDef> = {};
         for (const domain in this._domainLabels) {
             const [fname, functionDef] = await this._processDomain(domain);
-            if (functionDef)
+            if (functionDef) {
                 queries[fname] = functionDef;
+                countTotalProperties += functionDef.args.length;
+            }
         }
+        const countQueries = Object.keys(queries).length;
+        console.log(`In total: ${Object.keys(this._properties).length + 1} Wikidata properties included.`);
+        console.log(`${Object.values(this._properties).filter((p) => p.type instanceof Type.Compound).length} of them have qualifiers`);
+        console.log(`On average, there are ${countTotalProperties / countQueries} in each of the ${countQueries} domains`);
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
             is_monitorable: false
