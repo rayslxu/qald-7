@@ -24,6 +24,16 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
+export function instanceOfFilter(domain : Ast.EntityValue) : Ast.BooleanExpression {
+    return new Ast.AtomBooleanExpression(
+        null,
+        'instance_of',
+        '==',
+        domain,
+        null
+    );
+}
+
 export function isIdFilter(filter : Ast.BooleanExpression) : boolean {
     return filter instanceof Ast.AtomBooleanExpression && filter.name === 'id' && filter.operator === '==';
 }
