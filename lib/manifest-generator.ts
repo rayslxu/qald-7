@@ -499,7 +499,8 @@ class ManifestGenerator {
                 const display = await this._wikidata.getLabel(value);
                 if (display) {
                     const tokenized = this._tokenizer.tokenize(display);
-                    data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
+                    const name = tokenized.rawTokens.join(' ');
+                    data.data.push({ value: name, name: display, canonical: name });
                 }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
