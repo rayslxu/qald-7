@@ -2,22 +2,23 @@ import assert from 'assert';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { PostProcessor } from '../lib/post-processor';
+import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
 const TEST_CASES = [
     [
         'how many countries are there in europe ?',
-        'count ( @org.wikidata . country ( ) filter contains ( continent , " Q46 " ^^org.wikidata:p_continent ) ) ;',
-        'count ( @org.wikidata . entity ( ) filter instance_of == " Q6256 " ^^org.wikidata:entity && contains ( continent , " Q46 " ^^org.wikidata:entity ) ) ;'
+        `count ( @${TP_DEVICE_NAME} . country ( ) filter contains ( continent , " Q46 " ^^${TP_DEVICE_NAME}:p_continent ) ) ;`,
+        'count ( @${TP_DEVICE_NAME} . entity ( ) filter instance_of == " Q6256 " ^^${TP_DEVICE_NAME}:entity && contains ( continent , " Q46 " ^^${TP_DEVICE_NAME}:entity ) ) ;'
     ], 
     [
         'how many people live in the capital of Australia?',
-        `[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . country ( ) filter id == " Q408 " ^^org.wikidata:country ) ) ;`,
-        `[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . entity ( ) filter id == " Q408 " ^^org.wikidata:entity ) ) ;`
+        `[ population ] of @${TP_DEVICE_NAME} . entity ( ) filter in_array ( id , any ( [ capital ] of @${TP_DEVICE_NAME} . country ( ) filter id == " Q408 " ^^${TP_DEVICE_NAME}:country ) ) ;`,
+        `[ population ] of @${TP_DEVICE_NAME} . entity ( ) filter in_array ( id , any ( [ capital ] of @${TP_DEVICE_NAME} . entity ( ) filter id == " Q408 " ^^${TP_DEVICE_NAME}:entity ) ) ;`
     ],
     [
         'Give me the birthdays of all actors of the television show Charmed',
-        `[ < cast_member / date_of_birth > ] of @org.wikidata . television_series ( ) filter id == " Q162371 " ^^org.wikidata:television_series ;`,
-        `[ < cast_member / date_of_birth > ] of @org.wikidata . entity ( ) filter id == " Q162371 " ^^org.wikidata:entity ;`
+        `[ < cast_member / date_of_birth > ] of @${TP_DEVICE_NAME} . television_series ( ) filter id == " Q162371 " ^^${TP_DEVICE_NAME}:television_series ;`,
+        `[ < cast_member / date_of_birth > ] of @${TP_DEVICE_NAME} . entity ( ) filter id == " Q162371 " ^^${TP_DEVICE_NAME}:entity ;`
     ]
 ];
 
@@ -27,7 +28,7 @@ async function main() {
     const processor = new PostProcessor({ 
         tpClient, 
         schemas, 
-        class: await schemas.getFullMeta('org.wikidata'),
+        class: await schemas.getFullMeta(TP_DEVICE_NAME),
         normalizeDomains: 'always',
         normalizeEntityTypes: true,
         includeEntityValue: true, 

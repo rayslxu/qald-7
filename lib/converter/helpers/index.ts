@@ -23,7 +23,8 @@ import {
 } from '../../utils/sparqljs-typeguard';
 import {
     ENTITY_PREFIX,
-    PROPERTY_PREFIX
+    PROPERTY_PREFIX,
+    TP_DEVICE_NAME
 } from '../../utils/wikidata';
 import {
     baseQuery,
@@ -202,7 +203,7 @@ export default class ConverterHelper {
                     new Ast.ProjectionElement(
                         p.property, 
                         null, 
-                        p.type ? [new Type.Entity(`org.wikidata:${p.type}`)] : []
+                        p.type ? [new Type.Entity(`${TP_DEVICE_NAME}:${p.type}`)] : []
                     )
                 ),
                 null
@@ -351,7 +352,7 @@ export default class ConverterHelper {
             table.name = this._converter.schema.getTable(domain);
             const value = await this._converter.helper.convertValue(
                 ENTITY_PREFIX + subdomain, 
-                new Type.Entity(`org.wikidata:${table.name}_subdomain`)
+                new Type.Entity(`${TP_DEVICE_NAME}:${table.name}_subdomain`)
             ) as Ast.EntityValue ;
             table.filters.unshift(new Ast.AtomBooleanExpression(
                 null,
@@ -393,13 +394,13 @@ export default class ConverterHelper {
                 const idFilter = table.filters.find((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'id');
                 if (idFilter) {
                     const value = (idFilter as Ast.AtomBooleanExpression).value;
-                    (value as Ast.EntityValue).type = 'org.wikidata:entity';
+                    (value as Ast.EntityValue).type = `${TP_DEVICE_NAME}:entity`;
                     continue;
                 }
                 const qid = query.getImplementationAnnotation('wikidata_subject');
                 const value = await this._converter.helper.convertValue(
                     ENTITY_PREFIX + qid, 
-                    new Type.Entity(`org.wikidata:entity_subdomain`)
+                    new Type.Entity(`${TP_DEVICE_NAME}:entity_subdomain`)
                 );
                 table.filters.push(new Ast.AtomBooleanExpression(
                     null,

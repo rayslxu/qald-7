@@ -18,7 +18,8 @@ import {
 import { 
     ENTITY_PREFIX,
     PROPERTY_PREFIX,
-    LABEL
+    LABEL,
+    TP_DEVICE_NAME
 } from '../../utils/wikidata';
 import {
     ArrayCollection
@@ -62,7 +63,7 @@ export default class TripleParser {
                 null,
                 'id',
                 '==',
-                await this._converter.helper.convertValue(subject, new Type.Entity(`org.wikidata:${table}`)),
+                await this._converter.helper.convertValue(subject, new Type.Entity(`${TP_DEVICE_NAME}:${table}`)),
                 null
             ));
             this._converter.updateTable(subject, domain);
@@ -131,7 +132,7 @@ export default class TripleParser {
                 null,
                 'id',
                 '==',
-                await this._converter.helper.convertValue(subject, new Type.Entity(`org.wikidata:${table}`)),
+                await this._converter.helper.convertValue(subject, new Type.Entity(`${TP_DEVICE_NAME}:${table}`)),
                 null
             ));
             this._converter.updateTable(subject, domain);

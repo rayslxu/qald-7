@@ -1,12 +1,13 @@
 import assert from 'assert';
 import { Ast, Type } from 'thingtalk';
+import { TP_DEVICE_NAME } from './wikidata';
 
 export function idArgument(entityType : string) : Ast.ArgumentDef {
     return new Ast.ArgumentDef(
         null,
         Ast.ArgDirection.OUT,
         'id', 
-        new Type.Entity(`org.wikidata:${entityType}`),
+        new Type.Entity(`${TP_DEVICE_NAME}:${entityType}`),
         { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
     );
 }
@@ -16,7 +17,7 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
         null,
         Ast.ArgDirection.OUT,
         'instance_of',
-        new Type.Entity(`org.wikidata:${entityType}_subdomain`),
+        new Type.Entity(`${TP_DEVICE_NAME}:${entityType}_subdomain`),
         { 
             nl: { canonical: { reverse_property: ['#'] } },
             impl: { wikidata_id: new Ast.Value.String('P31') }
@@ -46,7 +47,7 @@ export function isIdFilter(filter : Ast.BooleanExpression) : boolean {
 export function baseQuery(domain : string) {
     return new Ast.InvocationExpression(
         null,
-        new Ast.Invocation(null, new Ast.DeviceSelector(null, 'org.wikidata', null, null), domain, [], null),
+        new Ast.Invocation(null, new Ast.DeviceSelector(null, TP_DEVICE_NAME, null, null), domain, [], null),
         null
     );
 }

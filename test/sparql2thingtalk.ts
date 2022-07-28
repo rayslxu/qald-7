@@ -5,6 +5,7 @@ import * as ThingTalk from 'thingtalk';
 import { ThingTalkUtils, EntityUtils, I18n } from 'genie-toolkit';
 
 import { SPARQLToThingTalkConverter } from '../lib/converter';
+import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
 const testFiles = [
     './test/tests-qid-only.txt',
@@ -14,7 +15,7 @@ const testFiles = [
 async function main() {
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
-    const classDef = await schemas.getFullMeta('org.wikidata');
+    const classDef = await schemas.getFullMeta(TP_DEVICE_NAME);
     for (const testFile of testFiles) {
         console.log('Running tests in', testFile);
         const excludeEntityDisplay = testFile.endsWith('qid-only.txt');

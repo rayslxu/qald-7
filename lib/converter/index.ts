@@ -10,6 +10,7 @@ import { MANUAL_CONVERSION_WITH_DISPLAY, MANUAL_CONVERSION_WITHOUT_DISPLAY } fro
 import { waitFinish } from '../utils/misc';
 
 import SPARQLToThingTalkConverter from "./sparql2thingtalk";
+import { TP_DEVICE_NAME } from '../utils/wikidata';
 
 export {
     SPARQLToThingTalkConverter
@@ -73,7 +74,7 @@ async function main() {
 
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
-    const classDef = await schemas.getFullMeta('org.wikidata');
+    const classDef = await schemas.getFullMeta(TP_DEVICE_NAME);
     const converter = new SPARQLToThingTalkConverter(classDef, args);
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 

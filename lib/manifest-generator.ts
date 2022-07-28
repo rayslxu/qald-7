@@ -10,7 +10,7 @@ import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, waitFinish } from './utils/misc';
 import { idArgument, elemType, instanceOfArgument } from './utils/thingtalk';
 import WikidataUtils, { PROPERTY_QUALIFIER_PREFIX } from './utils/wikidata';
-import { PROPERTY_PREFIX, ENTITY_PREFIX } from './utils/wikidata';
+import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
 
 interface Entity {
     type : string;
@@ -186,7 +186,7 @@ class ManifestGenerator {
         // if (wikibaseType === 'GlobeCoordinate')
         //    return Type.Location;
         if (wikibaseType === 'WikibaseItem')
-            return new Type.Array(new Type.Entity(`org.wikidata:p_${propertyName}`));
+            return new Type.Array(new Type.Entity(`${TP_DEVICE_NAME}:p_${propertyName}`));
         
         // unsupported
         return null;
@@ -229,7 +229,7 @@ class ManifestGenerator {
             }
         } else {
             this._entities[type] = {
-                type: `org.wikidata:${type}`,
+                type: `${TP_DEVICE_NAME}:${type}`,
                 name, 
                 is_well_known: false,
                 has_ner_support: true,
@@ -349,8 +349,8 @@ class ManifestGenerator {
                     if (type) {
                         const typeLabel = await this._wikidata.getLabel(type);
                         if (typeLabel) {
-                            const parentClasses = typeLabel === 'entity' ? [] : ['org.wikidata:entity'];
-                            valueTypes.add(`org.wikidata:${cleanName(typeLabel)}`);
+                            const parentClasses = typeLabel === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`];
+                            valueTypes.add(`${TP_DEVICE_NAME}:${cleanName(typeLabel)}`);
                             this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
                         }
                     }
@@ -358,7 +358,7 @@ class ManifestGenerator {
                 this._addEntity(
                     `p_${pname}`, 
                     label, 
-                    this._typeSystem === 'flat' ? ['org.wikidata:entity'] : [...valueTypes]
+                    this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
                 );
             }
             if (vtype === Type.String) {
@@ -380,7 +380,7 @@ class ManifestGenerator {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
-        this._addEntity(fname, domainLabel, fname === 'entity' ? [] : ['org.wikidata:entity']);
+        this._addEntity(fname, domainLabel, fname === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`]);
         const samples = await this._wikidata.getEntitiesByDomain(domain); 
         const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
         this._domainSamples[fname] = sampleLabels;
@@ -451,8 +451,8 @@ class ManifestGenerator {
         const entities : Ast.EntityDef[] = Object.values(this._entities).map((entity) => {
             return new Ast.EntityDef(
                 null,
-                entity.type.slice('org.wikidata:'.length),
-                (entity.subtype_of ?? []).map((e) => e.slice('org.wikidata:'.length)),
+                entity.type.slice(`${TP_DEVICE_NAME}:`.length),
+                (entity.subtype_of ?? []).map((e) => e.slice(`${TP_DEVICE_NAME}:`.length)),
                 { impl: { has_ner: new Ast.Value.Boolean(!!entity.has_ner_support) } }
             );
         });
@@ -461,7 +461,7 @@ class ManifestGenerator {
         const whitelist =  new Ast.Value.Array(
             Object.keys(queries).map((qname) => new Ast.Value.String(qname))
         );
-        return new Ast.ClassDef(null, 'org.wikidata', null, {
+        return new Ast.ClassDef(null, TP_DEVICE_NAME, null, {
             imports, queries, entities
         }, {
             nl: { name: `WikidataQA based on ${this._experiment}`, description: 'Question Answering over Wikidata' },
@@ -477,7 +477,7 @@ class ManifestGenerator {
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
         // write entity dataset for ids 
         for (const [fname, values] of Object.entries(this._domainSamples)) {
-            index.write(`entity\ten-US\torg.wikidata:${fname}\tparameter-datasets/${fname}.json\n`);
+            index.write(`entity\ten-US\t${TP_DEVICE_NAME}:${fname}\tparameter-datasets/${fname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
@@ -492,7 +492,7 @@ class ManifestGenerator {
         // write entity dataset for instanceof 
         for (const [domain, values] of Object.entries(this._wikidata.subdomains)) {
             const fname = cleanName(this._domainLabels[domain]);
-            index.write(`entity\ten-US\torg.wikidata:${fname}_subdomain\tparameter-datasets/${fname}.json\n`);
+            index.write(`entity\ten-US\t${TP_DEVICE_NAME}:${fname}_subdomain\tparameter-datasets/${fname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}_subdomain.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const value of values) {
@@ -507,7 +507,7 @@ class ManifestGenerator {
         }
         // write entity dataset for other properties
         for (const [pname, values] of Object.entries(this._propertyValues.entities)) {
-            index.write(`entity\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
+            index.write(`entity\ten-US\t${TP_DEVICE_NAME}:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
@@ -521,7 +521,7 @@ class ManifestGenerator {
         }
         // write string dataset for properties
         for (const [pname, values] of Object.entries(this._propertyValues.strings)) {
-            index.write(`string\ten-US\torg.wikidata:p_${pname}\tparameter-datasets/p_${pname}.tsv\n`);
+            index.write(`string\ten-US\t${TP_DEVICE_NAME}:p_${pname}\tparameter-datasets/p_${pname}.tsv\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.tsv`);
             const output = csvstringify({ header: false, delimiter: '\t' });
             for (const value of values) {
@@ -557,7 +557,7 @@ class ManifestGenerator {
             for (const subdomain of this._subdomains[domain]) {
                 const subdomainLabel = await this._wikidata.getLabel(subdomain);
                 if (subdomainLabel)
-                    this._addEntity(cleanName(subdomainLabel), subdomainLabel, ['org.wikidata:entity']);
+                    this._addEntity(cleanName(subdomainLabel), subdomainLabel, [`${TP_DEVICE_NAME}:entity`]);
             }
         }
     }

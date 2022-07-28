@@ -8,6 +8,7 @@ import { Ast } from 'thingtalk';
 import { DatasetParser, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { waitFinish } from './utils/misc';
 import { instanceOfFilter } from './utils/thingtalk';
+import { TP_DEVICE_NAME } from './utils/wikidata';
 
 function hasFilter(ast : Ast.BooleanExpression, property : string) : boolean {
     if (ast instanceof Ast.OrBooleanExpression)
@@ -48,7 +49,7 @@ class NormalizerVisitor extends Ast.NodeVisitor {
         const domain = invocation.invocation.channel;
         const QID = this._class.getFunction('query', domain)!.getImplementationAnnotation('wikidata_subject') as string;
         const display = this._class.getFunction('query', domain)!.canonical!;
-        const value = new Ast.EntityValue(QID[0], 'org.wikidata:entity', display[0]);
+        const value = new Ast.EntityValue(QID[0], `${TP_DEVICE_NAME}:entity`, display[0]);
         return instanceOfFilter(value);
     }
 
@@ -138,9 +139,9 @@ class NormalizerVisitor extends Ast.NodeVisitor {
 
     visitEntityValue(value : Ast.EntityValue) : boolean {
         if (this._normalizeEntityTypes)
-            value.type = 'org.wikidata:entity';
-        else if (this._normalizeDomains !== 'never' && !value.type.startsWith('org.wikidata:p_')) 
-            value.type = 'org.wikidata:entity';
+            value.type = `${TP_DEVICE_NAME}:entity`;
+        else if (this._normalizeDomains !== 'never' && !value.type.startsWith(`${TP_DEVICE_NAME}:p_`)) 
+            value.type = `${TP_DEVICE_NAME}:entity`;
         return true;
     }
 }
@@ -245,7 +246,7 @@ async function main() {
     const processor = new PostProcessor({ 
         tpClient, 
         schemas, 
-        class: await schemas.getFullMeta('org.wikidata'),
+        class: await schemas.getFullMeta(TP_DEVICE_NAME),
         normalizeDomains: args.normalize_domains,
         normalizeEntityTypes: args.normalize_entity_types,
         includeEntityValue: args.include_entity_value,

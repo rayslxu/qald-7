@@ -13,6 +13,7 @@ export const PROPERTY_PREDICATE_PREFIX = 'http://www.wikidata.org/prop/';
 export const PROPERTY_STATEMENT_PREFIX = 'http://www.wikidata.org/prop/statement/';
 export const PROPERTY_QUALIFIER_PREFIX = 'http://www.wikidata.org/prop/qualifier/';
 export const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
+export const TP_DEVICE_NAME = 'wd';
 
 const PROPERTY_BLACKLIST = [
     'P31',

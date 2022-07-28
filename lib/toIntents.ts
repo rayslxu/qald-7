@@ -8,6 +8,7 @@ import * as ThingTalk from 'thingtalk';
 import { Ast } from 'thingtalk';
 import { DatasetParser, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { waitFinish } from './utils/misc';
+import { TP_DEVICE_NAME } from './utils/wikidata';
 
 class GetFunctionVisitor extends Ast.NodeVisitor {
     names : string[] = [];
@@ -38,7 +39,7 @@ class GetIdFilterVisitor extends Ast.NodeVisitor {
         if (ast instanceof Ast.AtomBooleanExpression) {
             if (ast.name === 'id') {
                 assert(ast.value instanceof Ast.Value.Entity);
-                ast.value.type = 'org.wikidata:entity';
+                ast.value.type = `${TP_DEVICE_NAME}:entity`;
                 return `id = ${ast.value.display}`;
             }
         }

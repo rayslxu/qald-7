@@ -5,7 +5,7 @@ SELECT DISTINCT ?x WHERE {
 }
 TT: 
 
-@org.wikidata . entity ( ) filter instance_of == " Q207694 " ^^org.wikidata:entity_subdomain ( " museums " ) ;
+@wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) ;
 
 ====
 Utterance: show me museums named after louvre palace
@@ -15,7 +15,7 @@ SELECT DISTINCT ?x WHERE {
        <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
 TT: 
-@org.wikidata . entity ( ) filter contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ( " louvre palace " ) ) && instance_of == " Q207694 " ^^org.wikidata:entity_subdomain ( " museums " ) ;
+@wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) && instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) ;
 
 ====
 Utterance: show me the owner of museums named after louvre palace
@@ -26,7 +26,7 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P127> ?y.
 }
 TT: 
-[ owned_by ] of @org.wikidata . entity ( ) filter instance_of == " Q207694 " ^^org.wikidata:entity_subdomain ( " museums " ) && contains ( named_after , " Q1075988 " ^^org.wikidata:p_named_after ( " louvre palace " ) ) ;
+[ owned_by ] of @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) && contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) ;
 
 ====
 Utterance: Who was the doctoral supervisor of Albert Einstein
@@ -35,7 +35,7 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?uri
 }
 TT:
-[ doctoral_advisor ] of @org.wikidata . human ( ) filter id == " Q937 " ^^org.wikidata:human ( " albert einstein " ) ;
+[ doctoral_advisor ] of @wd . human ( ) filter id == " Q937 " ^^wd:human ( " albert einstein " ) ;
 
 ====
 Utterance: Did Kaurismäki ever win the Grand Prix at Cannes?
@@ -44,7 +44,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804> . 
 }
 TT: 
-[ contains ( award_received , " Q844804 " ^^org.wikidata:p_award_received ( " grand prix at cannes " ) ) ] of @org.wikidata . human ( ) filter id == " Q276186 " ^^org.wikidata:human ( " kaurismäki " ) ;
+[ contains ( award_received , " Q844804 " ^^wd:p_award_received ( " grand prix at cannes " ) ) ] of @wd . human ( ) filter id == " Q276186 " ^^wd:human ( " kaurismäki " ) ;
 
 ====
 Utterance: Which countries have more than two official languages??
@@ -54,7 +54,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P37> ?language . 
 } GROUP BY ?uri HAVING(COUNT(?language)>2)
 TT: 
-@org.wikidata . country ( ) filter count ( official_language ) >= 2 ;
+@wd . country ( ) filter count ( official_language ) >= 2 ;
 
 ====
 Utterance: What is the highest mountain in Australia?
@@ -65,7 +65,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P2044> ?height. 
 } ORDER BY DESC(?height) LIMIT 1
 TT: 
-sort ( elevation_above_sea_level desc of @org.wikidata . mountain ( ) filter contains ( continent , " Q3960 " ^^org.wikidata:p_continent ( " australia " ) ) ) [ 1 ] ;
+sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter contains ( continent , " Q3960 " ^^wd:p_continent ( " australia " ) ) ) [ 1 ] ;
 
 ====
 Utterance: Give me all cities in New Jersey with more than 10000 inhabitants.
@@ -77,7 +77,7 @@ SELECT DISTINCT ?uri WHERE {
     FILTER(?population > 10000) 
 }
 TT:
-@org.wikidata . city ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q1408 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " new jersey " ) ) && population >= 10000 ;
+@wd . city ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q1408 " ^^wd:p_located_in_the_administrative_territorial_entity ( " new jersey " ) ) && population >= 10000 ;
 
 ====
 Utterance: Whose wife is called Mary?
@@ -88,7 +88,7 @@ SELECT DISTINCT ?uri {
     FILTER(regex(?name,'Mary')) 
 }
 TT: 
-@org.wikidata . entity ( ) filter contains~ ( spouse , " mary " ) ;
+@wd . entity ( ) filter contains~ ( spouse , " mary " ) ;
 
 ====
 Utterance: Was the wife of president Lincoln called Mary?
@@ -99,7 +99,7 @@ ASK WHERE {
     FILTER(regex(?name,'Mary')) 
 }
 TT: 
-[ contains~ ( spouse , " mary " ) ] of @org.wikidata . human ( ) filter id == " Q91 " ^^org.wikidata:human ( " lincoln " ) ;
+[ contains~ ( spouse , " mary " ) ] of @wd . human ( ) filter id == " Q91 " ^^wd:human ( " lincoln " ) ;
 
 ====
 Utterance: How many countries are there in Europe ? 
@@ -109,7 +109,7 @@ SELECT (COUNT(DISTINCT ?uri) as ?c) WHERE {
      ?uri <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q46> . 
 }
 TT: 
-count ( @org.wikidata . country ( ) filter contains ( continent , " Q46 " ^^org.wikidata:p_continent ( " europe " ) ) ) ;
+count ( @wd . country ( ) filter contains ( continent , " Q46 " ^^wd:p_continent ( " europe " ) ) ) ;
 
 ====
 Utterance: Which actors were born in Germany?
@@ -120,7 +120,7 @@ SELECT DISTINCT ?uri WHERE {
     { ?uri <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q183> . } 
 }
 TT: 
-@org.wikidata . entity ( ) filter contains ( occupation , " Q10800557 " ^^org.wikidata:p_occupation ( " actors " ) ) && contains ( place_of_birth , " Q183 " ^^org.wikidata:p_place_of_birth ( " germany " ) ) ;
+@wd . entity ( ) filter contains ( occupation , " Q10800557 " ^^wd:p_occupation ( " actors " ) ) && contains ( place_of_birth , " Q183 " ^^wd:p_place_of_birth ( " germany " ) ) ;
 
 ====
 Utterance: Give me the birthdays of all actors of the television show Charmed.
@@ -129,7 +129,7 @@ SELECT DISTINCT ?date WHERE {
     <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?date .
 }
 TT: 
-[ < cast_member / date_of_birth > ] of @org.wikidata . television_series ( ) filter id == " Q162371 " ^^org.wikidata:television_series ( " charmed " ) ;
+[ < cast_member / date_of_birth > ] of @wd . television_series ( ) filter id == " Q162371 " ^^wd:television_series ( " charmed " ) ;
 
 ====
 Utterance: Does the Isar flow into a lake?
@@ -139,7 +139,7 @@ ASK WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>  . 
 }
 TT:
-[ contains ( mouth_of_the_watercourse , any ( [ id ] of @org.wikidata . lake ( ) ) ) ] of @org.wikidata . river ( ) filter id == " Q106588 " ^^org.wikidata:river ( " isar " ) ;
+[ contains ( mouth_of_the_watercourse , any ( [ id ] of @wd . lake ( ) ) ) ] of @wd . river ( ) filter id == " Q106588 " ^^wd:river ( " isar " ) ;
 
 ====
 Utterance: Who wrote the lyrics for the Polish national anthem?
@@ -148,7 +148,7 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q36> <http://www.wikidata.org/prop/direct/P85>/<http://www.wikidata.org/prop/direct/P676> ?uri . 
 }
 TT:
-[ < anthem / lyrics_by > ] of @org.wikidata . country ( ) filter id == " Q36 " ^^org.wikidata:country ( " polish " ) ;
+[ < anthem / lyrics_by > ] of @wd . country ( ) filter id == " Q36 " ^^wd:country ( " polish " ) ;
 
 ====
 Utterance: Which writers studied in Istanbul?
@@ -158,7 +158,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>  <http://www.wikidata.org/entity/Q406> . 
 }
 TT:
-@org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;
+@wd . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^wd:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^wd:p_occupation ( " writers " ) ) ;
 
 ====
 Utterance: Which writers studied in Istanbul?
@@ -168,7 +168,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>+  <http://www.wikidata.org/entity/Q406> . 
 }
 TT:
-@org.wikidata . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^org.wikidata:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^org.wikidata:p_occupation ( " writers " ) ) ;
+@wd . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^wd:p_located_in_the_administrative_territorial_entity ( " istanbul " ) ) && contains ( occupation , " Q36180 " ^^wd:p_occupation ( " writers " ) ) ;
 
 ====
 Utterance: In which city did John F. Kennedy die?
@@ -178,7 +178,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>  .  
 } 
 TT: 
-[ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( org.wikidata:city ) ] of @org.wikidata . human ( ) filter id == " Q9696 " ^^org.wikidata:human ( " john f . kennedy " ) ;
+[ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( wd:city ) ] of @wd . human ( ) filter id == " Q9696 " ^^wd:human ( " john f . kennedy " ) ;
 
 
 ====
@@ -191,7 +191,7 @@ SELECT DISTINCT ?uri WHERE {
     FILTER (?elevation < ?elevation2) . 
 } ORDER BY DESC(?elevation) LIMIT 1
 TT:
-sort ( elevation_above_sea_level desc of @org.wikidata . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @org.wikidata . mountain ( ) filter id == " Q16466024 " ^^org.wikidata:mountain ( " annapurna " ) ) ) [ 1 ] ;
+sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ( " annapurna " ) ) ) [ 1 ] ;
 
 ==== 
 Utterance: Are tree frogs a type of amphibian?
@@ -200,7 +200,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q53696> <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q10908> . 
 }
 TT:
-[ contains ( < parent_taxon * > , " Q10908 " ^^org.wikidata:p_parent_taxon ( " amphibian " ) ) ] of @org.wikidata . taxon ( ) filter id == " Q53696 " ^^org.wikidata:taxon ( " tree frogs " ) ;
+[ contains ( < parent_taxon * > , " Q10908 " ^^wd:p_parent_taxon ( " amphibian " ) ) ] of @wd . taxon ( ) filter id == " Q53696 " ^^wd:taxon ( " tree frogs " ) ;
 
 ====
 Utterance: Which telecommunications organizations are located in Belgium?
@@ -212,7 +212,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q31> . 
 }
 TT: 
-@org.wikidata . organization ( ) filter contains ( country , " Q31 " ^^org.wikidata:p_country ( " belgium " ) ) && contains ( industry , " Q418 " ^^org.wikidata:p_industry ( " telecommunications " ) ) ;
+@wd . organization ( ) filter contains ( country , " Q31 " ^^wd:p_country ( " belgium " ) ) && contains ( industry , " Q418 " ^^wd:p_industry ( " telecommunications " ) ) ;
 
 ====
 Utterance: Is there a video game called Battle Chess?
@@ -223,7 +223,7 @@ ASK WHERE {
     ?uri rdfs:label "Battle Chess"@en 
 }
 TT: 
-[ count >= 1 ] of count ( @org.wikidata . video_game ( ) filter id =~ " battle chess " ) ;
+[ count >= 1 ] of count ( @wd . video_game ( ) filter id =~ " battle chess " ) ;
 
 ====
 Utterance: Give me the websites of companies with more than 500000 employees.
@@ -235,7 +235,7 @@ SELECT DISTINCT ?string WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P856> ?string . 
 }
 TT:
-[ official_website ] of @org.wikidata . organization ( ) filter instance_of == " Q4830453 " ^^org.wikidata:organization_subdomain ( " companies " ) && employees >= 500000 ;
+[ official_website ] of @wd . organization ( ) filter instance_of == " Q4830453 " ^^wd:organization_subdomain ( " companies " ) && employees >= 500000 ;
 
 ====
 Utterance: Is Lake Baikal bigger than the Great Bear Lake?
@@ -246,7 +246,7 @@ ASK WHERE {
     FILTER(?area1 > ?area2) 
 }
 TT: 
-[ area >= any ( [ area ] of @org.wikidata . lake ( ) filter id == " Q5525 " ^^org.wikidata:lake ( " great bear lake " ) ) ] of @org.wikidata . lake ( ) filter id == " Q5513 " ^^org.wikidata:lake ( " lake baikal " ) ;
+[ area >= any ( [ area ] of @wd . lake ( ) filter id == " Q5525 " ^^wd:lake ( " great bear lake " ) ) ] of @wd . lake ( ) filter id == " Q5513 " ^^wd:lake ( " lake baikal " ) ;
 
 ====
 Utterance: Was U.S. president Jackson involved in a war?
@@ -255,7 +255,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?uri . 
 }
 TT:
-[ ! ( count ( conflict ) == 0 ) ] of @org.wikidata . human ( ) filter id == " Q11817 " ^^org.wikidata:human ( " jackson " ) ;
+[ ! ( count ( conflict ) == 0 ) ] of @wd . human ( ) filter id == " Q11817 " ^^wd:human ( " jackson " ) ;
 
 ====
 Utterance: How many people live in the capital of Australia?
@@ -265,7 +265,7 @@ SELECT DISTINCT ?number WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
 }
 TT:
-[ population ] of @org.wikidata . entity ( ) filter in_array ( id , any ( [ capital ] of @org.wikidata . country ( ) filter id == " Q408 " ^^org.wikidata:country ( " australia " ) ) ) ;
+[ population ] of @wd . entity ( ) filter in_array ( id , any ( [ capital ] of @wd . country ( ) filter id == " Q408 " ^^wd:country ( " australia " ) ) ) ;
 
 ====
 Utterance: Was the Cuban Missile Crisis earlier than the Bay of Pigs Invasion?
@@ -276,7 +276,7 @@ ASK WHERE {
     FILTER(?date1 < ?date2) 
 }
 TT:
-[ end_time <= any ( [ start_time ] of @org.wikidata . entity ( ) filter id == " Q191721 " ^^org.wikidata:entity ( " bay of pigs invasion " ) ) ] of @org.wikidata . entity ( ) filter id == " Q128160 " ^^org.wikidata:entity ( " cuban missile crisis " ) ;
+[ end_time <= any ( [ start_time ] of @wd . entity ( ) filter id == " Q191721 " ^^wd:entity ( " bay of pigs invasion " ) ) ] of @wd . entity ( ) filter id == " Q128160 " ^^wd:entity ( " cuban missile crisis " ) ;
 
 ====
 Utterance: Show me all basketball players that are higher than 2 meters .
@@ -287,7 +287,7 @@ SELECT DISTINCT ?uri WHERE {
     FILTER(?height > 200)
 }
 TT: 
-@org.wikidata . entity ( ) filter contains ( occupation , " Q3665646 " ^^org.wikidata:p_occupation ( " basketball players " ) ) && height >= 2 m ;
+@wd . entity ( ) filter contains ( occupation , " Q3665646 " ^^wd:p_occupation ( " basketball players " ) ) && height >= 2 m ;
 
 ====
 Utterance: in which u . s . state is mount mckinley located ?
@@ -296,7 +296,7 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?uri
 }
 TT: 
-[ located_in_the_administrative_territorial_entity ] of @org.wikidata . mountain ( ) filter id == " Q130018 " ^^org.wikidata:mountain ( " mount mckinley " ) ;
+[ located_in_the_administrative_territorial_entity ] of @wd . mountain ( ) filter id == " Q130018 " ^^wd:mountain ( " mount mckinley " ) ;
 
 ====
 Utterance: which indian company has the most employees ?
@@ -307,7 +307,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1128> ?employees . 
 } ORDER BY DESC(?employees) LIMIT 1
 TT: 
-sort ( employees desc of @org.wikidata . organization ( ) filter contains ( country , " Q668 " ^^org.wikidata:p_country ( " indian " ) ) && instance_of == " Q4830453 " ^^org.wikidata:organization_subdomain ( " company " ) ) [ 1 ] ;
+sort ( employees desc of @wd . organization ( ) filter contains ( country , " Q668 " ^^wd:p_country ( " indian " ) ) && instance_of == " Q4830453 " ^^wd:organization_subdomain ( " company " ) ) [ 1 ] ;
 
 ====
 Utterance: What is the highest place of the Urals?
@@ -316,4 +316,4 @@ SELECT DISTINCT ?uri WHERE {
     <http://www.wikidata.org/entity/Q35600> <http://www.wikidata.org/prop/direct/P610> ?uri . 
 }
 TT:
-[ highest_point ] of @org.wikidata . entity ( ) filter id == " Q35600 " ^^org.wikidata:entity ( " urals " ) ;
+[ highest_point ] of @wd . entity ( ) filter id == " Q35600 " ^^wd:entity ( " urals " ) ;
