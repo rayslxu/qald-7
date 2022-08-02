@@ -137,6 +137,14 @@ class NormalizerVisitor extends Ast.NodeVisitor {
         return true;
     }
 
+    visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
+        if (node.name === 'instance_of' && node.value instanceof Ast.EntityValue) {
+            node.value.type = `${TP_DEVICE_NAME}:domain`;
+            return false;
+        }
+        return true;
+    }
+
     visitEntityValue(value : Ast.EntityValue) : boolean {
         if (this._normalizeEntityTypes)
             value.type = `${TP_DEVICE_NAME}:entity`;
