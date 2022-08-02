@@ -445,9 +445,10 @@ class ManifestGenerator {
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String('Q35120')])
             }
         });
-        this._addEntity('entity', 'Entity');
 
         // entity declarations
+        this._addEntity('entity', 'Entity');
+        this._addEntity('domain', 'Domain');
         const entities : Ast.EntityDef[] = Object.values(this._entities).map((entity) => {
             return new Ast.EntityDef(
                 null,
@@ -490,6 +491,7 @@ class ManifestGenerator {
             await waitFinish(paramDataset);
         }
         // write entity dataset for instanceof 
+        const domainEntities : Record<string, any> = {};
         for (const [domain, values] of Object.entries(this._wikidata.subdomains)) {
             const fname = cleanName(this._domainLabels[domain]);
             index.write(`entity\ten-US\t${TP_DEVICE_NAME}:${fname}_subdomain\tparameter-datasets/${fname}.json\n`);
@@ -500,12 +502,25 @@ class ManifestGenerator {
                 if (display) {
                     const tokenized = this._tokenizer.tokenize(display);
                     const name = tokenized.rawTokens.join(' ');
-                    data.data.push({ value: name, name: display, canonical: name });
+                    domainEntities[name] = { value: name, name: display, canonical: name };
+                    data.data.push(domainEntities[value]);
                 }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
             await waitFinish(paramDataset);
         }
+        // add top-level domains as well
+        for (const entity of Object.values(this._entities)) {
+            if (entity.type.startsWith(`${TP_DEVICE_NAME}:p_`) || entity.type === 'entity' || entity.type === 'domain')
+                continue;
+            const display = entity.name;
+            const tokenized = this._tokenizer.tokenize(display);
+            const name = tokenized.rawTokens.join(' ');
+            domainEntities[name] = ({ value: name, name: display, canonical: name });
+        }
+        const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/domain.json`);
+        paramDataset.end(JSON.stringify({ result: "ok", data: Object.values(domainEntities) }, undefined, 2));
+        await waitFinish(paramDataset);
         // write entity dataset for other properties
         for (const [pname, values] of Object.entries(this._propertyValues.entities)) {
             index.write(`entity\ten-US\t${TP_DEVICE_NAME}:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
