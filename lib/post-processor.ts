@@ -233,6 +233,7 @@ async function main() {
         type: fs.createWriteStream
     });
     parser.add_argument('--normalize-domains', {
+        choices: ['always','id-filtered-only','never'],
         default: 'id-filtered-only'
     });
     parser.add_argument('--normalize-entity-types', {
