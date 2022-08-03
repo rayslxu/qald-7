@@ -381,6 +381,8 @@ class ManifestGenerator {
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
         this._addEntity(fname, domainLabel, fname === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`]);
+        this._addEntity(fname + '_subdomain', `Subdomains of ${domainLabel}`, null);
+        this._addEntity('domain', `Domains`, [`${TP_DEVICE_NAME}:${fname}_subdomain`]);
         const samples = await this._wikidata.getEntitiesByDomain(domain); 
         const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
         this._domainSamples[fname] = sampleLabels;
@@ -457,6 +459,8 @@ class ManifestGenerator {
         // entity declarations
         this._addEntity('entity', 'Entity');
         this._addEntity('domain', 'Domain');
+        this._addEntity('entity_subdomain', `Subdomains for all entities`, null);
+        this._addEntity('domain', `Domains`, [`${TP_DEVICE_NAME}:entity_subdomain`]);
         const entities : Ast.EntityDef[] = Object.values(this._entities).map((entity) => {
             return new Ast.EntityDef(
                 null,
