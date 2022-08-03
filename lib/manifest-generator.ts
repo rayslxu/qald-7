@@ -511,7 +511,7 @@ class ManifestGenerator {
                     const tokenized = this._tokenizer.tokenize(display);
                     const name = tokenized.rawTokens.join(' ');
                     domainEntities[name] = { value: name, name: display, canonical: name };
-                    data.data.push(domainEntities[value]);
+                    data.data.push(domainEntities[name]);
                 }
             }
             paramDataset.end(JSON.stringify(data, undefined, 2));
