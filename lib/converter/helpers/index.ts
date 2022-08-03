@@ -30,6 +30,7 @@ import {
     baseQuery,
     elemType,
     getPropertiesInFilter,
+    instanceOfFilter,
     isIdFilter
 } from '../../utils/thingtalk';
 import {
@@ -350,17 +351,8 @@ export default class ConverterHelper {
                 continue;
             const domain = await this._converter.kb.getTopLevelDomain([subdomain]);
             table.name = this._converter.schema.getTable(domain);
-            const value = await this._converter.helper.convertValue(
-                ENTITY_PREFIX + subdomain, 
-                new Type.Entity(`${TP_DEVICE_NAME}:${table.name}_subdomain`)
-            ) as Ast.EntityValue ;
-            table.filters.unshift(new Ast.AtomBooleanExpression(
-                null,
-                'instance_of',
-                '==',
-                value,
-                null
-            ));
+            const subdomainLabel = await this._converter.kb.getLabel(subdomain);
+            table.filters.unshift(instanceOfFilter(subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`));
         }
 
         // if there is property not available in the domain, use 'entity' domain 
@@ -397,18 +389,9 @@ export default class ConverterHelper {
                     (value as Ast.EntityValue).type = `${TP_DEVICE_NAME}:entity`;
                     continue;
                 }
-                const qid = query.getImplementationAnnotation('wikidata_subject');
-                const value = await this._converter.helper.convertValue(
-                    ENTITY_PREFIX + qid, 
-                    new Type.Entity(`${TP_DEVICE_NAME}:entity_subdomain`)
-                );
-                table.filters.push(new Ast.AtomBooleanExpression(
-                    null,
-                    'instance_of', 
-                    '==',
-                    value,
-                    null
-                ));
+                const qid = query.getImplementationAnnotation('wikidata_subject') as string;
+                const subdomainLabel = await this._converter.kb.getLabel(qid);
+                table.filters.unshift(instanceOfFilter(subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`));
             }
         }
     }

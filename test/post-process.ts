@@ -8,7 +8,7 @@ const TEST_CASES = [
     [
         'how many countries are there in europe ?',
         `count ( @${TP_DEVICE_NAME} . country ( ) filter contains ( continent , " Q46 " ^^${TP_DEVICE_NAME}:p_continent ) ) ;`,
-        'count ( @${TP_DEVICE_NAME} . entity ( ) filter instance_of == " Q6256 " ^^${TP_DEVICE_NAME}:entity && contains ( continent , " Q46 " ^^${TP_DEVICE_NAME}:entity ) ) ;'
+        `count ( @${TP_DEVICE_NAME} . entity ( ) filter contains ( continent , " Q46 " ^^${TP_DEVICE_NAME}:entity ) && instance_of == " country " ^^${TP_DEVICE_NAME}:domain ) ;`
     ], 
     [
         'how many people live in the capital of Australia?',

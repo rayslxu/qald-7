@@ -47,10 +47,8 @@ class NormalizerVisitor extends Ast.NodeVisitor {
 
     private _instanceOfFilter(invocation : Ast.InvocationExpression) : Ast.BooleanExpression {
         const domain = invocation.invocation.channel;
-        const QID = this._class.getFunction('query', domain)!.getImplementationAnnotation('wikidata_subject') as string;
-        const display = this._class.getFunction('query', domain)!.canonical!;
-        const value = new Ast.EntityValue(QID[0], `${TP_DEVICE_NAME}:entity`, display[0]);
-        return instanceOfFilter(value);
+        const display = this._class.getFunction('query', domain)!.canonical![0];
+        return instanceOfFilter(display, `${TP_DEVICE_NAME}:entity`);
     }
 
     private _addInstanceOfFilter(invocation : Ast.InvocationExpression) : Ast.Expression {
@@ -192,7 +190,7 @@ export class PostProcessor {
             return thingtalk.split(' ');
         program.visit(this._normalizer);
         return ThingTalkUtils.serializePrediction(
-            program, 
+            program.optimize(), 
             preprocessedUtterance, 
             entities,
             { 

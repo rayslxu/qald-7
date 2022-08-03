@@ -1,6 +1,9 @@
 import assert from 'assert';
+import { I18n } from 'genie-toolkit';
 import { Ast, Type } from 'thingtalk';
 import { TP_DEVICE_NAME } from './wikidata';
+
+const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
 export function idArgument(entityType : string) : Ast.ArgumentDef {
     return new Ast.ArgumentDef(
@@ -25,12 +28,14 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
-export function instanceOfFilter(domain : Ast.EntityValue) : Ast.BooleanExpression {
+export function instanceOfFilter(domainLabel : string, type : string) : Ast.BooleanExpression {
+    const name = tokenizer.tokenize(domainLabel!).rawTokens.join(' ');
+    const value = new Ast.Value.Entity(name, type, domainLabel);
     return new Ast.AtomBooleanExpression(
         null,
         'instance_of',
         '==',
-        domain,
+        value,
         null
     );
 }
