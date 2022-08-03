@@ -1,0 +1,8 @@
+Utterance: show me all museums
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+}
+TT: 
+@wd . entity ( ) filter instance_of == " art museum " ^^wd:entity_subdomain ;
+

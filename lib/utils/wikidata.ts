@@ -748,6 +748,21 @@ export default class WikidataUtils {
     }
 
     /**
+     * Given a name of an entity, find its QID 
+     * @param name the name of the entity
+     * @returns 
+     */
+    async getEntityByName(name : string) : Promise<string|null> {
+        const result = await this._request(this._wdk.searchEntities(name));
+        try {
+            return result.search[0].id;
+        } catch(e) {
+            console.log(`Failed to find domain for ${name}`);
+            return null;
+        }
+    }
+
+    /**
      * guess if the thingtalk type of a value is string
      * @param value a string of value
      * @returns if the value is a string value

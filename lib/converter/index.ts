@@ -10,17 +10,24 @@ import { MANUAL_CONVERSION_WITH_DISPLAY, MANUAL_CONVERSION_WITHOUT_DISPLAY } fro
 import { waitFinish } from '../utils/misc';
 
 import SPARQLToThingTalkConverter from "./sparql2thingtalk";
+import ThingTalkToSPARQLConverter from './thingtalk2sparql';
 import { TP_DEVICE_NAME } from '../utils/wikidata';
 
 export {
-    SPARQLToThingTalkConverter
+    SPARQLToThingTalkConverter,
+    ThingTalkToSPARQLConverter
 };
-
 
 async function main() {
     const parser = new argparse.ArgumentParser({
         add_help : true,
-        description : "A tool to convert QALD-7 SPARQL to ThingTalk"
+        description : "A tool to convert QALD-7 SPARQL from/to ThingTalk"
+    });
+    parser.add_argument('--direction', {
+        required: false,
+        choices: ['from-thingtalk', 'to-thingtalk'],
+        default: 'to-thingtalk',
+        help: `The direction of conversion`
     });
     parser.add_argument('-l', '--locale', {
         required: false,
@@ -78,48 +85,50 @@ async function main() {
     const converter = new SPARQLToThingTalkConverter(classDef, args);
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
 
-    const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
-    const output = new DatasetStringifier();
-    output.pipe(args.output);
-    
-    const manualConversion = args.exclude_entity_display ? MANUAL_CONVERSION_WITHOUT_DISPLAY : MANUAL_CONVERSION_WITH_DISPLAY;
-    let counter = 0;
-    for await (const item of input) {
-        counter ++;
-        if (counter < args.offset)
-            continue;
-        const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
-        try {
-            if (item.query.sparql in manualConversion) {
-                output.write({ id: item.id, preprocessed, target_code: manualConversion[item.query.sparql] });
-            } else { 
-                const program = await converter.convert(item.query.sparql, preprocessed);
-                await program.typecheck(schemas);
-                const target_code = ThingTalkUtils.serializePrediction(
-                    program, 
-                    preprocessed,
-                    EntityUtils.makeDummyEntities(preprocessed), 
-                    { 
-                        locale: 'en', 
-                        timezone: undefined, 
-                        includeEntityValue: args.include_entity_value, 
-                        excludeEntityDisplay: args.exclude_entity_display
-                    }
-                ).join(' ');
-                output.write({ id: item.id, preprocessed, target_code });
+    if (args.direction === 'to-thingtalk') {
+        const input = args.input.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
+        const output = new DatasetStringifier();
+        output.pipe(args.output);
+        
+        const manualConversion = args.exclude_entity_display ? MANUAL_CONVERSION_WITHOUT_DISPLAY : MANUAL_CONVERSION_WITH_DISPLAY;
+        let counter = 0;
+        for await (const item of input) {
+            counter ++;
+            if (counter < args.offset)
+                continue;
+            const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
+            try {
+                if (item.query.sparql in manualConversion) {
+                    output.write({ id: item.id, preprocessed, target_code: manualConversion[item.query.sparql] });
+                } else { 
+                    const program = await converter.convert(item.query.sparql, preprocessed);
+                    await program.typecheck(schemas);
+                    const target_code = ThingTalkUtils.serializePrediction(
+                        program, 
+                        preprocessed,
+                        EntityUtils.makeDummyEntities(preprocessed), 
+                        { 
+                            locale: 'en', 
+                            timezone: undefined, 
+                            includeEntityValue: args.include_entity_value, 
+                            excludeEntityDisplay: args.exclude_entity_display
+                        }
+                    ).join(' ');
+                    output.write({ id: item.id, preprocessed, target_code });
+                }
+            } catch(e) {
+                console.log(`Example ${item.id} failed`);
+                if (args.drop)
+                    args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
+                else 
+                    console.log((e as Error).message);
             }
-        } catch(e) {
-            console.log(`Example ${item.id} failed`);
-            if (args.drop)
-                args.drop.write(`${item.id}\t${preprocessed}\t${item.query.sparql}\t${(e as Error).message.replace(/\s+/g, ' ')}\n`);
-            else 
-                console.log((e as Error).message);
         }
+        await waitFinish(input);
+        await waitFinish(output);
+        if (args.drop)
+            await waitFinish(args.drop);
     }
-    await waitFinish(input);
-    await waitFinish(output);
-    if (args.drop)
-        await waitFinish(args.drop);
 }
 
 if (require.main === module)
