@@ -1,6 +1,7 @@
 dist
 node_modules
 entities.json
+domain.json
 parameter-datasets.tsv
 parameter-datasets
 manifest.tt
