@@ -381,8 +381,8 @@ class ManifestGenerator {
         console.log(`Sampling ${domainLabel} domain ...`);
         const fname = cleanName(domainLabel);
         this._addEntity(fname, domainLabel, fname === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`]);
-        this._addEntity(fname + '_subdomain', `Subdomains of ${domainLabel}`, null);
-        this._addEntity('domain', `Domains`, [`${TP_DEVICE_NAME}:${fname}_subdomain`]);
+        this._addEntity(fname + '_subdomain', `Subdomains of ${domainLabel} (${domain})`, null);
+        this._addEntity('domain', `All domains`, [`${TP_DEVICE_NAME}:${fname}_subdomain`]);
         const samples = await this._wikidata.getEntitiesByDomain(domain); 
         const sampleLabels = await this._wikidata.getLabelsByBatch(...samples);
         this._domainSamples[fname] = sampleLabels;
@@ -485,7 +485,7 @@ class ManifestGenerator {
     /**
      * Output the parameter datasets 
      */
-    async _outputParameterDatasets() {
+    async _outputParameterDatasets(classDef : Ast.ClassDef) {
         const dir = path.dirname(this._output.path as string);
         const index = fs.createWriteStream(dir + '/parameter-datasets.tsv');
         // write entity dataset for ids 
@@ -514,7 +514,7 @@ class ManifestGenerator {
                 if (display) {
                     const tokenized = this._tokenizer.tokenize(display);
                     const name = tokenized.rawTokens.join(' ');
-                    domainEntities[name] = { value: name, name: display, canonical: name };
+                    domainEntities[name] = { value: name, name: `${display} (${value})`, canonical: name };
                     data.data.push(domainEntities[name]);
                 }
             }
@@ -522,13 +522,12 @@ class ManifestGenerator {
             await waitFinish(paramDataset);
         }
         // add top-level domains as well
-        for (const entity of Object.values(this._entities)) {
-            if (entity.type.startsWith(`${TP_DEVICE_NAME}:p_`) || entity.type === 'entity' || entity.type === 'domain')
-                continue;
-            const display = entity.name;
+        for (const query of Object.values(classDef.queries)) {
+            const qid = query.getImplementationAnnotation('wikidata_subject') as string;
+            const display = (query.getNaturalLanguageAnnotation('canonical') as string[])[0] ;
             const tokenized = this._tokenizer.tokenize(display);
             const name = tokenized.rawTokens.join(' ');
-            domainEntities[name] = ({ value: name, name: display, canonical: name });
+            domainEntities[name] = ({ value: name, name: `${display} (${qid})`, canonical: name });
         }
         const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/domain.json`);
         paramDataset.end(JSON.stringify({ result: "ok", data: Object.values(domainEntities) }, undefined, 2));
@@ -608,7 +607,7 @@ class ManifestGenerator {
 
         console.log('Start generating parameter datasets ...');
         await this._outputEntities();
-        await this._outputParameterDatasets();
+        await this._outputParameterDatasets(classDef);
         console.log('Done.');
     }
 }
