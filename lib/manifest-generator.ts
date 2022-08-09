@@ -204,7 +204,9 @@ class ManifestGenerator {
             const altLabels = await this._wikidata.getAltLabels(id);
             labels.push(...altLabels);
         } 
-        const baseCanonical = {};
+        const baseCanonical : Record<string, any> = {};
+        if (['P106', 'P27'].includes(id)) // occupation and country of citizenship
+            baseCanonical.reverse_property = ["#"];
         for (const label of labels) 
             genBaseCanonical(baseCanonical, label, type, null);
         return baseCanonical;
