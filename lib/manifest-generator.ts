@@ -407,11 +407,17 @@ class ManifestGenerator {
         if (missing.length > 0)
             console.log(missing.map(([id, label]) => `${label} (${id})`).join(', '));
 
+
+        const canonical = [domainLabel];
+        if (this._useWikidataAltLabels) {
+            const altLabels = await this._wikidata.getAltLabels(domain);
+            canonical.push(...altLabels);
+        }
         const functionDef = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
             is_list: true, 
             is_monitorable: false
         }, args, {
-            nl: { canonical: [domainLabel] },
+            nl: { canonical },
             impl : {
                 inherit_arguments: new Ast.Value.Boolean(false),
                 handle_thingtalk: new Ast.Value.Boolean(true),
