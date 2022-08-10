@@ -21,7 +21,8 @@ async function main() {
         const excludeEntityDisplay = testFile.endsWith('qid-only.txt');
         const options = {
             cache: 'wikidata_cache.sqlite', 
-            bootleg_db: 'bootleg.sqlite'
+            bootleg_db: 'bootleg.sqlite',
+            human_readable_instance_of: false
         };
         const converter = new SPARQLToThingTalkConverter(classDef, options);
         const tokenizer = new I18n.LanguagePack('en').getTokenizer();

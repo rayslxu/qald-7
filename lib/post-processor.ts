@@ -32,23 +32,28 @@ class NormalizerVisitor extends Ast.NodeVisitor {
     private _class : Ast.ClassDef;
     private _normalizeDomains : 'always'|'id-filtered-only'|'never';
     private _normalizeEntityTypes : boolean;
+    private _humanReadableInstanceOf : boolean;
 
     constructor(
         klass : Ast.ClassDef,
         options : { 
         normalizeDomains : 'always'|'id-filtered-only'|'never', 
-        normalizeEntityTypes : boolean;
+        normalizeEntityTypes : boolean,
+        humanReadableInstanceOf : boolean
     }) {
         super();
         this._class = klass;
         this._normalizeDomains = options.normalizeDomains;
         this._normalizeEntityTypes = options.normalizeEntityTypes;
+        this._humanReadableInstanceOf = options.humanReadableInstanceOf;
     }
 
     private _instanceOfFilter(invocation : Ast.InvocationExpression) : Ast.BooleanExpression {
         const domain = invocation.invocation.channel;
-        const display = this._class.getFunction('query', domain)!.canonical![0];
-        return instanceOfFilter(display, `${TP_DEVICE_NAME}:entity`);
+        const functionDef = this._class.getFunction('query', domain)!;
+        const qid = (functionDef.getImplementationAnnotation('wikidata_subject')! as string[])[0];
+        const display = functionDef.canonical![0];
+        return instanceOfFilter(qid, display, `${TP_DEVICE_NAME}:entity`, this._humanReadableInstanceOf);
     }
 
     private _addInstanceOfFilter(invocation : Ast.InvocationExpression) : Ast.Expression {
@@ -160,6 +165,7 @@ interface PostProcessorOptions {
     normalizeEntityTypes : boolean; 
     includeEntityValue : boolean;
     excludeEntityDisplay : boolean;
+    humanReadableInstanceOf : boolean;
 }
 
 export class PostProcessor {
@@ -246,6 +252,11 @@ async function main() {
         action: 'store_true',
         default: false
     });
+    parser.add_argument('--human-readable-instance-of', {
+        action: 'store_true',
+        help: 'Use human readable string for instance_of instead of QID.',
+        default: false
+    });
 
     const args = parser.parse_args();
     const tpClient = new Tp.FileClient(args);
@@ -257,7 +268,8 @@ async function main() {
         normalizeDomains: args.normalize_domains,
         normalizeEntityTypes: args.normalize_entity_types,
         includeEntityValue: args.include_entity_value,
-        excludeEntityDisplay: args.exclude_entity_display
+        excludeEntityDisplay: args.exclude_entity_display,
+        humanReadableInstanceOf: args.human_readable_instance_of
     });
 
     args.input.setEncoding('utf8').pipe(byline())

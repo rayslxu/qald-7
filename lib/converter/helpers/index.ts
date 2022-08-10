@@ -352,7 +352,7 @@ export default class ConverterHelper {
             const domain = await this._converter.kb.getTopLevelDomain([subdomain]);
             table.name = this._converter.schema.getTable(domain);
             const subdomainLabel = await this._converter.kb.getLabel(subdomain);
-            table.filters.unshift(instanceOfFilter(subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`));
+            table.filters.unshift(instanceOfFilter(subdomain, subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`, this._converter.humanReadableInstanceOf));
         }
 
         // if there is property not available in the domain, use 'entity' domain 
@@ -391,7 +391,7 @@ export default class ConverterHelper {
                 }
                 const qid = query.getImplementationAnnotation('wikidata_subject') as string;
                 const subdomainLabel = await this._converter.kb.getLabel(qid);
-                table.filters.unshift(instanceOfFilter(subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`));
+                table.filters.unshift(instanceOfFilter(qid, subdomainLabel!, `${TP_DEVICE_NAME}:${table.name}_subdomain`, this._converter.humanReadableInstanceOf));
             }
         }
     }

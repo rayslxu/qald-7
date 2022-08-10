@@ -32,6 +32,7 @@ interface ManifestGeneratorOptions {
     output : fs.WriteStream,
     exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean,
+    human_readable_instance_of : boolean,
     bootleg_db : string
 }
 
@@ -67,6 +68,7 @@ class ManifestGenerator {
 
     private _includeNonEntityProperties : boolean;
     private _useWikidataAltLabels : boolean;
+    private _humanReadableInstanceOf : boolean;
 
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
@@ -87,6 +89,7 @@ class ManifestGenerator {
 
         this._includeNonEntityProperties = !options.exclude_non_entity_properties;
         this._useWikidataAltLabels = options.use_wikidata_alt_labels;
+        this._humanReadableInstanceOf = options.human_readable_instance_of;
     }
 
     /**
@@ -522,7 +525,10 @@ class ManifestGenerator {
                 if (display) {
                     const tokenized = this._tokenizer.tokenize(display);
                     const name = tokenized.rawTokens.join(' ');
-                    domainEntities[name] = { value: name, name: `${display} (${value})`, canonical: name };
+                    if (this._humanReadableInstanceOf)
+                        domainEntities[name] = { value: name, name: `${display} (${value})`, canonical: name };
+                    else 
+                        domainEntities[name] = { value, name: display, canonical: name };
                     data.data.push(domainEntities[name]);
                 }
             }
@@ -535,7 +541,10 @@ class ManifestGenerator {
             const display = (query.getNaturalLanguageAnnotation('canonical') as string[])[0] ;
             const tokenized = this._tokenizer.tokenize(display);
             const name = tokenized.rawTokens.join(' ');
-            domainEntities[name] = ({ value: name, name: `${display} (${qid})`, canonical: name });
+            if (this._humanReadableInstanceOf)
+                domainEntities[name] = { value: name, name: `${display} (${qid})`, canonical: name };
+            else 
+                domainEntities[name] = { value: qid, name: display, canonical: name };
         }
         const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/domain.json`);
         paramDataset.end(JSON.stringify({ result: "ok", data: Object.values(domainEntities) }, undefined, 2));
@@ -652,6 +661,11 @@ async function main() {
     parser.add_argument('--use-wikidata-alt-labels', {
         action: 'store_true',
         help: 'Enable wikidata alternative labels as annotations.',
+        default: false
+    });
+    parser.add_argument('--human-readable-instance-of', {
+        action: 'store_true',
+        help: 'Use human readable string for instance_of instead of QID.',
         default: false
     });
     parser.add_argument('--bootleg-db', {

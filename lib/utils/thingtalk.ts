@@ -28,9 +28,9 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
-export function instanceOfFilter(domainLabel : string, type : string) : Ast.BooleanExpression {
+export function instanceOfFilter(domain : string, domainLabel : string, type : string, humanReadable = false) : Ast.BooleanExpression {
     const name = tokenizer.tokenize(domainLabel!).rawTokens.join(' ');
-    const value = new Ast.Value.Entity(name, type, domainLabel);
+    const value = humanReadable ? new Ast.Value.Entity(name, type, domainLabel) : new Ast.Value.Entity(domain, type, domainLabel);
     return new Ast.AtomBooleanExpression(
         null,
         'instance_of',

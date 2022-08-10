@@ -77,6 +77,11 @@ async function main() {
         action: 'store_true',
         default: false
     });
+    parser.add_argument('--human-readable-instance-of', {
+        action: 'store_true',
+        help: 'Use human readable string for instance_of instead of QID.',
+        default: false
+    });
     const args = parser.parse_args();
 
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });

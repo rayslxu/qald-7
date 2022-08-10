@@ -184,6 +184,7 @@ class QueryGenerator {
 interface SPARQLToThingTalkConverterOptions {
     cache : string;
     bootleg_db : string;
+    human_readable_instance_of : boolean;
 }
 
 export default class SPARQLToThingTalkConverter {
@@ -200,6 +201,7 @@ export default class SPARQLToThingTalkConverter {
     private _crossTableComparison : Comparison[];
     private _parser : QueryParser;
     private _generator : QueryGenerator;
+    private _humanReadableInstanceOf : boolean;
 
     constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._sparqlParser = new Parser();
@@ -216,6 +218,7 @@ export default class SPARQLToThingTalkConverter {
         this._tables = {};
         this._crossTableComparison = [];
         this._keywords = [];
+        this._humanReadableInstanceOf = options.human_readable_instance_of;
     } 
 
     get class() : Ast.ClassDef {
@@ -252,6 +255,10 @@ export default class SPARQLToThingTalkConverter {
 
     get utterance() : string|undefined {
         return this._utterance;
+    }
+
+    get humanReadableInstanceOf() : boolean {
+        return this._humanReadableInstanceOf;
     }
      
     updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
