@@ -1,5 +1,6 @@
 dist
 node_modules
+data/experiments
 entities.json
 domain.json
 parameter-datasets.tsv
