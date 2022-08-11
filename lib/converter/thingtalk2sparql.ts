@@ -30,6 +30,7 @@ class TableInfoVisitor extends Ast.NodeVisitor {
 class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
+    private _isBooleanQuestion : boolean;
     private _target_projection : string|null;
     private _target_projection_variable : string|null;
     private _triples : string[];
@@ -38,6 +39,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         super();
         this._converter = converter;
         this._subject = subject;
+        this._isBooleanQuestion = false;
         this._target_projection = projection;
         this._target_projection_variable = null;
         this._triples = [];
@@ -50,7 +52,15 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     get resultVariable() {
-        return this._target_projection_variable ?? this._subject;
+        if (this._target_projection_variable)
+            return this._target_projection_variable;
+        if (this._subject.startsWith('?'))
+            return this._subject;
+        return null;
+    }
+
+    get isBooleanQuestion() {
+        return this._isBooleanQuestion;
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
@@ -83,6 +93,11 @@ class TripleGenerator extends Ast.NodeVisitor {
                 this._triples.push(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
             }     
         }
+        return true;
+    }
+
+    visitBooleanQuestionExpression(node : ThingTalk.Ast.BooleanQuestionExpression) : boolean {
+        this._isBooleanQuestion = true;
         return true;
     }
 
@@ -121,6 +136,7 @@ export default class ThingTalkToSPARQLConverter {
 
     private _entityVariableCount : number;
     private _resultVariable : string|null;
+    private _isBooleanQuestion : boolean;
     private _statements : string[];
     private _humanReadableInstanceOf : boolean;
 
@@ -146,6 +162,7 @@ export default class ThingTalkToSPARQLConverter {
         this._entityVariableCount = 0;
         this._statements = [];
         this._resultVariable = null;
+        this._isBooleanQuestion = false;
         this._humanReadableInstanceOf = options.human_readable_instance_of;
     }
 
@@ -174,6 +191,7 @@ export default class ThingTalkToSPARQLConverter {
         this._entityVariableCount = 0;
         this._statements = [];
         this._resultVariable = null;
+        this._isBooleanQuestion = false;
     }
 
     private async _convertSingleTable(ast : Ast.Expression) {
@@ -186,6 +204,7 @@ export default class ThingTalkToSPARQLConverter {
         ast.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.triples);
         this._resultVariable = tripleGenerator.resultVariable;
+        this._isBooleanQuestion = tripleGenerator.isBooleanQuestion;
     }
 
     async convert(utterance : string, thingtalk : string) : Promise<string> {
@@ -199,6 +218,8 @@ export default class ThingTalkToSPARQLConverter {
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
         await this._convertSingleTable(table);  
-        return `SELECT DISTINCT ${this._resultVariable} WHERE { ${this._statements.join((' '))} }`;
+        return this._isBooleanQuestion ? 
+            `ASK WHERE { ${this._statements.join((' '))} }` : 
+            `SELECT DISTINCT ${this._resultVariable} WHERE { ${this._statements.join((' '))} }`;
     }
 }

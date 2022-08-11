@@ -36,3 +36,11 @@ SELECT DISTINCT ?x WHERE {
     <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?x.
 }
 
+====
+Utterance: Did Kaurismäki ever win the Grand Prix at Cannes?
+TT: 
+[ contains ( award_received , " Q844804 " ^^wd:p_award_received ) ] of @wd . human ( ) filter id == " Q276186 " ^^wd:human ;
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804>. 
+}
