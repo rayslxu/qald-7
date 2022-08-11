@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { EntityUtils } from 'genie-toolkit';
 import ThingTalk from 'thingtalk';
 import { Ast, Syntax } from "thingtalk";
@@ -19,8 +20,8 @@ class TableInfoVisitor extends Ast.NodeVisitor {
 
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
         if (node.name === 'id' && node.value instanceof Ast.EntityValue)
-            this.subject = 'wd:' + node.value.value!;
-        if (node.name === 'instance_of' && node.value instanceof Ast.EntityValue)
+            this.subject = `<${ENTITY_PREFIX}${node.value.value}>`;
+        if (node.name === 'instance_of' && node.value instanceof Ast.EntityValue) 
             this.domainName = node.value.value!;
         return true;
     }
@@ -29,12 +30,16 @@ class TableInfoVisitor extends Ast.NodeVisitor {
 class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
+    private _target_projection : string|null;
+    private _target_projection_variable : string|null;
     private _triples : string[];
 
-    constructor(converter : ThingTalkToSPARQLConverter, subject : string, domain : string|null) {
+    constructor(converter : ThingTalkToSPARQLConverter, subject : string, projection : string|null, domain : string|null) {
         super();
         this._converter = converter;
         this._subject = subject;
+        this._target_projection = projection;
+        this._target_projection_variable = null;
         this._triples = [];
         if (domain)
             this._triples.push(`${subject} <${PROPERTY_PREFIX}P31> <${ENTITY_PREFIX}${domain}>.`);
@@ -44,10 +49,16 @@ class TripleGenerator extends Ast.NodeVisitor {
         return this._triples;
     }
 
+    get resultVariable() {
+        return this._target_projection_variable ?? this._subject;
+    }
+
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
         for (const arg of node.args) {
             const p = this._converter.getWikidataProperty(arg);
             const v = this._converter.getEntityVariable();
+            if (arg === this._target_projection) 
+                this._target_projection_variable = `?${v}`;
             this._triples.push(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
         }
         return true;
@@ -79,9 +90,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (node.name !== 'id' && node.name !== 'instance_of') {
             const property = node.name;
             const p = this._converter.getWikidataProperty(property);
-            const domain = (node.value as Ast.EntityValue).value!;
-            const q = this._converter.getWikidataDomain(domain);
-            this._triples.push(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${q}>.`);
+            const v = (node.value as Ast.EntityValue).value!;
+            this._triples.push(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
 
         }
         return true;
@@ -98,7 +108,8 @@ interface ThingTalkToSPARQLConverterOptions {
     locale : string,
     timezone ?: string,
     cache : string,
-    bootleg : string
+    bootleg : string,
+    human_readable_instance_of : boolean
 }
 export default class ThingTalkToSPARQLConverter {
     private _classDef : Ast.ClassDef;
@@ -109,7 +120,9 @@ export default class ThingTalkToSPARQLConverter {
     private _domainMap : Record<string, string>;
 
     private _entityVariableCount : number;
+    private _resultVariable : string|null;
     private _statements : string[];
+    private _humanReadableInstanceOf : boolean;
 
     constructor(classDef : Ast.ClassDef, entities : Entity[], options : ThingTalkToSPARQLConverterOptions) {
         this._classDef = classDef;
@@ -123,13 +136,21 @@ export default class ThingTalkToSPARQLConverter {
             this._propertyMap[property.name] = qid;
         }
         this._domainMap = {};
-        for (const entity of entities) {
-            const qid = entity.name.match(/Q[0-9]+/g)![0];
-            this._domainMap[entity.value] = qid;
+        if (options.human_readable_instance_of) {
+            for (const entity of entities) {
+                const qid = entity.name.match(/Q[0-9]+/g)![0];
+                this._domainMap[entity.value] = qid;
+            }
         }
 
         this._entityVariableCount = 0;
         this._statements = [];
+        this._resultVariable = null;
+        this._humanReadableInstanceOf = options.human_readable_instance_of;
+    }
+
+    get kb() {
+        return this._kb;
     }
 
     getEntityVariable() : string {
@@ -140,29 +161,44 @@ export default class ThingTalkToSPARQLConverter {
         return this._propertyMap[property];
     }
 
-    async getWikidataDomain(domain : string) : Promise<string|null> {
-        if (domain in this._domainMap)
-            return this._domainMap[domain];
-        return this._kb.getEntityByName(domain);
+    getWikidataDomain(domain : string) : string|null {
+        if (this._humanReadableInstanceOf) {
+            if (domain in this._domainMap)
+                return this._domainMap[domain];
+            throw new Error('Unknown domain: ' + domain);
+        }
+        return domain;
     }
 
-    private async _convertSingleTable(ast : Ast.Node) {
+    private _reset() {
+        this._entityVariableCount = 0;
+        this._statements = [];
+        this._resultVariable = null;
+    }
+
+    private async _convertSingleTable(ast : Ast.Expression) {
         const tableInfoVisitor = new TableInfoVisitor();
         ast.visit(tableInfoVisitor);
         const subject = tableInfoVisitor.subject ?? '?' + this.getEntityVariable();
+        const projection = ast instanceof Ast.ProjectionExpression ? ast.args[0] : null;
         const domain = tableInfoVisitor.domainName ? await this.getWikidataDomain(tableInfoVisitor.domainName) : null;
-        const tripleGenerator = new TripleGenerator(this, subject, domain);
+        const tripleGenerator = new TripleGenerator(this, subject, projection, domain);
         ast.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.triples);
-
+        this._resultVariable = tripleGenerator.resultVariable;
     }
 
     async convert(utterance : string, thingtalk : string) : Promise<string> {
+        this._reset();
         const entities = EntityUtils.makeDummyEntities(utterance);
         const ast = Syntax.parse(thingtalk, Syntax.SyntaxType.Tokenized, entities, {
             locale : this._locale, timezone: this._timezone
         });
-        await this._convertSingleTable(ast);        
-        return `SELECT DISTINCT ?x WHERE { ${this._statements.join(('. '))} }`;
+        assert(ast instanceof Ast.Program);
+        const expr = (ast.statements[0] as Ast.ExpressionStatement).expression;
+        assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
+        const table = expr.expressions[0];
+        await this._convertSingleTable(table);  
+        return `SELECT DISTINCT ${this._resultVariable} WHERE { ${this._statements.join((' '))} }`;
     }
 }

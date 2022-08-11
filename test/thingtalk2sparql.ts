@@ -17,7 +17,8 @@ async function main() {
         locale: 'en-US',
         timezone: undefined,
         cache: 'wikidata_cache.sqlite',
-        bootleg: 'bootleg.sqlite'
+        bootleg: 'bootleg.sqlite',
+        human_readable_instance_of: false
     };
     const converter = new ThingTalkToSPARQLConverter(classDef, entities, options);
     const tests = fs.readFileSync('./test/tests-reverse.txt').toString('utf-8').split('====');
@@ -26,9 +27,9 @@ async function main() {
     const start = index ? (index > 0 ? index - 1 : tests.length + index) : 0;
     for (let i = Math.max(start, 0); i < tests.length; i++) {
         console.log(`Running test ${i + 1} ...` );
-        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('SPARQL:')).trim();
-        const expected = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length, tests[i].indexOf('TT:')).trim();
-        const thingtalk = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length).trim();     
+        const utterance = tests[i].slice(tests[i].indexOf('Utterance:') + 'Utterance:'.length, tests[i].indexOf('TT:')).trim();
+        const thingtalk = tests[i].slice(tests[i].indexOf('TT:') + 'TT:'.length, tests[i].indexOf('SPARQL:')).trim();
+        const expected = tests[i].slice(tests[i].indexOf('SPARQL:') + 'SPARQL:'.length).trim();     
         const sparql = await converter.convert(utterance, thingtalk);
         assert.strictEqual(sparql, expected.replace(/\s+/g, ' '));
     }

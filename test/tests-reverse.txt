@@ -1,8 +1,38 @@
 Utterance: show me all museums
+TT: 
+@wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
 }
+
+====
+Utterance: show me museums named after louvre palace
 TT: 
-@wd . entity ( ) filter instance_of == " art museum " ^^wd:entity_subdomain ;
+@wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ) && instance_of == " Q207694 " ^^wd:entity_subdomain ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
+}
+
+====
+Utterance: show me the owner of museums named after louvre palace
+TT: 
+[ owned_by ] of @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain && contains ( named_after , " Q1075988 " ^^wd:p_named_after ) ;
+SPARQL: 
+SELECT DISTINCT ?y WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P127> ?y.
+    ?x <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
+}
+
+====
+Utterance: Who was the doctoral supervisor of Albert Einstein
+TT:
+[ doctoral_advisor ] of @wd . human ( ) filter id == " Q937 " ^^wd:human ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?x.
+}
 
