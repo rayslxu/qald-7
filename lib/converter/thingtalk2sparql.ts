@@ -100,7 +100,32 @@ class TripleGenerator extends Ast.NodeVisitor {
         return true;
     }
 
+    visitNotBooleanExpression(node : ThingTalk.Ast.NotBooleanExpression) : boolean {
+        if (node.expr instanceof Ast.AtomBooleanExpression) {
+            if (node.expr.operator === '==' && node.expr.value instanceof Ast.NullValue) {
+                const property = node.expr.name;
+                const p = this._converter.getWikidataProperty(property);
+                const v = this._converter.getEntityVariable();
+                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
+                return false; 
+            } 
+        }
+        throw new Error('Unsupported negative boolean expression');
+    }
+
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
+        // id string filter
+        if (node.name === 'id' && node.operator === '=~') {
+            assert(node.value instanceof Ast.StringValue);
+            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"@en.`);
+            return true;
+        }
+
+        // skip all other filters on id and instance_of
+        if (node.name === 'id' || node.name === 'instance_of')
+            return true;
+
+        // filter on aggregation result
         if (node.name === 'count') {
             assert(node.value instanceof Ast.NumberValue);
             // check if any node satisfying the filters exists, no need to do anything
@@ -109,23 +134,19 @@ class TripleGenerator extends Ast.NodeVisitor {
             throw new Error('Unsupported aggregation');
         } 
         
-        if (node.name === 'id' && node.operator === '=~') {
-            assert(node.value instanceof Ast.StringValue);
-            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"@en.`);
-        } else if (node.name !== 'id' && node.name !== 'instance_of') {
-            const property = node.name;
-            const p = this._converter.getWikidataProperty(property);
-            if (node.value instanceof Ast.EntityValue) {
-                const v = node.value.value!;
-                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
-            } else if (node.value instanceof Ast.NumberValue) {
-                const value = node.value.value;
-                const variable = this._converter.getEntityVariable();
-                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
-                this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
-            } else {
-                throw new Error('Unsupported atom filter');
-            }
+        // generic atom filters 
+        const property = node.name;
+        const p = this._converter.getWikidataProperty(property);
+        if (node.value instanceof Ast.EntityValue) {
+            const v = node.value.value!;
+            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
+        } else if (node.value instanceof Ast.NumberValue) {
+            const value = node.value.value;
+            const variable = this._converter.getEntityVariable();
+            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+            this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
+        } else {
+            throw new Error('Unsupported atom filter');
         }
         return true;
     }
@@ -135,11 +156,12 @@ class TripleGenerator extends Ast.NodeVisitor {
             if (node.lhs.op === 'count') {
                 const property = (node.lhs.operands[0] as Ast.VarRefValue).name;
                 const p = this._converter.getWikidataProperty(property);
-                const op = convertOp(node.operator); // HACK
+                const op = convertOp(node.operator); 
                 const value = (node.rhs as Ast.NumberValue).value;
                 const variable = this._converter.getEntityVariable();
                 this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
-                this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
+                if (!(node.operator === '>=' && value === 1)) // this means it is just checking if anything exists, no need to use having clause
+                    this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
             }
         }
