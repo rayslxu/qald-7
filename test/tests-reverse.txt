@@ -44,3 +44,13 @@ SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804>. 
 }
+
+====
+Utterance: Which countries have more than two official languages?
+TT: 
+@wd . country ( ) filter count ( official_language ) >= 2 ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>. 
+    ?x <http://www.wikidata.org/prop/direct/P37> ?y. 
+} GROUP BY ?x HAVING(COUNT(?y) > 2)
