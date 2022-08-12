@@ -15,7 +15,7 @@ async function main() {
 
     const options = {
         locale: 'en-US',
-        timezone: undefined,
+        timezone: 'utc',
         cache: 'wikidata_cache.sqlite',
         bootleg: 'bootleg.sqlite',
         human_readable_instance_of: false

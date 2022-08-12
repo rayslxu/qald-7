@@ -105,3 +105,34 @@ SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?x. 
 }
+
+====
+Utterance: in which u . s . state is mount mckinley located ?
+TT: 
+[ located_in_the_administrative_territorial_entity ] of @wd . mountain ( ) filter id == " Q130018 " ^^wd:mountain ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?x.
+}
+
+====
+Utterance: which indian company has the most employees ?
+TT: 
+sort ( employees desc of @wd . organization ( ) filter contains ( country , " Q668 " ^^wd:p_country ) && instance_of == " Q4830453 " ^^wd:organization_subdomain ) [ 1 ] ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>. 
+    ?x <http://www.wikidata.org/prop/direct/P1128> ?y.  
+    ?x <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q668>.
+} ORDER BY DESC(?y) LIMIT 1
+
+====
+Utterance: show me protests started after 2000?
+TT: 
+@wd . entity ( ) filter instance_of == " Q273120 " ^^wd:entity_subdomain && start_time >= new Date ( 2000 ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE {
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q273120>. 
+    ?x <http://www.wikidata.org/prop/direct/P580> ?y.
+    FILTER(?y > "2000-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>).
+}

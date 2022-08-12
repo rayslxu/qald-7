@@ -3,7 +3,7 @@ import { EntityUtils } from 'genie-toolkit';
 import ThingTalk from 'thingtalk';
 import { Ast, Syntax } from "thingtalk";
 import WikidataUtils from '../utils/wikidata';
-import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from '../utils/wikidata';
+import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL, DATETIME } from '../utils/wikidata';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
 // const PREDICATE_VARIABLES = ['p', 'q', 'r'];
@@ -145,6 +145,11 @@ class TripleGenerator extends Ast.NodeVisitor {
             const variable = this._converter.getEntityVariable();
             this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
+        } else if (node.value instanceof Ast.DateValue) {
+            const value = (node.value.toJS() as Date).toISOString();
+            const variable = this._converter.getEntityVariable();
+            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+            this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
         } else {
             throw new Error('Unsupported atom filter');
         }
