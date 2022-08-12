@@ -256,7 +256,7 @@ export default class ConverterHelper {
         }
         // for projections, add filter that the property is not null
         for (const proj of projections) {
-            let isNull : Ast.BooleanExpression;
+            let isNull : Ast.BooleanExpression|null = null;
             if (typeof proj.property === 'string') {
                 if (proj.property.endsWith('Label'))
                     continue;
@@ -279,12 +279,12 @@ export default class ConverterHelper {
                     continue;
                 const propertyType = this._converter.schema.getPropertyType(proj.property);
                 if (propertyType instanceof Type.Array) {
-                    isNull = new Ast.ComputeBooleanExpression(
+                    operands.push(new Ast.ComputeBooleanExpression(
                         null,
                         new Ast.Value.Computation('count', [new Ast.Value.VarRef(proj.property)]),
-                        '==',
-                        new Ast.Value.Number(0)
-                    );
+                        '>=',
+                        new Ast.Value.Number(1)
+                    ));
                 } else {   
                     isNull = new Ast.AtomBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
                 }
@@ -293,7 +293,8 @@ export default class ConverterHelper {
             } else {
                 isNull = new Ast.PropertyPathBooleanExpression(null, proj.property, '==', new Ast.Value.Null, null);
             }
-            operands.push(new Ast.NotBooleanExpression(null, isNull));
+            if (isNull)
+                operands.push(new Ast.NotBooleanExpression(null, isNull));
         }
         
         if (idFilter) {

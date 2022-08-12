@@ -255,7 +255,7 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q11817> <http://www.wikidata.org/prop/direct/P607> ?uri . 
 }
 TT:
-[ ! ( count ( conflict ) == 0 ) ] of @wd . human ( ) filter id == " Q11817 " ^^wd:human ( " jackson " ) ;
+[ count ( conflict ) >= 1 ] of @wd . human ( ) filter id == " Q11817 " ^^wd:human ( " jackson " ) ;
 
 ====
 Utterance: How many people live in the capital of Australia?
