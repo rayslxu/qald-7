@@ -54,3 +54,14 @@ SELECT DISTINCT ?x WHERE {
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>. 
     ?x <http://www.wikidata.org/prop/direct/P37> ?y. 
 } GROUP BY ?x HAVING(COUNT(?y) > 2)
+
+====
+Utterance: What is the highest mountain in Australia?
+TT: 
+sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter contains ( continent , " Q3960 " ^^wd:p_continent ) ) [ 1 ] ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
+    ?x <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q3960>. 
+} ORDER BY DESC(?y) LIMIT 1

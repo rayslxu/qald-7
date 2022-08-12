@@ -121,12 +121,38 @@ class TripleGenerator extends Ast.NodeVisitor {
         }
         throw new Error('Unsupported compute boolean expression: ' + node.prettyprint());
     }
+
+    visitIndexExpression(node : ThingTalk.Ast.IndexExpression) : boolean {
+        assert(node.indices.length === 1 && (node.indices[0] as Ast.NumberValue).value === 1);
+        this._converter.setLimit(1);
+        return true;
+    }
+
+    visitSliceExpression(node : ThingTalk.Ast.SliceExpression) : boolean {
+        assert((node.base as Ast.NumberValue).value === 1);
+        this._converter.setLimit((node.limit as Ast.NumberValue).value);
+        return true;
+    }
+
+    visitSortExpression(node : ThingTalk.Ast.SortExpression) : boolean {
+        const property = (node.value as Ast.VarRefValue).name;
+        const p = this._converter.getWikidataProperty(property);
+        const variable = this._converter.getEntityVariable();
+        this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+        this._converter.setOrder({ variable : '?' + variable, direction: node.direction });
+        return true;
+    }
 }
 
 interface Entity {
     value : string,
     name : string,
     canonical : string
+}
+
+interface Order {
+    variable : string, 
+    direction : 'asc' | 'desc'
 }
 
 interface ThingTalkToSPARQLConverterOptions {
@@ -149,6 +175,8 @@ export default class ThingTalkToSPARQLConverter {
     private _isBooleanQuestion : boolean;
     private _statements : string[];
     private _having : string[];
+    private _order : Order|null;
+    private _limit : number|null;
     private _humanReadableInstanceOf : boolean;
 
     constructor(classDef : Ast.ClassDef, entities : Entity[], options : ThingTalkToSPARQLConverterOptions) {
@@ -170,12 +198,15 @@ export default class ThingTalkToSPARQLConverter {
             }
         }
 
+        this._humanReadableInstanceOf = options.human_readable_instance_of;
+
         this._entityVariableCount = 0;
         this._statements = [];
         this._having = [];
         this._resultVariable = null;
         this._isBooleanQuestion = false;
-        this._humanReadableInstanceOf = options.human_readable_instance_of;
+        this._order = null;
+        this._limit = null;
     }
 
     get class() {
@@ -223,9 +254,20 @@ export default class ThingTalkToSPARQLConverter {
         this._resultVariable = variable;
     }
 
+    setOrder(order : Order) {
+        this._order = order;
+    }
+
+    setLimit(index : number) {
+        this._limit = index;
+    }
+
     private _reset() {
         this._entityVariableCount = 0;
         this._statements = [];
+        this._having = [];
+        this._order = null;
+        this._limit = null;
         this._resultVariable = null;
         this._isBooleanQuestion = false;
     }
@@ -253,10 +295,14 @@ export default class ThingTalkToSPARQLConverter {
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
         await this._convertSingleTable(table);  
-        const sparql = (this._isBooleanQuestion ? `ASK ` : `SELECT DISTINCT ${this._resultVariable} `) + 
+        let sparql = (this._isBooleanQuestion ? `ASK ` : `SELECT DISTINCT ${this._resultVariable} `) + 
             `WHERE { ${this._statements.join((' '))} }`;
         if (this._having.length > 0)
-            return sparql + ` GROUP BY ${this._resultVariable} HAVING(${this._having.join(' && ')})`;
+            sparql += ` GROUP BY ${this._resultVariable} HAVING(${this._having.join(' && ')})`;
+        if (this._order)
+            sparql += ` ORDER BY ${this._order.direction === 'desc'? `DESC(${this._order.variable})` : this._order.variable}`;
+        if (this._limit)
+            sparql += ` LIMIT ${this._limit}`;
         return sparql;
     }
 }
