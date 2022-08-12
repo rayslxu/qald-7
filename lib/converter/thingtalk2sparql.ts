@@ -1,9 +1,9 @@
 import assert from 'assert';
 import { EntityUtils } from 'genie-toolkit';
-import ThingTalk from 'thingtalk';
+import ThingTalk, { Type } from 'thingtalk';
 import { Ast, Syntax } from "thingtalk";
 import WikidataUtils from '../utils/wikidata';
-import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL, DATETIME } from '../utils/wikidata';
+import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL, DATETIME, TP_DEVICE_NAME } from '../utils/wikidata';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
 // const PREDICATE_VARIABLES = ['p', 'q', 'r'];
@@ -74,23 +74,37 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitProjectionExpression2(node : ThingTalk.Ast.ProjectionExpression2) : boolean {
-        for (const proj of node.projections) {
-            if (proj.value instanceof Ast.Value)    
-                throw new Error('Not supported: value in projection');
-            
-            if (Array.isArray(proj.value)) {
-                const path : string[] = [];
-                for (const element of proj.value) {
-                    const property = this._converter.getWikidataProperty(element.property);
-                    path.push(`<${PROPERTY_PREFIX}${property}>${element.quantifier ?? ''}`);
-                }
-                const v = this._converter.getEntityVariable();
-                this._converter.addStatement(`${this._subject} ${path.join('/')}, ?${v}.`);
-            } else {
-                const p = this._converter.getWikidataProperty(proj.value);
-                const v = this._converter.getEntityVariable();
-                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
-            }     
+        assert(node.projections.length === 1);
+        const proj = node.projections[0];
+        if (proj.value instanceof Ast.Value)    
+            throw new Error('Not supported: value in projection');
+        
+        const v = this._converter.getEntityVariable();
+        if (proj.prettyprint() === this._target_projection)
+            this._converter.setResultVariable(`?${v}`);
+        
+        if (Array.isArray(proj.value)) {
+            const path : string[] = [];
+            for (const element of proj.value) {
+                const property = this._converter.getWikidataProperty(element.property);
+                path.push(`<${PROPERTY_PREFIX}${property}>${element.quantifier ?? ''}`);
+            }
+            this._converter.addStatement(`${this._subject} ${path.join('/')} ?${v}.`);
+        } else {
+            const p = this._converter.getWikidataProperty(proj.value);
+            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
+        }     
+
+        if (proj.types.length > 0) {
+            const statements = proj.types.map((t) => {
+                const type = (t as Type.Entity).type.slice(TP_DEVICE_NAME.length + 1).replace(/_/g, ' ');
+                const domain = this._converter.getWikidataDomain(type);
+                return `?${v} <${PROPERTY_PREFIX}P31> <${ENTITY_PREFIX}${domain}>.`;
+            });
+            if (statements.length === 1)
+                this._converter.addStatement(statements[0]);
+            else 
+                this._converter.addStatement(`{ ${statements.join(' UNION ')} }`);
         }
         return true;
     }
@@ -251,11 +265,12 @@ export default class ThingTalkToSPARQLConverter {
             const qid = property.getImplementationAnnotation('wikidata_id') as string;
             this._propertyMap[property.name] = qid;
         }
-        this._domainMap = {};
+        this._domainMap = { 'art museum' : 'Q207694' };
         if (options.human_readable_instance_of) {
             for (const entity of entities) {
                 const qid = entity.name.match(/Q[0-9]+/g)![0];
                 this._domainMap[entity.value] = qid;
+                this._domainMap[qid] = qid;
             }
         }
 
@@ -291,12 +306,11 @@ export default class ThingTalkToSPARQLConverter {
     }
 
     getWikidataDomain(domain : string) : string|null {
-        if (this._humanReadableInstanceOf) {
-            if (domain in this._domainMap)
-                return this._domainMap[domain];
-            throw new Error('Unknown domain: ' + domain);
-        }
-        return domain;
+        if (domain in this._domainMap)
+            return this._domainMap[domain];
+        if (this._kb.isEntity(domain))
+            return domain;
+        throw new Error('Unknown domain: ' + domain);
     }
 
     addStatement(statement : string) {
@@ -333,13 +347,25 @@ export default class ThingTalkToSPARQLConverter {
         this._isBooleanQuestion = false;
     }
 
+    private _targetProjectionName(ast : Ast.Expression) {
+        if (ast instanceof Ast.ProjectionExpression) {
+            assert(ast.args.length === 1);
+            return ast.args[0];
+        }
+        if (ast instanceof Ast.ProjectionExpression2) {
+            assert(ast.projections.length === 1);
+            return ast.projections[0].prettyprint();
+        }
+        return null;
+    }
+
     private async _convertSingleTable(ast : Ast.Expression) {
         const tableInfoVisitor = new TableInfoVisitor(this);
         ast.visit(tableInfoVisitor);
         const subject = tableInfoVisitor.subject ?? '?' + this.getEntityVariable();
         if (subject.startsWith('?'))
             this.setResultVariable(subject);
-        const projection = ast instanceof Ast.ProjectionExpression ? ast.args[0] : null;
+        const projection = this._targetProjectionName(ast);
         const domain = tableInfoVisitor.domainName ? await this.getWikidataDomain(tableInfoVisitor.domainName) : null;
         const tripleGenerator = new TripleGenerator(this, subject, projection, domain);
         ast.visit(tripleGenerator);

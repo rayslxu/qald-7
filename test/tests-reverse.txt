@@ -136,3 +136,13 @@ SELECT DISTINCT ?x WHERE {
     ?x <http://www.wikidata.org/prop/direct/P580> ?y.
     FILTER(?y > "2000-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>).
 }
+
+====
+Utterance: Which museum exhibits The Scream by Munch?
+TT: 
+[ < has_parts / location > : Entity ( wd:art_museum ) ] of @wd . entity ( ) filter id == " Q471379 " ^^wd:entity ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q471379> <http://www.wikidata.org/prop/direct/P527>/<http://www.wikidata.org/prop/direct/P276> ?x. 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+}
