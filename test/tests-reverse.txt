@@ -65,3 +65,12 @@ SELECT DISTINCT ?x WHERE {
     ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
     ?x <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q3960>. 
 } ORDER BY DESC(?y) LIMIT 1
+
+==== 
+Utterance: Are tree frogs a type of amphibian?
+TT:
+[ contains ( < parent_taxon * > , " Q10908 " ^^wd:p_parent_taxon ) ] of @wd . taxon ( ) filter id == " Q53696 " ^^wd:taxon ;
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q53696> <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q10908>. 
+}

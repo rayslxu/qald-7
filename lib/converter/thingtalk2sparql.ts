@@ -142,6 +142,16 @@ class TripleGenerator extends Ast.NodeVisitor {
         this._converter.setOrder({ variable : '?' + variable, direction: node.direction });
         return true;
     }
+
+    visitPropertyPathBooleanExpression(node : ThingTalk.Ast.PropertyPathBooleanExpression) : boolean {
+        const predicate = node.path.map((elem) => {
+            const p = this._converter.getWikidataProperty(elem.property);
+            return elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : `<${PROPERTY_PREFIX}${p}>`;
+        }).join('/'); 
+        const v = (node.value as Ast.EntityValue).value!;
+        this._converter.addStatement(`${this._subject} ${predicate} <${ENTITY_PREFIX}${v}>.`);
+        return true;
+    }
 }
 
 interface Entity {
