@@ -63,13 +63,13 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
-        for (const arg of node.args) {
-            const p = this._converter.getWikidataProperty(arg);
-            const v = this._converter.getEntityVariable();
-            if (arg === this._target_projection) 
-                this._converter.setResultVariable(`?${v}`);
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
-        }
+        assert(node.args.length === 1);
+        const arg = node.args[0];
+        const p = this._converter.getWikidataProperty(arg);
+        const v = this._converter.getEntityVariable();
+        if (arg === this._target_projection) 
+            this._converter.setResultVariable(`?${v}`);
+        this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
         return true;
     }
 
@@ -101,9 +101,17 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
+        if (node.name === 'count') {
+            assert(node.value instanceof Ast.NumberValue);
+            // check if any node satisfying the filters exists, no need to do anything
+            if (node.value.value === 1 && node.operator === '>=')
+                return true;
+            throw new Error('Unsupported aggregation');
+        } 
+        
         if (node.name === 'id' && node.operator === '=~') {
             assert(node.value instanceof Ast.StringValue);
-            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"en.`);
+            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"@en.`);
         } else if (node.name !== 'id' && node.name !== 'instance_of') {
             const property = node.name;
             const p = this._converter.getWikidataProperty(property);

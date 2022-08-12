@@ -86,3 +86,13 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P1128> ?z. 
     FILTER(?z > 500000). 
 }
+
+====
+Utterance: Is there a video game called Battle Chess?
+TT: 
+[ count >= 1 ] of count ( @wd . video_game ( ) filter id =~ " battle chess " ) ;
+SPARQL:  
+ASK WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q7889>. 
+    ?x <http://www.w3.org/2000/01/rdf-schema#label> "battle chess"@en.
+}
