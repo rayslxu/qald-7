@@ -36,7 +36,7 @@ async function main() {
     });
     parser.add_argument('--timezone', {
         required: false,
-        default: undefined,
+        default: 'utc',
         help: `Timezone to use to interpret dates and times (defaults to the current timezone).`
     });
     parser.add_argument('--manifest', {

@@ -186,7 +186,7 @@ export class PostProcessor {
     async postprocess(thingtalk : string, preprocessedUtterance : string) : Promise<string[]> {
         const entities = EntityUtils.makeDummyEntities(preprocessedUtterance);
         const program = await ThingTalkUtils.parsePrediction(thingtalk.split(' '), entities, {
-            timezone : undefined,
+            timezone : 'utc',
             thingpediaClient: this._tpClient,
             schemaRetriever : this._schemas
         });
@@ -201,7 +201,7 @@ export class PostProcessor {
             entities,
             { 
                 locale: 'en', 
-                timezone: undefined, 
+                timezone: 'utc', 
                 includeEntityValue: this._includeEntityValue, 
                 excludeEntityDisplay: this._excludeEntityDisplay 
             }
@@ -221,7 +221,7 @@ async function main() {
     });
     parser.add_argument('--timezone', {
         required: false,
-        default: undefined,
+        default: 'utc',
         help: `Timezone to use to interpret dates and times (defaults to the current timezone).`
     });
     parser.add_argument('--thingpedia', {
