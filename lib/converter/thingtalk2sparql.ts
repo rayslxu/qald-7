@@ -3,7 +3,7 @@ import { EntityUtils } from 'genie-toolkit';
 import ThingTalk from 'thingtalk';
 import { Ast, Syntax } from "thingtalk";
 import WikidataUtils from '../utils/wikidata';
-import { ENTITY_PREFIX, PROPERTY_PREFIX } from '../utils/wikidata';
+import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL } from '../utils/wikidata';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
 // const PREDICATE_VARIABLES = ['p', 'q', 'r'];
@@ -101,7 +101,10 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
-        if (node.name !== 'id' && node.name !== 'instance_of') {
+        if (node.name === 'id' && node.operator === '=~') {
+            assert(node.value instanceof Ast.StringValue);
+            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"en.`);
+        } else if (node.name !== 'id' && node.name !== 'instance_of') {
             const property = node.name;
             const p = this._converter.getWikidataProperty(property);
             if (node.value instanceof Ast.EntityValue) {
