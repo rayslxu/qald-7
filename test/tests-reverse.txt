@@ -74,3 +74,15 @@ SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q53696> <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q10908>. 
 }
+
+====
+Utterance: Give me the websites of companies with more than 500000 employees.
+TT:
+[ official_website ] of @wd . organization ( ) filter instance_of == " Q4830453 " ^^wd:organization_subdomain && employees >= 500000 ;
+SPARQL:
+SELECT DISTINCT ?y WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>. 
+    ?x <http://www.wikidata.org/prop/direct/P856> ?y. 
+    ?x <http://www.wikidata.org/prop/direct/P1128> ?z. 
+    FILTER(?z > 500000). 
+}

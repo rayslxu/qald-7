@@ -8,6 +8,11 @@ import { ENTITY_PREFIX, PROPERTY_PREFIX } from '../utils/wikidata';
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
 // const PREDICATE_VARIABLES = ['p', 'q', 'r'];
 
+function convertOp(op : string) {
+    // HACK
+    return ['>=', '<='].includes(op) ? op[0] : op; 
+}
+
 class TableInfoVisitor extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     subject ?: string;
@@ -99,9 +104,17 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (node.name !== 'id' && node.name !== 'instance_of') {
             const property = node.name;
             const p = this._converter.getWikidataProperty(property);
-            const v = (node.value as Ast.EntityValue).value!;
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
-
+            if (node.value instanceof Ast.EntityValue) {
+                const v = node.value.value!;
+                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
+            } else if (node.value instanceof Ast.NumberValue) {
+                const value = node.value.value;
+                const variable = this._converter.getEntityVariable();
+                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+                this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
+            } else {
+                throw new Error('Unsupported atom filter');
+            }
         }
         return true;
     }
@@ -111,7 +124,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             if (node.lhs.op === 'count') {
                 const property = (node.lhs.operands[0] as Ast.VarRefValue).name;
                 const p = this._converter.getWikidataProperty(property);
-                const op = ['>=', '<='].includes(node.operator) ? node.operator[0] : node.operator; // HACK
+                const op = convertOp(node.operator); // HACK
                 const value = (node.rhs as Ast.NumberValue).value;
                 const variable = this._converter.getEntityVariable();
                 this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
