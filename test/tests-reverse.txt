@@ -56,6 +56,76 @@ SELECT DISTINCT ?x WHERE {
 } GROUP BY ?x HAVING(COUNT(?y) > 2)
 
 ====
+Utterance: Give me all cities in New Jersey with more than 10000 inhabitants.
+TT:
+@wd . city ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q1408 " ^^wd:p_located_in_the_administrative_territorial_entity ) && population >= 10000 ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>. 
+    ?x <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1408>. 
+    ?x <http://www.wikidata.org/prop/direct/P1082> ?y. 
+    FILTER(?y > 10000).
+}
+
+====
+Utterance: Whose wife is called Mary?
+TT: 
+@wd . entity ( ) filter contains~ ( spouse , " mary " ) ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P26> ?y.  
+    ?y <http://www.w3.org/2000/01/rdf-schema#label> "mary"@en.
+}
+
+====
+Utterance: Was the wife of president Lincoln called Mary?
+TT: 
+[ contains~ ( spouse , " mary " ) ] of @wd . human ( ) filter id == " Q91 " ^^wd:human ;
+SPARQL: 
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q91> <http://www.wikidata.org/prop/direct/P26> ?x.  
+    ?x <http://www.w3.org/2000/01/rdf-schema#label> "mary"@en.
+}
+
+====
+Utterance: Give me the birthdays of all actors of the television show Charmed.
+TT: 
+[ < cast_member / date_of_birth > ] of @wd . television_series ( ) filter id == " Q162371 " ^^wd:television_series ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?x.
+}
+
+====
+Utterance: Who wrote the lyrics for the Polish national anthem?
+TT:
+[ < anthem / lyrics_by > ] of @wd . country ( ) filter id == " Q36 " ^^wd:country ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q36> <http://www.wikidata.org/prop/direct/P85>/<http://www.wikidata.org/prop/direct/P676> ?x. 
+}
+
+====
+Utterance: Which writers studied in Istanbul?
+TT:
+@wd . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^wd:p_located_in_the_administrative_territorial_entity ) && contains ( occupation , " Q36180 " ^^wd:p_occupation ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>  <http://www.wikidata.org/entity/Q406>. 
+    ?x <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q36180>. 
+}
+
+====
+Utterance: In which city did John F. Kennedy die? 
+TT: 
+[ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( wd:city ) ] of @wd . human ( ) filter id == " Q9696 " ^^wd:human ;
+SPARQL:
+SELECT DISTINCT ?x WHERE {  
+    <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/direct/P20>/<http://www.wikidata.org/prop/direct/P131> ?x. 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>.  
+}
+
+====
 Utterance: What is the highest mountain in Australia?
 TT: 
 sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter contains ( continent , " Q3960 " ^^wd:p_continent ) ) [ 1 ] ;

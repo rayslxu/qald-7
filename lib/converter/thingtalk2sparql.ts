@@ -47,12 +47,14 @@ class TableInfoVisitor extends Ast.NodeVisitor {
     }
 
     visitInvocation(node : ThingTalk.Ast.Invocation) : boolean {
-        if (this._converter.humanReadableInstanceOf) {
-            this.domainName = node.channel.replace(/_/g, ' ');
-        } else {
-            const query = this._converter.class.getFunction('query', node.channel);
-            this.domainName = (query?.getImplementationAnnotation('wikidata_subject') as string[])[0];
-        } 
+        if (node.channel !== 'entity') {
+            if (this._converter.humanReadableInstanceOf) {
+                this.domainName = node.channel.replace(/_/g, ' ');
+            } else {
+                const query = this._converter.class.getFunction('query', node.channel);
+                this.domainName = (query?.getImplementationAnnotation('wikidata_subject') as string[])[0];
+            } 
+        }
         return true;
     }
 }
@@ -205,6 +207,11 @@ class TripleGenerator extends Ast.NodeVisitor {
             const variable = this._converter.getEntityVariable();
             this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
+        } else if (node.value instanceof Ast.StringValue) {
+            const value = node.value.value;
+            const variable = this._converter.getEntityVariable();
+            this._converter.addStatement(this._triple(p, variable));
+            this._converter.addStatement(`?${variable} <${LABEL}> "${value}"@en.`);
         } else {
             throw new Error('Unsupported atom filter');
         }
@@ -347,12 +354,10 @@ export default class ThingTalkToSPARQLConverter {
             this._propertyMap[property.name] = qid;
         }
         this._domainMap = { 'art museum' : 'Q207694' };
-        if (options.human_readable_instance_of) {
-            for (const entity of entities) {
-                const qid = entity.name.match(/Q[0-9]+/g)![0];
-                this._domainMap[entity.value] = qid;
-                this._domainMap[qid] = qid;
-            }
+        for (const entity of entities) {
+            const qid = entity.name.match(/Q[0-9]+/g)![0];
+            this._domainMap[entity.value] = qid;
+            this._domainMap[qid] = qid;
         }
 
         this._humanReadableInstanceOf = options.human_readable_instance_of;
@@ -449,7 +454,7 @@ export default class ThingTalkToSPARQLConverter {
         return null;
     }
 
-    private async _convertSingleTable(ast : Ast.Expression) {
+    private async _convertExpression(ast : Ast.Expression) {
         const tableInfoVisitor = new TableInfoVisitor(this);
         ast.visit(tableInfoVisitor);
         const subject = tableInfoVisitor.subject ?? '?' + this.getEntityVariable();
@@ -471,7 +476,7 @@ export default class ThingTalkToSPARQLConverter {
         const expr = (ast.statements[0] as Ast.ExpressionStatement).expression;
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
-        await this._convertSingleTable(table);  
+        await this._convertExpression(table);  
         let sparql = (this._isBooleanQuestion ? `ASK ` : `SELECT DISTINCT ${this._resultVariable} `) + 
             `WHERE { ${this._statements.join((' '))} }`;
         if (this._having.length > 0)
