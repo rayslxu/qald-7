@@ -57,22 +57,27 @@ class TableInfoVisitor extends Ast.NodeVisitor {
     }
 }
 
+interface QualifiedPredicate {
+    property : string;
+    predicateVariable : string;
+}
+
 class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
     private _target_projection : string|null;
-    private _inQualifier : boolean;
+    private _inPredicate : QualifiedPredicate|null;
 
     constructor(converter : ThingTalkToSPARQLConverter, 
                 subject : string, 
                 projection : string|null, 
                 domain : string|null,
-                inQualifier = false) {
+                qualifiedPredicate : QualifiedPredicate|null = null) {
         super();
         this._converter = converter;
         this._subject = subject;
         this._target_projection = projection;
-        this._inQualifier = inQualifier;
+        this._inPredicate = qualifiedPredicate;
         if (subject.startsWith('?') && domain)
             this._converter.addStatement(this._triple('P31', domain));
     }
@@ -84,8 +89,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         else if (subject)
             s = `<${ENTITY_PREFIX}${subject}>`;
         let p;
-        if (this._inQualifier)
-            p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
+        if (this._inPredicate)
+            p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${this._inPredicate.property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
         else   
             p = PREDICATE_VARIABLES.includes(value) ? `<${PROPERTY_PREDICATE_PREFIX}${property}>` : `<${PROPERTY_PREFIX}${property}>`;
         const v = [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(value) ? `?${value}` : `<${ENTITY_PREFIX}${value}>`;
@@ -179,10 +184,14 @@ class TripleGenerator extends Ast.NodeVisitor {
                 return true;
             throw new Error('Unsupported aggregation');
         } 
-        
+
+
         // generic atom filters 
-        const property = node.name;
-        const p = this._converter.getWikidataProperty(property);
+        let p = node.name;
+        if (!(node.name === 'value' && this._inPredicate)) {
+            const property = node.name;
+            p = this._converter.getWikidataProperty(property);
+        }
         if (node.value instanceof Ast.EntityValue) {
             const v = node.value.value!;
             this._converter.addStatement(this._triple(p, v));
@@ -250,20 +259,42 @@ class TripleGenerator extends Ast.NodeVisitor {
         return true;
     }
 
+    // qualifier
     visitFilterValue(node : ThingTalk.Ast.FilterValue) : boolean {
         assert(node.value instanceof Ast.VarRefValue);
-        const property = node.value.name;
-        const p = this._converter.getWikidataProperty(property);
-        const predicateVariable = this._converter.getPredicateVaraible();
+        const predicate = this._createQualifier(node.value.name);
         const entityVariable = this._converter.getEntityVariable();
-        this._converter.addStatement(this._triple(p, predicateVariable));
-        this._converter.addStatement(`?${predicateVariable} <${PROPERTY_STATEMENT_PREFIX}${p}> ?${entityVariable}.`);
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicateVariable}`, null, null, true);
+        this._converter.addStatement(`?${predicate.predicateVariable} <${PROPERTY_STATEMENT_PREFIX}${predicate.property}> ?${entityVariable}.`);
+        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, null, null, predicate);
         node.filter.visit(tripleGenerator);
 
         if (node.prettyprint() === this._target_projection)
             this._converter.setResultVariable(`?${entityVariable}`);
         return false;
+    }
+
+    visitArrayFieldValue(node : ThingTalk.Ast.ArrayFieldValue) : boolean {
+        assert(node.value instanceof Ast.FilterValue && node.value.value instanceof Ast.VarRefValue);
+        const predicate = this._createQualifier(node.value.value.name);
+        const field = this._converter.getWikidataProperty(node.field);
+        const fieldVariable = this._converter.getEntityVariable();
+        this._converter.addStatement(`?${predicate.predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${field}> ?${fieldVariable}.`);
+        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, null, null, predicate);
+        node.value.filter.visit(tripleGenerator);
+
+        if (node.prettyprint() === this._target_projection)
+            this._converter.setResultVariable(`?${fieldVariable}`);
+        return false;
+    }
+
+    private _createQualifier(property : string) : QualifiedPredicate {
+        const p = this._converter.getWikidataProperty(property);
+        const predicateVariable = this._converter.getPredicateVaraible();
+        this._converter.addStatement(this._triple(p, predicateVariable));
+        return {
+            property : p,
+            predicateVariable
+        };
     }
 }
 
@@ -394,6 +425,7 @@ export default class ThingTalkToSPARQLConverter {
 
     private _reset() {
         this._entityVariableCount = 0;
+        this._predicateVariableCount = 0;
         this._statements = [];
         this._having = [];
         this._order = null;
