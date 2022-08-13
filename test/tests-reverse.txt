@@ -146,3 +146,16 @@ SELECT DISTINCT ?x WHERE {
     <http://www.wikidata.org/entity/Q471379> <http://www.wikidata.org/prop/direct/P527>/<http://www.wikidata.org/prop/direct/P276> ?x. 
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
 }
+
+
+====
+Utterance: who are the US presidents since 2000? 
+TT:
+[ head_of_government filter end_time >= new Date ( 2000 ) ] of @wd . country ( ) filter id == " Q30 " ^^wd:country ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE {
+    <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p.
+    ?p <http://www.wikidata.org/prop/statement/P6> ?x.
+    ?p <http://www.wikidata.org/prop/qualifier/P582> ?y.
+    FILTER(?y > "2000-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>).
+}

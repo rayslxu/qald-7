@@ -3,10 +3,19 @@ import { EntityUtils } from 'genie-toolkit';
 import ThingTalk, { Type } from 'thingtalk';
 import { Ast, Syntax } from "thingtalk";
 import WikidataUtils from '../utils/wikidata';
-import { ENTITY_PREFIX, PROPERTY_PREFIX, LABEL, DATETIME, TP_DEVICE_NAME } from '../utils/wikidata';
+import { 
+    ENTITY_PREFIX, 
+    PROPERTY_PREFIX, 
+    LABEL, 
+    DATETIME, 
+    TP_DEVICE_NAME,
+    PROPERTY_PREDICATE_PREFIX,
+    PROPERTY_QUALIFIER_PREFIX,
+    PROPERTY_STATEMENT_PREFIX
+} from '../utils/wikidata';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
-// const PREDICATE_VARIABLES = ['p', 'q', 'r'];
+const PREDICATE_VARIABLES = ['p', 'q', 'r'];
 
 function convertOp(op : string) {
     // HACK
@@ -52,24 +61,47 @@ class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
     private _target_projection : string|null;
+    private _inQualifier : boolean;
 
-    constructor(converter : ThingTalkToSPARQLConverter, subject : string, projection : string|null, domain : string|null) {
+    constructor(converter : ThingTalkToSPARQLConverter, 
+                subject : string, 
+                projection : string|null, 
+                domain : string|null,
+                inQualifier = false) {
         super();
         this._converter = converter;
         this._subject = subject;
         this._target_projection = projection;
+        this._inQualifier = inQualifier;
         if (subject.startsWith('?') && domain)
-            this._converter.addStatement(`${subject} <${PROPERTY_PREFIX}P31> <${ENTITY_PREFIX}${domain}>.`);
+            this._converter.addStatement(this._triple('P31', domain));
+    }
+
+    private _triple(property : string, value : string, subject ?: string) {
+        let s = this._subject;
+        if (subject && [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(subject))
+            s = `?${subject}`;
+        else if (subject)
+            s = `<${ENTITY_PREFIX}${subject}>`;
+        let p;
+        if (this._inQualifier)
+            p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
+        else   
+            p = PREDICATE_VARIABLES.includes(value) ? `<${PROPERTY_PREDICATE_PREFIX}${property}>` : `<${PROPERTY_PREFIX}${property}>`;
+        const v = [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(value) ? `?${value}` : `<${ENTITY_PREFIX}${value}>`;
+        return `${s} ${p} ${v}.`;
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
-        assert(node.args.length === 1);
-        const arg = node.args[0];
-        const p = this._converter.getWikidataProperty(arg);
-        const v = this._converter.getEntityVariable();
-        if (arg === this._target_projection) 
-            this._converter.setResultVariable(`?${v}`);
-        this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
+        assert(node.args.length === 1 || node.computations.length === 1);
+        if (node.args.length === 1) {
+            const arg = node.args[0];
+            const p = this._converter.getWikidataProperty(arg);
+            const v = this._converter.getEntityVariable();
+            if (arg === this._target_projection) 
+                this._converter.setResultVariable(`?${v}`);
+            this._converter.addStatement(this._triple(p, v));
+        }
         return true;
     }
 
@@ -92,14 +124,14 @@ class TripleGenerator extends Ast.NodeVisitor {
             this._converter.addStatement(`${this._subject} ${path.join('/')} ?${v}.`);
         } else {
             const p = this._converter.getWikidataProperty(proj.value);
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
+            this._converter.addStatement(this._triple(p, v));
         }     
 
         if (proj.types.length > 0) {
             const statements = proj.types.map((t) => {
                 const type = (t as Type.Entity).type.slice(TP_DEVICE_NAME.length + 1).replace(/_/g, ' ');
-                const domain = this._converter.getWikidataDomain(type);
-                return `?${v} <${PROPERTY_PREFIX}P31> <${ENTITY_PREFIX}${domain}>.`;
+                const domain = this._converter.getWikidataDomain(type)!;
+                return this._triple('P31', domain, v);
             });
             if (statements.length === 1)
                 this._converter.addStatement(statements[0]);
@@ -120,7 +152,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const property = node.expr.name;
                 const p = this._converter.getWikidataProperty(property);
                 const v = this._converter.getEntityVariable();
-                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${v}.`);
+                this._converter.addStatement(this._triple(p, v));
                 return false; 
             } 
         }
@@ -153,16 +185,16 @@ class TripleGenerator extends Ast.NodeVisitor {
         const p = this._converter.getWikidataProperty(property);
         if (node.value instanceof Ast.EntityValue) {
             const v = node.value.value!;
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> <${ENTITY_PREFIX}${v}>.`);
+            this._converter.addStatement(this._triple(p, v));
         } else if (node.value instanceof Ast.NumberValue) {
             const value = node.value.value;
             const variable = this._converter.getEntityVariable();
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+            this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
         } else if (node.value instanceof Ast.DateValue) {
             const value = (node.value.toJS() as Date).toISOString();
             const variable = this._converter.getEntityVariable();
-            this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+            this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
         } else {
             throw new Error('Unsupported atom filter');
@@ -178,7 +210,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const op = convertOp(node.operator); 
                 const value = (node.rhs as Ast.NumberValue).value;
                 const variable = this._converter.getEntityVariable();
-                this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+                this._converter.addStatement(this._triple(p, variable));
                 if (!(node.operator === '>=' && value === 1)) // this means it is just checking if anything exists, no need to use having clause
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
@@ -203,7 +235,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         const property = (node.value as Ast.VarRefValue).name;
         const p = this._converter.getWikidataProperty(property);
         const variable = this._converter.getEntityVariable();
-        this._converter.addStatement(`${this._subject} <${PROPERTY_PREFIX}${p}> ?${variable}.`);
+        this._converter.addStatement(this._triple(p, variable));
         this._converter.setOrder({ variable : '?' + variable, direction: node.direction });
         return true;
     }
@@ -216,6 +248,22 @@ class TripleGenerator extends Ast.NodeVisitor {
         const v = (node.value as Ast.EntityValue).value!;
         this._converter.addStatement(`${this._subject} ${predicate} <${ENTITY_PREFIX}${v}>.`);
         return true;
+    }
+
+    visitFilterValue(node : ThingTalk.Ast.FilterValue) : boolean {
+        assert(node.value instanceof Ast.VarRefValue);
+        const property = node.value.name;
+        const p = this._converter.getWikidataProperty(property);
+        const predicateVariable = this._converter.getPredicateVaraible();
+        const entityVariable = this._converter.getEntityVariable();
+        this._converter.addStatement(this._triple(p, predicateVariable));
+        this._converter.addStatement(`?${predicateVariable} <${PROPERTY_STATEMENT_PREFIX}${p}> ?${entityVariable}.`);
+        const tripleGenerator = new TripleGenerator(this._converter, `?${predicateVariable}`, null, null, true);
+        node.filter.visit(tripleGenerator);
+
+        if (node.prettyprint() === this._target_projection)
+            this._converter.setResultVariable(`?${entityVariable}`);
+        return false;
     }
 }
 
@@ -246,6 +294,8 @@ export default class ThingTalkToSPARQLConverter {
     private _domainMap : Record<string, string>;
 
     private _entityVariableCount : number;
+    private _predicateVariableCount : number;
+
     private _resultVariable : string|null;
     private _isBooleanQuestion : boolean;
     private _statements : string[];
@@ -277,6 +327,7 @@ export default class ThingTalkToSPARQLConverter {
         this._humanReadableInstanceOf = options.human_readable_instance_of;
 
         this._entityVariableCount = 0;
+        this._predicateVariableCount = 0;
         this._statements = [];
         this._having = [];
         this._resultVariable = null;
@@ -299,6 +350,10 @@ export default class ThingTalkToSPARQLConverter {
 
     getEntityVariable() : string {
         return ENTITY_VARIABLES[this._entityVariableCount ++];
+    }
+
+    getPredicateVaraible() : string {
+        return PREDICATE_VARIABLES[this._predicateVariableCount ++];
     }
 
     getWikidataProperty(property : string) : string {
@@ -349,8 +404,11 @@ export default class ThingTalkToSPARQLConverter {
 
     private _targetProjectionName(ast : Ast.Expression) {
         if (ast instanceof Ast.ProjectionExpression) {
-            assert(ast.args.length === 1);
-            return ast.args[0];
+            assert(ast.args.length === 1 || ast.computations.length === 1);
+            if (ast.args.length === 1) 
+                return ast.args[0];
+            if (ast.computations.length === 1)
+                return ast.computations[0].prettyprint();
         }
         if (ast instanceof Ast.ProjectionExpression2) {
             assert(ast.projections.length === 1);
