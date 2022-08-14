@@ -240,3 +240,23 @@ SELECT DISTINCT ?x WHERE {
     ?p <http://www.wikidata.org/prop/qualifier/P580> ?x.
     ?p <http://www.wikidata.org/prop/statement/P6> <http://www.wikidata.org/entity/Q76>.
 }
+
+====
+Utterance: How many countries are there in Europe ? 
+TT: 
+count ( @wd . country ( ) filter contains ( continent , " Q46 " ^^wd:p_continent ) ) ;
+SPARQL: 
+SELECT (COUNT(DISTINCT ?x) as ?count) WHERE {
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>. 
+    ?x <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q46>. 
+}
+
+====
+Utterance: how many children do US president have on average? 
+TT:
+avg ( number_of_children of @wd . entity ( ) filter contains ( position_held , " Q11696 " ^^wd:p_position_held ) ) ;
+SPARQL: 
+SELECT (AVG(?y) as ?avg) WHERE {
+    ?x <http://www.wikidata.org/prop/direct/P1971> ?y.
+    ?x <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q11696>. 
+}

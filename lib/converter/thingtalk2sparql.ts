@@ -64,6 +64,7 @@ interface QualifiedPredicate {
     predicateVariable : string;
 }
 
+
 class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
@@ -104,7 +105,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (node.args.length === 1) {
             const arg = node.args[0];
             const p = this._converter.getWikidataProperty(arg);
-            const v = this._converter.getEntityVariable();
+            const v = this._converter.getEntityVariable(p);
             if (arg === this._target_projection) 
                 this._converter.setResultVariable(`?${v}`);
             this._converter.addStatement(this._triple(p, v));
@@ -158,7 +159,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             if (node.expr.operator === '==' && node.expr.value instanceof Ast.NullValue) {
                 const property = node.expr.name;
                 const p = this._converter.getWikidataProperty(property);
-                const v = this._converter.getEntityVariable();
+                const v = this._converter.getEntityVariable(p);
                 this._converter.addStatement(this._triple(p, v));
                 return false; 
             } 
@@ -199,17 +200,17 @@ class TripleGenerator extends Ast.NodeVisitor {
             this._converter.addStatement(this._triple(p, v));
         } else if (node.value instanceof Ast.NumberValue) {
             const value = node.value.value;
-            const variable = this._converter.getEntityVariable();
+            const variable = this._converter.getEntityVariable(p);
             this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
         } else if (node.value instanceof Ast.DateValue) {
             const value = (node.value.toJS() as Date).toISOString();
-            const variable = this._converter.getEntityVariable();
+            const variable = this._converter.getEntityVariable(p);
             this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
         } else if (node.value instanceof Ast.StringValue) {
             const value = node.value.value;
-            const variable = this._converter.getEntityVariable();
+            const variable = this._converter.getEntityVariable(p);
             this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`?${variable} <${LABEL}> "${value}"@en.`);
         } else {
@@ -225,7 +226,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const p = this._converter.getWikidataProperty(property);
                 const op = convertOp(node.operator); 
                 const value = (node.rhs as Ast.NumberValue).value;
-                const variable = this._converter.getEntityVariable();
+                const variable = this._converter.getEntityVariable(p);
                 this._converter.addStatement(this._triple(p, variable));
                 if (!(node.operator === '>=' && value === 1)) // this means it is just checking if anything exists, no need to use having clause
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
@@ -250,9 +251,22 @@ class TripleGenerator extends Ast.NodeVisitor {
     visitSortExpression(node : ThingTalk.Ast.SortExpression) : boolean {
         const property = (node.value as Ast.VarRefValue).name;
         const p = this._converter.getWikidataProperty(property);
-        const variable = this._converter.getEntityVariable();
+        const variable = this._converter.getEntityVariable(p);
         this._converter.addStatement(this._triple(p, variable));
         this._converter.setOrder({ variable : '?' + variable, direction: node.direction });
+        return true;
+    }
+
+    visitAggregationExpression(node : ThingTalk.Ast.AggregationExpression) : boolean {
+        if (node.operator === 'count' && node.field === '*') {
+            this._converter.setAggregation(node.operator, this._subject.slice('?'.length));
+        } else {
+            const v = this._converter.getEntityVariable();
+            const property = this._converter.getWikidataProperty(node.field);
+            this._converter.setPropertyVariable(property, v);
+            this._converter.setAggregation(node.operator, v);
+            this._converter.addStatement(this._triple(property, v));
+        }
         return true;
     }
 
@@ -284,7 +298,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         assert(node.value instanceof Ast.FilterValue && node.value.value instanceof Ast.VarRefValue);
         const predicate = this._createQualifier(node.value.value.name);
         const field = this._converter.getWikidataProperty(node.field);
-        const fieldVariable = this._converter.getEntityVariable();
+        const fieldVariable = this._converter.getEntityVariable(field);
         this._converter.addStatement(`?${predicate.predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${field}> ?${fieldVariable}.`);
         const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, null, null, predicate);
         node.value.filter.visit(tripleGenerator);
@@ -296,7 +310,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     private _createQualifier(property : string) : QualifiedPredicate {
         const p = this._converter.getWikidataProperty(property);
-        const predicateVariable = this._converter.getPredicateVaraible();
+        const predicateVariable = this._converter.getPredicateVariable();
         this._converter.addStatement(this._triple(p, predicateVariable));
         return {
             property : p,
@@ -316,6 +330,18 @@ interface Order {
     direction : 'asc' | 'desc'
 }
 
+interface Aggregation {
+    operator : string;
+    variable : string;
+}
+
+function aggregationToString(agg : Aggregation) {
+    if (agg.operator === 'count')
+        return `(COUNT(DISTINCT ?${agg.variable}) as ?count)`;
+    else 
+        return `(${agg.operator.toUpperCase()}(?${agg.variable}) as ?${agg.operator})`;
+}
+
 interface ThingTalkToSPARQLConverterOptions {
     locale : string,
     timezone ?: string,
@@ -330,6 +356,7 @@ export default class ThingTalkToSPARQLConverter {
     private _kb : WikidataUtils;
     private _propertyMap : Record<string, string>;
     private _domainMap : Record<string, string>;
+    private _variableMap : Record<string, string>;
 
     private _entityVariableCount : number;
     private _predicateVariableCount : number;
@@ -340,6 +367,7 @@ export default class ThingTalkToSPARQLConverter {
     private _having : string[];
     private _order : Order|null;
     private _limit : number|null;
+    private _aggregation : Aggregation|null;
     private _humanReadableInstanceOf : boolean;
 
     constructor(classDef : Ast.ClassDef, entities : Entity[], options : ThingTalkToSPARQLConverterOptions) {
@@ -359,6 +387,7 @@ export default class ThingTalkToSPARQLConverter {
             this._domainMap[entity.value] = qid;
             this._domainMap[qid] = qid;
         }
+        this._variableMap = {};
 
         this._humanReadableInstanceOf = options.human_readable_instance_of;
 
@@ -370,6 +399,7 @@ export default class ThingTalkToSPARQLConverter {
         this._isBooleanQuestion = false;
         this._order = null;
         this._limit = null;
+        this._aggregation = null;
     }
 
     get class() {
@@ -384,11 +414,21 @@ export default class ThingTalkToSPARQLConverter {
         return this._humanReadableInstanceOf;
     }
 
-    getEntityVariable() : string {
+    get variableMap() {
+        return this._variableMap;
+    }
+
+    set variableMap(variableMap : Record<string, string>) {
+        this._variableMap = variableMap;
+    }
+
+    getEntityVariable(property ?: string) : string {
+        if (property && property in this._variableMap)
+            return this._variableMap[property];
         return ENTITY_VARIABLES[this._entityVariableCount ++];
     }
 
-    getPredicateVaraible() : string {
+    getPredicateVariable() : string {
         return PREDICATE_VARIABLES[this._predicateVariableCount ++];
     }
 
@@ -428,6 +468,14 @@ export default class ThingTalkToSPARQLConverter {
         this._limit = index;
     }
 
+    setAggregation(operator : string, variable : string) {
+        this._aggregation = { operator, variable };
+    }
+
+    setPropertyVariable(property : string, variable : string) {
+        this._variableMap[property] = variable;
+    }
+
     private _reset() {
         this._entityVariableCount = 0;
         this._predicateVariableCount = 0;
@@ -437,6 +485,8 @@ export default class ThingTalkToSPARQLConverter {
         this._limit = null;
         this._resultVariable = null;
         this._isBooleanQuestion = false;
+        this._aggregation = null;
+        this._variableMap = {};
     }
 
     private _targetProjectionName(ast : Ast.Expression) {
@@ -477,10 +527,24 @@ export default class ThingTalkToSPARQLConverter {
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
         await this._convertExpression(table);  
-        let sparql = (this._isBooleanQuestion ? `ASK ` : `SELECT DISTINCT ${this._resultVariable} `) + 
-            `WHERE { ${this._statements.join((' '))} }`;
+
+        let sparql = '';
+        // ask/select
+        if (this._isBooleanQuestion) 
+            sparql += 'ASK '; 
+        else if (this._aggregation) 
+            sparql += `SELECT ${aggregationToString(this._aggregation)} `;
+        else  
+            sparql += `SELECT DISTINCT ${this._resultVariable} `;
+
+        // where clauses
+        sparql += `WHERE { ${this._statements.join((' '))} }`;
+
+        // having clauses
         if (this._having.length > 0)
             sparql += ` GROUP BY ${this._resultVariable} HAVING(${this._having.join(' && ')})`;
+        
+        // order claueses
         if (this._order)
             sparql += ` ORDER BY ${this._order.direction === 'desc'? `DESC(${this._order.variable})` : this._order.variable}`;
         if (this._limit)
