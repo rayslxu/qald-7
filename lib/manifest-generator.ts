@@ -477,7 +477,12 @@ class ManifestGenerator {
                 null,
                 entity.type.slice(`${TP_DEVICE_NAME}:`.length),
                 (entity.subtype_of ?? []).map((e) => e.slice(`${TP_DEVICE_NAME}:`.length)),
-                { impl: { has_ner: new Ast.Value.Boolean(!!entity.has_ner_support) } }
+                { 
+                    impl: { 
+                        has_ner: new Ast.Value.Boolean(!!entity.has_ner_support),
+                        description: new Ast.Value.String(entity.name)
+                    } 
+                }
             );
         });
 
