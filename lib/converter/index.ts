@@ -101,7 +101,9 @@ async function main() {
             counter ++;
             if (counter < args.offset)
                 continue;
-            const preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
+            let preprocessed = tokenizer.tokenize(item.question[0].string).rawTokens.join(' ');
+            // Add a hack to fix the tokenizer error for "U.S."
+            preprocessed = preprocessed.replace("u . s .", "united states");
             try {
                 if (item.query.sparql in manualConversion) {
                     output.write({ id: item.id, preprocessed, target_code: manualConversion[item.query.sparql] });
