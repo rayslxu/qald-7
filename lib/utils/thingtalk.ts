@@ -11,7 +11,13 @@ export function idArgument(entityType : string) : Ast.ArgumentDef {
         Ast.ArgDirection.OUT,
         'id', 
         new Type.Entity(`${TP_DEVICE_NAME}:${entityType}`),
-        { nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } } }
+        { 
+            nl: { canonical: { base: ['name'], passive_verb: ['named', 'called'] } },
+            impl: {  
+                projectable: new Ast.Value.Boolean(false), 
+                nullable: new Ast.Value.Boolean(false)
+            }
+        }
     );
 }
 
@@ -23,7 +29,11 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
         new Type.Entity(`${TP_DEVICE_NAME}:${entityType}_subdomain`),
         { 
             nl: { canonical: { reverse_property: ['#'] } },
-            impl: { wikidata_id: new Ast.Value.String('P31') }
+            impl: { 
+                wikidata_id: new Ast.Value.String('P31'), 
+                projectable: new Ast.Value.Boolean(false), 
+                nullable: new Ast.Value.Boolean(false)
+            }
         }
     );
 }
