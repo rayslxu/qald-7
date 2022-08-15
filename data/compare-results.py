@@ -1,7 +1,7 @@
 import sys
 
-path1 = './experiments/' + sys.argv[1] + '/test.debug'
-path2 = './experiments/' + sys.argv[2] + '/test.debug'
+path1 = './experiments/' + sys.argv[2] + '/' + sys.argv[1] + '.debug'
+path2 = './experiments/' + sys.argv[3] + '/' + sys.argv[1] + '.debug'
 
 failed_example1 = []
 with open(path1, 'r') as f1:
