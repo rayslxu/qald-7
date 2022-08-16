@@ -260,3 +260,36 @@ SELECT (AVG(?y) as ?avg) WHERE {
     ?x <http://www.wikidata.org/prop/direct/P1971> ?y.
     ?x <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q11696>. 
 }
+
+====
+Utterance: Does the Isar flow into a lake?
+TT:
+[ contains ( mouth_of_the_watercourse , any ( [ id ] of @wd . lake ( ) ) ) ] of @wd . river ( ) filter id == " Q106588 " ^^wd:river ;
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q106588> <http://www.wikidata.org/prop/direct/P403> ?x. 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>. 
+}
+
+====
+Utterance: Which mountain is the highest after the Annapurna?
+TT:
+sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ) ) [ 1 ] ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502> . 
+    ?x <http://www.wikidata.org/prop/direct/P2044> ?y . 
+    <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z . 
+    FILTER (?y < ?z) . 
+} ORDER BY DESC(?y) LIMIT 1
+
+====
+Utterance: Is Lake Baikal bigger than the Great Bear Lake?
+TT: 
+[ area >= any ( [ area ] of @wd . lake ( ) filter id == " Q5525 " ^^wd:lake ) ] of @wd . lake ( ) filter id == " Q5513 " ^^wd:lake ;
+SPARQL:
+ASK WHERE { 
+    <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?x. 
+    <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?y. 
+    FILTER(?x > ?y) 
+}

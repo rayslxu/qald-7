@@ -317,6 +317,15 @@ class TripleGenerator extends Ast.NodeVisitor {
             predicateVariable
         };
     }
+
+    visitComparisonSubqueryBooleanExpression(node : ThingTalk.Ast.ComparisonSubqueryBooleanExpression) : boolean {
+        assert(node.lhs instanceof Ast.VarRefValue);
+        const p = this._converter.getWikidataProperty(node.lhs.name);
+        const v = this._converter.getEntityVariable(p);
+        this._converter.addStatement(this._triple(p, v));
+        this._converter.convertExpression(node.rhs.optimize());
+        return false;
+    }
 }
 
 interface Entity {
@@ -504,7 +513,7 @@ export default class ThingTalkToSPARQLConverter {
         return null;
     }
 
-    private async _convertExpression(ast : Ast.Expression) {
+    async convertExpression(ast : Ast.Expression) {
         const tableInfoVisitor = new TableInfoVisitor(this);
         ast.visit(tableInfoVisitor);
         const subject = tableInfoVisitor.subject ?? '?' + this.getEntityVariable();
@@ -526,7 +535,7 @@ export default class ThingTalkToSPARQLConverter {
         const expr = (ast.statements[0] as Ast.ExpressionStatement).expression;
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
-        await this._convertExpression(table);  
+        await this.convertExpression(table);  
 
         let sparql = '';
         // ask/select
