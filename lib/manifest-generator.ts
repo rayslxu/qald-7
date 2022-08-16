@@ -212,6 +212,27 @@ class ManifestGenerator {
             baseCanonical.reverse_property = ["#"];
         for (const label of labels) 
             genBaseCanonical(baseCanonical, label, type, null);
+
+        // copy annotation to projections
+        for (const key in baseCanonical) {
+            if (key === 'default')
+                continue;
+            if (key.endsWith('_true') || key.endsWith('_false'))
+                continue;
+            if (key.endsWith('_projection'))
+                continue;
+            if (key === 'base' && !('property' in baseCanonical)) {
+                baseCanonical['property'] = baseCanonical[key]; 
+                baseCanonical['property_projection'] = baseCanonical[key];
+            }
+            if (!((key + '_projection') in baseCanonical)) {
+                baseCanonical[key + '_projection'] = [];
+                for (const value of baseCanonical[key]) {
+                    if (!value.includes('#'))
+                        baseCanonical[key + '_projection'].push(value);
+                }
+            }
+        }
         return baseCanonical;
     }
 
