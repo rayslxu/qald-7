@@ -749,6 +749,25 @@ export default class WikidataUtils {
     }
 
     /**
+     * Return the children domains given a domain
+     * this returns all domains in wikidata, including those not in the manifest
+     * @param qids a list of QIDs
+     * @returns a list of subdomain QIDs 
+     */
+    async getSubdomains(...qids : string[]) : Promise<string[]> {
+        const domains = [];
+        for (const qid of qids) {
+            const query = `SELECT ?uri WHERE { ?uri wdt:P279* wd:${qid} }`;
+            const result = await this._query(query);
+            const parentDomains : string[] = result.map((r : any) => 
+                r.uri.value.slice(ENTITY_PREFIX.length)
+            );
+            domains.push(...parentDomains);
+        }
+        return [...new Set(domains)];
+    }
+
+    /**
      * Given a name of an entity, find its QID 
      * @param name the name of the entity
      * @returns 

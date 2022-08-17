@@ -351,48 +351,64 @@ class ManifestGenerator {
                     impl: { wikidata_id: new Ast.Value.String(property) } 
                 }
             );
+            if (pname.startsWith('located_') || pname.startsWith('location_of_') || pname.endsWith('_location'))
+                argumentDef.impl_annotations['type_category'] = new Ast.Value.String('location');
+            else if (pname.startsWith('cause_of'))
+                argumentDef.impl_annotations['type_category'] = new Ast.Value.String('cause');
+
+            if (values.length > 0) {
+                const vtype = elemType(ptype);
+                if (vtype instanceof Type.Entity && vtype.type.startsWith(TP_DEVICE_NAME)) {
+                    if (!(pname in this._propertyValues.entities))
+                        this._propertyValues.entities[pname] = {};
+                    const valueTypes : Set<string> = new Set();
+                    const valueTypeQIDs : string[] = [];
+                    for (const value of values) {
+                        if (value in this._propertyValues.entities[pname])
+                            continue;
+                        if (!this._wikidata.isEntity(value))
+                            continue;
+                        this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
+
+                        if (this._typeSystem === 'flat')
+                            continue; 
+                        const type = await this._getEntityType(value);
+                        if (type) {
+                            valueTypeQIDs.push(type);
+                            const typeLabel = await this._wikidata.getLabel(type);
+                            if (typeLabel) {
+                                const parentClasses = typeLabel === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`];
+                                valueTypes.add(`${TP_DEVICE_NAME}:${cleanName(typeLabel)}`);
+                                this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
+                            }
+                        }
+                    }
+                    this._addEntity(
+                        `p_${pname}`, 
+                        label, 
+                        this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
+                    );
+                    
+                    if (valueTypeQIDs.includes('Q5'))
+                        argumentDef.impl_annotations['type_category'] = new Ast.Value.String('people');
+                    const locationTypes = await this._wikidata.getSubdomains('Q17334923');
+                    if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
+                        argumentDef.impl_annotations['type_category'] = new Ast.Value.String('location');
+                        
+                }
+                if (vtype === Type.String) {
+                    if (!(pname in this._propertyValues.strings))
+                        this._propertyValues.strings[pname] = [];
+                    for (const value of values)
+                        this._propertyValues.strings[pname].push(value);
+                }
+
+                
+            }
+
             args.push(argumentDef);
             if (!(property in this._properties))
                 this._properties[property] = argumentDef;
-            // TODO: separate property values by domain
-            if (values.length === 0)
-                continue;
-            const vtype = elemType(ptype);
-            if (vtype instanceof Type.Entity) {
-                if (!(pname in this._propertyValues.entities))
-                    this._propertyValues.entities[pname] = {};
-                const valueTypes : Set<string> = new Set();
-                for (const value of values) {
-                    if (value in this._propertyValues.entities[pname])
-                        continue;
-                    if (!this._wikidata.isEntity(value))
-                        continue;
-                    this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
-
-                    if (this._typeSystem === 'flat')
-                        continue; 
-                    const type = await this._getEntityType(value);
-                    if (type) {
-                        const typeLabel = await this._wikidata.getLabel(type);
-                        if (typeLabel) {
-                            const parentClasses = typeLabel === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`];
-                            valueTypes.add(`${TP_DEVICE_NAME}:${cleanName(typeLabel)}`);
-                            this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
-                        }
-                    }
-                }
-                this._addEntity(
-                    `p_${pname}`, 
-                    label, 
-                    this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
-                );
-            }
-            if (vtype === Type.String) {
-                if (!(pname in this._propertyValues.strings))
-                    this._propertyValues.strings[pname] = [];
-                for (const value of values)
-                    this._propertyValues.strings[pname].push(value);
-            }
         }
         return args;
     }
