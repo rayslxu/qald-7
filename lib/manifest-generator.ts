@@ -27,6 +27,7 @@ interface PropertyValues {
 
 interface ManifestGeneratorOptions {
     experiment : 'qald7'|'qald9',
+    domains ?: string
     type_system : 'flat' | 'hierarchical'
     cache : string,
     output : fs.WriteStream,
@@ -38,6 +39,7 @@ interface ManifestGeneratorOptions {
 
 class ManifestGenerator {
     private _experiment : 'qald7'|'qald9';
+    private _domains : string[];
     private _typeSystem : 'flat' | 'hierarchical';
     private _wikidata : WikidataUtils;
     private _parser : SparqlParser;
@@ -72,6 +74,7 @@ class ManifestGenerator {
 
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
+        this._domains = options.domains? options.domains.split(',') : [];
         this._typeSystem = options.type_system;
         this._wikidata = new WikidataUtils(options.cache, options.bootleg_db);
         this._parser = new Parser();
@@ -560,6 +563,8 @@ class ManifestGenerator {
         // write entity dataset for instanceof 
         const domainEntities : Record<string, any> = {};
         for (const [domain, values] of Object.entries(this._wikidata.subdomains)) {
+            if (this._domains.length > 0 && !this._domains.includes(domain))
+                continue;
             const fname = cleanName(this._domainLabels[domain]);
             index.write(`entity\ten-US\t${TP_DEVICE_NAME}:${fname}_subdomain\tparameter-datasets/${fname}.json\n`);
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}_subdomain.json`);
@@ -638,6 +643,8 @@ class ManifestGenerator {
         await this._wikidata.loadAllDomains();
         this._subdomains = this._wikidata.subdomains;
         for (const domain in this._subdomains) {
+            if (this._domains.length > 0 && !this._domains.includes(domain))
+                continue;
             const domainLabel = await this._wikidata.getLabel(domain);
             if (!domainLabel)
                 throw new Error('Failed to find label for domain: ' + domain);
@@ -685,6 +692,10 @@ async function main() {
     parser.add_argument('--experiment', {
         required: false,
         default: 'qald7'
+    });
+    parser.add_argument('--domains', {
+        required: false,
+        help: 'a list of domains to include, separated by comma, if absent, include all domains'
     });
     parser.add_argument('--type-system', {
         required: false,
