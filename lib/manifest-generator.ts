@@ -352,9 +352,9 @@ class ManifestGenerator {
                 }
             );
             if (pname.startsWith('located_') || pname.startsWith('location_of_') || pname.endsWith('_location'))
-                argumentDef.impl_annotations['type_category'] = new Ast.Value.String('location');
+                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
             else if (pname.startsWith('cause_of'))
-                argumentDef.impl_annotations['type_category'] = new Ast.Value.String('cause');
+                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'how';
 
             if (values.length > 0) {
                 const vtype = elemType(ptype);
@@ -389,11 +389,13 @@ class ManifestGenerator {
                         this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
                     );
                     
-                    if (valueTypeQIDs.includes('Q5'))
-                        argumentDef.impl_annotations['type_category'] = new Ast.Value.String('people');
-                    const locationTypes = await this._wikidata.getSubdomains('Q17334923');
-                    if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
-                        argumentDef.impl_annotations['type_category'] = new Ast.Value.String('location');
+                    if (valueTypeQIDs.includes('Q5')) {
+                        argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'who';
+                    } else {
+                        const locationTypes = await this._wikidata.getSubdomains('Q17334923');
+                        if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
+                            argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
+                    }
                         
                 }
                 if (vtype === Type.String) {
