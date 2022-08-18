@@ -25,7 +25,7 @@ export default class ValueConverter {
         this._prefix = options?.prefix ?? ENTITY_PREFIX;
     }
 
-    private async _getEntityDisplay(qid : string) {
+    async getEntityDisplay(qid : string) {
         const wikidataLabel = await this._converter.kb.getLabel(qid);
         assert(wikidataLabel);
         const display = closest(wikidataLabel, this._converter.keywords);
@@ -67,7 +67,7 @@ export default class ValueConverter {
         if (type instanceof Type.Entity) {
             assert(typeof value === 'string' && value.startsWith(this._prefix));
             const qid = value.slice(this._prefix.length);
-            const display = await this._getEntityDisplay(qid);
+            const display = await this.getEntityDisplay(qid);
             return new Ast.Value.Entity(qid, type.type, display); 
         } 
         if (type instanceof Type.Enum) {

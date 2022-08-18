@@ -5,7 +5,7 @@ SELECT DISTINCT ?x WHERE {
 }
 TT: 
 
-@wd . entity ( ) filter instance_of == " Q273120 " ^^wd:entity_subdomain ( " museums " ) ;
+@wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) ;
 
 ====
 Utterance: show me museums named after louvre palace
@@ -15,7 +15,7 @@ SELECT DISTINCT ?x WHERE {
        <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
 TT: 
-@wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) && instance_of == " Q273120 " ^^wd:entity_subdomain ( " museums " ) ;
+@wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) && instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) ;
 
 ====
 Utterance: show me the owner of museums named after louvre palace
@@ -26,7 +26,7 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P127> ?y.
 }
 TT: 
-[ owned_by ] of @wd . entity ( ) filter instance_of == " art_museum " ^^wd:entity_subdomain ( " museums " ) && contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) ;
+[ owned_by ] of @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ( " museums " ) && contains ( named_after , " Q1075988 " ^^wd:p_named_after ( " louvre palace " ) ) ;
 
 ====
 Utterance: Who was the doctoral supervisor of Albert Einstein
@@ -235,7 +235,7 @@ SELECT DISTINCT ?string WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P856> ?string . 
 }
 TT:
-[ official_website ] of @wd . organization ( ) filter instance_of == " business " ^^wd:organization_subdomain ( " companies " ) && employees >= 500000 ;
+[ official_website ] of @wd . organization ( ) filter instance_of == " Q4830453 " ^^wd:organization_subdomain ( " companies " ) && employees >= 500000 ;
 
 ====
 Utterance: Is Lake Baikal bigger than the Great Bear Lake?
@@ -307,7 +307,7 @@ SELECT DISTINCT ?uri WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1128> ?employees . 
 } ORDER BY DESC(?employees) LIMIT 1
 TT: 
-sort ( employees desc of @wd . organization ( ) filter contains ( country , " Q668 " ^^wd:p_country ( " indian " ) ) && instance_of == " business " ^^wd:organization_subdomain ( " company " ) ) [ 1 ] ;
+sort ( employees desc of @wd . organization ( ) filter contains ( country , " Q668 " ^^wd:p_country ( " indian " ) ) && instance_of == " Q4830453 " ^^wd:organization_subdomain ( " company " ) ) [ 1 ] ;
 
 ====
 Utterance: What is the highest place of the Urals?

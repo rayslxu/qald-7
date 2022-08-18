@@ -8,8 +8,8 @@ import { SPARQLToThingTalkConverter } from '../lib/converter';
 import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
 const testFiles = [
-    './test/tests-qid-only.txt',
-    './test/tests.txt'
+    './test/tests.txt',
+    './test/tests-qid-only.txt'
 ];
 
 async function main() {
@@ -42,7 +42,7 @@ async function main() {
                 converted, 
                 preprocessed,
                 EntityUtils.makeDummyEntities(preprocessed),
-                { locale: 'en', timezone: 'utc', includeEntityValue: true, excludeEntityDisplay  }
+                { locale: 'en', timezone: undefined, includeEntityValue: true, excludeEntityDisplay  }
             ).join(' ');
 
             assert.strictEqual(thingtalk, expected);
