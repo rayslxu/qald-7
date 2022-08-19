@@ -57,6 +57,10 @@ class TableInfoVisitor extends Ast.NodeVisitor {
         }
         return true;
     }
+
+    visitComparisonSubqueryBooleanExpression(node : ThingTalk.Ast.ComparisonSubqueryBooleanExpression) : boolean {
+        return false;
+    }
 }
 
 interface QualifiedPredicate {
@@ -104,6 +108,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         assert(node.args.length === 1 || node.computations.length === 1);
         if (node.args.length === 1) {
             const arg = node.args[0];
+            if (arg === 'id')
+                return true;
             const p = this._converter.getWikidataProperty(arg);
             const v = this._converter.getEntityVariable(p);
             if (arg === this._target_projection) 
@@ -119,7 +125,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (proj.value instanceof Ast.Value)    
             throw new Error('Not supported: value in projection');
         
-        const v = this._converter.getEntityVariable();
+        const v = this._converter.getEntityVariable(proj.prettyprint());
         if (proj.prettyprint() === this._target_projection)
             this._converter.setResultVariable(`?${v}`);
         
@@ -261,9 +267,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (node.operator === 'count' && node.field === '*') {
             this._converter.setAggregation(node.operator, this._subject.slice('?'.length));
         } else {
-            const v = this._converter.getEntityVariable();
             const property = this._converter.getWikidataProperty(node.field);
-            this._converter.setPropertyVariable(property, v);
+            const v = this._converter.getEntityVariable(node.field);
             this._converter.setAggregation(node.operator, v);
             this._converter.addStatement(this._triple(property, v));
         }
@@ -323,7 +328,25 @@ class TripleGenerator extends Ast.NodeVisitor {
         const p = this._converter.getWikidataProperty(node.lhs.name);
         const v = this._converter.getEntityVariable(p);
         this._converter.addStatement(this._triple(p, v));
-        this._converter.convertExpression(node.rhs.optimize());
+
+        // set variable map for the subquery (do not use existing mapping)
+        const variableMap : Record<string, string> = {};
+        let projection  = (node.rhs as Ast.ProjectionExpression).args[0];
+        if (projection === 'id') {
+            variableMap[projection] = v;
+        } else {
+            projection = this._converter.getWikidataProperty(projection);
+            variableMap[projection] = this._converter.getEntityVariable();
+        }
+        
+        if (node.operator === '==' || node.operator === 'contains' || node.operator === 'in_array') {
+            this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
+        } else if (node.operator === '>=' || node.operator === '<=' ) {
+            this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
+            this._converter.addStatement(`FILTER(?${v} ${node.operator[0]} ?${variableMap[projection]}).`);
+        } else {
+            throw new Error('Unsupported operator for subquery: ' + node.operator);
+        }
         return false;
     }
 }
@@ -423,18 +446,13 @@ export default class ThingTalkToSPARQLConverter {
         return this._humanReadableInstanceOf;
     }
 
-    get variableMap() {
-        return this._variableMap;
-    }
-
-    set variableMap(variableMap : Record<string, string>) {
-        this._variableMap = variableMap;
-    }
-
     getEntityVariable(property ?: string) : string {
-        if (property && property in this._variableMap)
+        if (!property)
+            return ENTITY_VARIABLES[this._entityVariableCount ++];
+        if (property in this._variableMap) 
             return this._variableMap[property];
-        return ENTITY_VARIABLES[this._entityVariableCount ++];
+        this._variableMap[property] = ENTITY_VARIABLES[this._entityVariableCount ++];
+        return this._variableMap[property];
     }
 
     getPredicateVariable() : string {
@@ -454,7 +472,8 @@ export default class ThingTalkToSPARQLConverter {
     }
 
     addStatement(statement : string) {
-        this._statements.push(statement);
+        if (!this._statements.includes(statement))
+            this._statements.push(statement);
     }
 
     addHaving(having : string) {
@@ -479,10 +498,6 @@ export default class ThingTalkToSPARQLConverter {
 
     setAggregation(operator : string, variable : string) {
         this._aggregation = { operator, variable };
-    }
-
-    setPropertyVariable(property : string, variable : string) {
-        this._variableMap[property] = variable;
     }
 
     private _reset() {
@@ -513,16 +528,31 @@ export default class ThingTalkToSPARQLConverter {
         return null;
     }
 
-    async convertExpression(ast : Ast.Expression) {
+    async convertExpression(ast : Ast.Expression, isMainExpression = true, variableMapping : Record<string, string> = {}) {
+        // save out of scope variable mapping, load in scope variable mapping 
+        const outVariableMapping = this._variableMap;
+        this._variableMap = variableMapping;
+
         const tableInfoVisitor = new TableInfoVisitor(this);
         ast.visit(tableInfoVisitor);
-        const subject = tableInfoVisitor.subject ?? '?' + this.getEntityVariable();
-        if (subject.startsWith('?'))
+        let subject;
+        if (tableInfoVisitor.subject) {
+            subject = tableInfoVisitor.subject;
+        } else {
+            if (this._variableMap['id'])
+                subject = '?' + this._variableMap['id'];
+            else 
+                subject = '?' + this.getEntityVariable();
+        }
+        if (isMainExpression && subject.startsWith('?'))
             this.setResultVariable(subject);
-        const projection = this._targetProjectionName(ast);
         const domain = tableInfoVisitor.domainName ? await this.getWikidataDomain(tableInfoVisitor.domainName) : null;
-        const tripleGenerator = new TripleGenerator(this, subject, projection, domain);
+        this._variableMap = variableMapping;
+        const tripleGenerator = new TripleGenerator(this, subject, isMainExpression ? this._targetProjectionName(ast) : null, domain);
         ast.visit(tripleGenerator);
+
+        // restore out of scope variable
+        this._variableMap = outVariableMapping;
     }
 
     async convert(utterance : string, thingtalk : string) : Promise<string> {

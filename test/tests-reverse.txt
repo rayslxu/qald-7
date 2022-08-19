@@ -272,15 +272,27 @@ ASK WHERE {
 }
 
 ====
+Utterance: mountain lower than the Annapurna?
+TT:
+@wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ) ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P2044> ?y.
+    FILTER(?y < ?z). 
+    <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
+}
+
+====
 Utterance: Which mountain is the highest after the Annapurna?
 TT:
 sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ) ) [ 1 ] ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502> . 
-    ?x <http://www.wikidata.org/prop/direct/P2044> ?y . 
-    <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z . 
-    FILTER (?y < ?z) . 
+    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
+    FILTER(?y < ?z). 
+    <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
 } ORDER BY DESC(?y) LIMIT 1
 
 ====
@@ -290,6 +302,6 @@ TT:
 SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?x. 
+    FILTER(?x > ?y).
     <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?y. 
-    FILTER(?x > ?y) 
 }
