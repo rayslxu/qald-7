@@ -2,7 +2,7 @@ import assert from 'assert';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { PostProcessor } from '../lib/post-processor';
-import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
+import WikidataUtils, { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
 const TEST_CASES = [
     [
@@ -25,15 +25,18 @@ const TEST_CASES = [
 async function main() { 
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
+    const wikidata = new WikidataUtils('wikidata_cache.sqlite', 'bootleg.sqlite');
     const processor = new PostProcessor({ 
         tpClient, 
         schemas, 
+        wikidata,
         class: await schemas.getFullMeta(TP_DEVICE_NAME),
         normalizeDomains: 'always',
         normalizeEntityTypes: true,
         includeEntityValue: true, 
         excludeEntityDisplay: true,
-        humanReadableInstanceOf: false
+        humanReadableInstanceOf: false,
+        oracleNED: false
     });
     for (const [utterance, before, after] of TEST_CASES) {
         const processed = await processor.postprocess(before, utterance);

@@ -8,7 +8,7 @@ import { Ast } from 'thingtalk';
 import { DatasetParser, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
 import { waitFinish } from './utils/misc';
 import { instanceOfFilter } from './utils/thingtalk';
-import { TP_DEVICE_NAME } from './utils/wikidata';
+import WikidataUtils, { TP_DEVICE_NAME } from './utils/wikidata';
 
 function hasFilter(ast : Ast.BooleanExpression, property : string) : boolean {
     if (ast instanceof Ast.OrBooleanExpression)
@@ -33,6 +33,7 @@ class NormalizerVisitor extends Ast.NodeVisitor {
     private _normalizeDomains : 'always'|'id-filtered-only'|'never';
     private _normalizeEntityTypes : boolean;
     private _humanReadableInstanceOf : boolean;
+    entities : Set<Ast.EntityValue>;
 
     constructor(
         klass : Ast.ClassDef,
@@ -46,6 +47,7 @@ class NormalizerVisitor extends Ast.NodeVisitor {
         this._normalizeDomains = options.normalizeDomains;
         this._normalizeEntityTypes = options.normalizeEntityTypes;
         this._humanReadableInstanceOf = options.humanReadableInstanceOf;
+        this.entities = new Set();
     }
 
     private _instanceOfFilter(invocation : Ast.InvocationExpression) : Ast.BooleanExpression {
@@ -153,6 +155,8 @@ class NormalizerVisitor extends Ast.NodeVisitor {
             value.type = `${TP_DEVICE_NAME}:entity`;
         else if (this._normalizeDomains !== 'never' && !value.type.startsWith(`${TP_DEVICE_NAME}:p_`)) 
             value.type = `${TP_DEVICE_NAME}:entity`;
+            
+        this.entities.add(value);
         return true;
     }
 }
@@ -160,30 +164,36 @@ class NormalizerVisitor extends Ast.NodeVisitor {
 interface PostProcessorOptions {
     tpClient : Tp.BaseClient;
     schemas : ThingTalk.SchemaRetriever;
+    wikidata : WikidataUtils;
     class : Ast.ClassDef;
     normalizeDomains : 'always'|'id-filtered-only'|'never';
     normalizeEntityTypes : boolean; 
     includeEntityValue : boolean;
     excludeEntityDisplay : boolean;
     humanReadableInstanceOf : boolean;
+    oracleNED : boolean;
 }
 
 export class PostProcessor {
     private _tpClient : Tp.BaseClient;
     private _schemas : ThingTalk.SchemaRetriever;
+    private _wikidata : WikidataUtils;
     private _normalizer : NormalizerVisitor;
     private _includeEntityValue : boolean;
     private _excludeEntityDisplay : boolean;
+    private _oracleNED : boolean;
 
     constructor(options : PostProcessorOptions) {
         this._tpClient = options.tpClient;
         this._schemas = options.schemas;
+        this._wikidata = options.wikidata;
         this._normalizer = new NormalizerVisitor(options.class, options);
         this._includeEntityValue = options.includeEntityValue;
         this._excludeEntityDisplay = options.excludeEntityDisplay;
+        this._oracleNED = options.oracleNED;
     }
 
-    async postprocess(thingtalk : string, preprocessedUtterance : string) : Promise<string[]> {
+    async postprocess(thingtalk : string, preprocessedUtterance : string) : Promise<[string[], string]> {
         const entities = EntityUtils.makeDummyEntities(preprocessedUtterance);
         const program = await ThingTalkUtils.parsePrediction(thingtalk.split(' '), entities, {
             timezone : 'utc',
@@ -193,9 +203,9 @@ export class PostProcessor {
         // skip program that does not type check. 
         // TODO: fix typechecking
         if (!program)
-            return thingtalk.split(' ');
+            throw new Error('Typecheck failed: ' + thingtalk);
         program.visit(this._normalizer);
-        return ThingTalkUtils.serializePrediction(
+        const serialized = ThingTalkUtils.serializePrediction(
             program.optimize(), 
             preprocessedUtterance, 
             entities,
@@ -206,6 +216,19 @@ export class PostProcessor {
                 excludeEntityDisplay: this._excludeEntityDisplay 
             }
         );
+        if (this._oracleNED) {
+            const oracleNED_suffix = [];
+            for (const entity of this._normalizer.entities) {
+                const qid = entity.value!;
+                const type = (await this._wikidata.getDomain(qid))!;
+                const typeLabel = (await this._wikidata.getLabel(type))!;
+                oracleNED_suffix.push('<e>', qid, typeLabel);
+                if (entity.display)
+                    oracleNED_suffix.push(entity.display);
+            }
+            return [serialized, ' ' + oracleNED_suffix.join(' ')];
+        }
+        return [serialized, ''];
     }
 }
 
@@ -236,6 +259,14 @@ async function main() {
         required: true,
         type: fs.createWriteStream
     });
+    parser.add_argument('--cache', {
+        required: false,
+        default: 'wikidata_cache.sqlite'
+    });
+    parser.add_argument('--bootleg-db', {
+        required: false,
+        default: 'bootleg.sqlite'
+    });
     parser.add_argument('--normalize-domains', {
         choices: ['always','id-filtered-only','never'],
         default: 'id-filtered-only'
@@ -252,6 +283,10 @@ async function main() {
         action: 'store_true',
         default: false
     });
+    parser.add_argument('--oracle-ned', {
+        action: 'store_true',
+        default: false
+    });
     parser.add_argument('--human-readable-instance-of', {
         action: 'store_true',
         help: 'Use human readable string for instance_of instead of QID.',
@@ -261,15 +296,18 @@ async function main() {
     const args = parser.parse_args();
     const tpClient = new Tp.FileClient(args);
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null);
+    const wikidata = new WikidataUtils(args.cache, args.bootleg_db);
     const processor = new PostProcessor({ 
         tpClient, 
         schemas, 
+        wikidata,
         class: await schemas.getFullMeta(TP_DEVICE_NAME),
         normalizeDomains: args.normalize_domains,
         normalizeEntityTypes: args.normalize_entity_types,
         includeEntityValue: args.include_entity_value,
         excludeEntityDisplay: args.exclude_entity_display,
-        humanReadableInstanceOf: args.human_readable_instance_of
+        humanReadableInstanceOf: args.human_readable_instance_of,
+        oracleNED: args.oracle_ned
     });
 
     args.input.setEncoding('utf8').pipe(byline())
@@ -279,8 +317,9 @@ async function main() {
 
             async transform(ex, encoding, callback) {
                 try {
-                    const postprocessed = await processor.postprocess(ex.target_code, ex.preprocessed);
+                    const [postprocessed, suffix] = await processor.postprocess(ex.target_code, ex.preprocessed);
                     ex.target_code = postprocessed.join(' ');
+                    ex.preprocessed = ex.preprocessed + suffix;
                     callback(null, ex);
                 } catch(e) {
                     callback();
