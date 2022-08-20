@@ -317,3 +317,15 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 [ highest_point ] of @wd . entity ( ) filter id == " Q35600 " ^^wd:entity ( " urals " ) ;
+
+====
+Utterance: what is in a chocolate chip cookie ?
+SPARQL:
+SELECT DISTINCT ?uri WHERE { 
+    <http://www.wikidata.org/entity/Q14169302> <http://www.wikidata.org/prop/direct/P527> ?uri
+}
+TT:
+[ has_parts ] of @wd . entity ( ) filter id == " Q14169302 " ^^wd:entity ( " chocolate chip cookie " ) ;
+
+====
+Utterance: 

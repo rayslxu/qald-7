@@ -55,8 +55,7 @@ export default class TripleParser {
         // Case 0: if subject is an entity, create an id filter first
         // if the subject is already in the tables, it means we already have the id filter, so no need to run this again
         if (isWikidataEntityNode(triple.subject) && !(subject in this._converter.tables)) {
-            const domain = await this._converter.kb.getDomain(subject.slice(ENTITY_PREFIX.length));
-            assert(domain);
+            const domain = (await this._converter.kb.getDomain(subject.slice(ENTITY_PREFIX.length))) ?? 'Q35120';
             const table = this._converter.schema.getTable(domain);
             assert(table);
             filters.push(new Ast.AtomBooleanExpression(
