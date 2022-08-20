@@ -140,10 +140,12 @@ export default class PredicateParser {
                     });
                     continue; 
                 }
+                const qualifierType = this._converter.schema.getPropertyType(`${predicate.property}.${qualifier.property}`);
                 filters.push(await this._converter.helper.makeAtomBooleanExpression(
                     qualifier.property,
                     qualifier.value,
-                    qualifier.op
+                    qualifier.op,
+                    elemType(qualifierType)
                 ));
             }
             
@@ -198,10 +200,12 @@ export default class PredicateParser {
                     });
                     continue; 
                 }
+                const qualifierType = this._converter.schema.getPropertyType(`${predicate.property}.${qualifier.property}`);
                 const filter = await this._converter.helper.makeAtomBooleanExpression(
                     `${predicate.property}.${qualifier.property}`,
                     qualifier.value,
-                    qualifier.op
+                    qualifier.op,
+                    elemType(qualifierType)
                 );
                 filtersBySubject.add(predicate.table, filter);
             }
