@@ -27,8 +27,13 @@ export class WikiSchema {
                 // log type information for compound field, by concat property name and filed name
                 const type= elemType(arg.type, false);
                 if (type instanceof Type.Compound) {
-                    for (const field of Object.values(type.fields)) 
+                    for (const field of Object.values(type.fields)) {
+                        if (field.name === 'value')
+                            continue;
+                        const pid = field.getImplementationAnnotation('wikidata_id') as string;
                         this._propertyTypeMap[`${arg.name}.${field.name}`] = field.type;
+                        this._propertyMap[pid] = field.name;
+                    }
                 }
             }
         }

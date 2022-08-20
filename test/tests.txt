@@ -326,6 +326,3 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 [ has_parts ] of @wd . entity ( ) filter id == " Q14169302 " ^^wd:entity ( " chocolate chip cookie " ) ;
-
-====
-Utterance: 
