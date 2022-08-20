@@ -498,6 +498,19 @@ class ManifestGenerator {
         console.log(`In total: ${Object.keys(this._properties).length + 1} Wikidata properties included.`);
         console.log(`${Object.values(this._properties).filter((p) => p.type instanceof Type.Compound).length} of them have qualifiers`);
         console.log(`On average, there are ${countTotalProperties / countQueries} in each of the ${countQueries} domains`);
+        // create a special property just to represent sparql that we cannot handle.
+        this._properties['_predicate'] = new Ast.ArgumentDef(
+            null,
+            Ast.ArgDirection.OUT,
+            '_predicate',
+            Type.String,
+            {
+                impl: {  
+                    projectable: new Ast.Value.Boolean(false), 
+                    filterable: new Ast.Value.Boolean(false)
+                }
+            }
+        );
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
             is_monitorable: false
