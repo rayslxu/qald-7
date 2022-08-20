@@ -202,8 +202,10 @@ export class PostProcessor {
         });
         // skip program that does not type check. 
         // TODO: fix typechecking
-        if (!program)
-            throw new Error('Typecheck failed: ' + thingtalk);
+        if (!program) {
+            console.log('Typecheck failed: ' + thingtalk);
+            return [thingtalk.split(' '), ''];
+        }
         program.visit(this._normalizer);
         const serialized = ThingTalkUtils.serializePrediction(
             program.optimize(), 
