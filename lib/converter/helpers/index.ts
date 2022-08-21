@@ -227,15 +227,52 @@ export default class ConverterHelper {
         
         const order = ordering[0];
         const expression = order.expression;
-        assert(isVariable(expression));
-        const projection = table.projections.find((proj) => proj.variable === expression.value);
-        if (!projection)
-            throw new Error('Failed to find the variable for sorting');
-        if (typeof projection.property !== 'string')
-            throw new Error('Unsupported: sort on property path');
-        const property = new Ast.Value.VarRef(projection.property);
-        const direction = order.descending ? 'desc' : 'asc';
-        return new Ast.SortExpression(null, base, property, direction, null);
+        if (isVariable(expression)) {
+            const projection = table.projections.find((proj) => proj.variable === expression.value);
+            if (!projection)
+                throw new Error('Failed to find the variable for sorting');
+            if (typeof projection.property !== 'string')
+                throw new Error('Unsupported: sort on property path');
+            const property = new Ast.Value.VarRef(projection.property);
+            const direction = order.descending ? 'desc' : 'asc';
+            return new Ast.SortExpression(null, base, property, direction, null);
+        } else if (isAggregateExpression(expression)) {
+            const exp = expression.expression;
+            const direction = order.descending ? 'desc' : 'asc';
+            assert(isVariable(exp));
+            if (exp.value === table.name) {
+                let groupBy = undefined;
+                if (table.projections.length > 0) {
+                    assert(table.projections.length === 1 && typeof table.projections[0].property === 'string');
+                    groupBy = table.projections[0].property;
+                }
+                base = new Ast.AggregationExpression(
+                    null,
+                    base,
+                    '*',
+                    expression.aggregation,
+                    null,
+                    undefined,
+                    groupBy
+                );
+                return new Ast.SortExpression(null, base, new Ast.Value.VarRef(expression.aggregation), direction, null);
+            } else {
+                const projection = table.projections.find((proj) => proj.variable === exp.value);
+                if (!projection)
+                    throw new Error('Failed to find the variable for sorting');
+                if (typeof projection.property !== 'string')
+                    throw new Error('Unsupported: sort on property path');
+                return new Ast.SortExpression(
+                    null,
+                    base,
+                    new Ast.Value.Computation(expression.aggregation, [new Ast.Value.VarRef(projection.property)]),
+                    direction,
+                    null
+                );
+            }
+        }
+        throw new Error('Unsupported ordering expression: ' + expression);
+        
     }
 
     addLimit(base : Ast.Expression, limit ?: number) : Ast.Expression {
