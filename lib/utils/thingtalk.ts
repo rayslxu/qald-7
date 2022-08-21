@@ -38,6 +38,25 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
     );
 }
 
+// return a property just for representation, it won't get synthesized 
+export function fakeProperty(qid : string, pname : string) : Ast.ArgumentDef {
+    return new Ast.ArgumentDef(
+        null,
+        Ast.ArgDirection.OUT,
+        pname,
+        new Type.Array(new Type.Entity(`${TP_DEVICE_NAME}:entity`)),
+        {
+            impl: {
+                wikidata_id: new Ast.Value.String(qid),
+                projectable: new Ast.Value.Boolean(false), 
+                filterable: new Ast.Value.Boolean(false), 
+                nullable: new Ast.Value.Boolean(false)
+            }
+        }
+
+    );
+}
+
 export function instanceOfFilter(domain : string, domainLabel : string, type : string, humanReadable = false) : Ast.BooleanExpression {
     const name = tokenizer.tokenize(domainLabel!).rawTokens.join(' ');
     const value = humanReadable ? new Ast.Value.Entity(name, type, domainLabel) : new Ast.Value.Entity(domain, type, domainLabel);

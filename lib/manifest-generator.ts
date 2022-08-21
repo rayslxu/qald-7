@@ -8,7 +8,7 @@ import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs'
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, sampleAltLabels, waitFinish } from './utils/misc';
-import { idArgument, elemType, instanceOfArgument } from './utils/thingtalk';
+import { idArgument, elemType, instanceOfArgument, fakeProperty } from './utils/thingtalk';
 import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
 
@@ -301,23 +301,19 @@ class ManifestGenerator {
                 }
             }
             for (const triple of triples) {
+                let domain = 'Q35120';
                 if ((triple.subject as IriTerm).termType === 'NamedNode') {
                     const entityId = triple.subject.value.slice(ENTITY_PREFIX.length);
-                    const domain = await this._getEntityType(entityId);
-                    if (!domain)
-                        continue;
-                    for (const property of extractProperties(triple.predicate)) {
-                        if (!(domain in this._propertiesByDomainInQald))
-                            this._propertiesByDomainInQald[domain] = new Set();
-                        this._propertiesByDomainInQald[domain].add(property);
-                    }
+                    const entityDomain = await this._getEntityType(entityId);
+                    if (entityDomain)
+                        domain = entityDomain;
                 } else if ((triple.subject as VariableTerm).termType === 'Variable' && triple.subject.value in variables) {
-                    const domain = variables[triple.subject.value];
-                    for (const property of extractProperties(triple.predicate)) {
-                        if (!(domain in this._propertiesByDomainInQald))
-                            this._propertiesByDomainInQald[domain] = new Set();
-                        this._propertiesByDomainInQald[domain].add(property);
-                    }
+                    domain = variables[triple.subject.value];
+                }
+                for (const property of extractProperties(triple.predicate)) {
+                    if (!(domain in this._propertiesByDomainInQald))
+                        this._propertiesByDomainInQald[domain] = new Set();
+                    this._propertiesByDomainInQald[domain].add(property);
                 }
             }
         } catch(e) {
@@ -449,18 +445,8 @@ class ManifestGenerator {
 
         // get all properties by sampling Wikidata
         const args = await this._processDomainProperties(domain, fname);
-        const missing = [];
-        // check missing properties in QALD (do not add it, just check) 
-        for (const [id, label] of Object.entries(this._propertiesByDomainInQald[domain] ?? {})) {
-            const pname = cleanName(label);
-            if (args.some((a) => a.name === pname) || id === 'P31')
-                continue;
-            missing.push([id, label]);
-        }
         console.log(`Done sampling ${domainLabel} domain`);
-        console.log(`In total ${args.length} properties sampled, ${missing.length} not covered`);
-        if (missing.length > 0)
-            console.log(missing.map(([id, label]) => `${label} (${id})`).join(', '));
+        console.log(`In total ${args.length} properties sampled`);
 
 
         const canonical = [domainLabel];
@@ -521,6 +507,17 @@ class ManifestGenerator {
                 }
             }
         );
+        for (const domain in this._propertiesByDomainInQald) {
+            for (const id of this._propertiesByDomainInQald[domain]) {
+                const label = await this._wikidata.getLabel(id);
+                const pname = cleanName(label!);
+                if (id in this._properties || id === 'P31')
+                    continue;
+                console.log(`Adding missing property in domain ${domain}: ${pname} (${id})`);
+                this._properties[id] = fakeProperty(id, pname);
+            }
+        }
+
         queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
             is_list: true,
             is_monitorable: false
