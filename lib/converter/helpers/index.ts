@@ -384,8 +384,12 @@ export default class ConverterHelper {
             const query = this._converter.class.getFunction('query', table.name)!; 
             if (properties.some((prop) => !query.args.includes(prop))) {
                 table.name = 'entity';
-                if (table.filters.some((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'instance_of'))
+                const instanceOf = table.filters.find((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'instance_of');
+                if (instanceOf) {
+                    const value = (instanceOf as Ast.AtomBooleanExpression).value;
+                    (value as Ast.EntityValue).type = `${TP_DEVICE_NAME}:entity_subdomain`;
                     continue;
+                }
                 const idFilter = table.filters.find((f) => f instanceof Ast.AtomBooleanExpression && f.name === 'id');
                 if (idFilter) {
                     const value = (idFilter as Ast.AtomBooleanExpression).value;
