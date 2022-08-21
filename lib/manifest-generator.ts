@@ -9,7 +9,7 @@ import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, sampleAltLabels, waitFinish } from './utils/misc';
 import { idArgument, elemType, instanceOfArgument } from './utils/thingtalk';
-import WikidataUtils, { PROPERTY_QUALIFIER_PREFIX } from './utils/wikidata';
+import WikidataUtils from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
 
 interface Entity {
@@ -117,12 +117,22 @@ class ManifestGenerator {
             return this._propertyTypes[propertyId];
         let type = await this._getPropertyTypeHelper(propertyId, propertyName);
         const qualifiers = await this._wikidata.getQualifiersByProperty(propertyId);
+        // HACK: force occupation to have start time and end time
+        if (propertyId === 'P106')
+            qualifiers.push('P580', 'P582');
+
+        // make sure start time and end time come in pairs 
+        if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
+            qualifiers.push('P582');
+        if (qualifiers.includes('P582') && !qualifiers.includes('P580'))
+            qualifiers.push('P580');
+        
         if (type && qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
                 value: new Ast.ArgumentDef(null, null, 'value', elemType(type))
             };
             for (const qualifier of qualifiers) {
-                const pid = qualifier.slice(PROPERTY_QUALIFIER_PREFIX.length);
+                const pid = qualifier;
                 const label = (await this._wikidata.getLabel(pid))!;
                 const qname = cleanName(label);
                 const qtype = await this._getPropertyTypeHelper(pid, qname);

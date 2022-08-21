@@ -430,7 +430,7 @@ export default class WikidataUtils {
         } LIMIT 100`;
         const res = await this._query(sparql);
         res.forEach((r : any) => {
-            const q = r.qualifier?.value;
+            const q = r.qualifier?.value.slice(PROPERTY_QUALIFIER_PREFIX.length);
             if (q) {
                 if (PROPERTY_BLACKLIST.includes(q.slice(PROPERTY_QUALIFIER_PREFIX.length)))
                     return;
