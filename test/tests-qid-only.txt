@@ -4,7 +4,7 @@ SELECT DISTINCT ?x WHERE {
     ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
 }
 TT: 
-@wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ;
+@wd . museum ( ) filter instance_of == " Q207694 " ^^wd:museum_subdomain ;
 
 ====
 Utterance: show me museums named after louvre palace
@@ -14,7 +14,7 @@ SELECT DISTINCT ?x WHERE {
        <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
 TT: 
-@wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ) && instance_of == " Q207694 " ^^wd:entity_subdomain ;
+@wd . museum ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ) && instance_of == " Q207694 " ^^wd:museum_subdomain ;
 
 ====
 Utterance: show me the owner of museums named after louvre palace
@@ -25,7 +25,7 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P127> ?y.
 }
 TT: 
-[ owned_by ] of @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain && contains ( named_after , " Q1075988 " ^^wd:p_named_after ) ;
+[ owned_by ] of @wd . museum ( ) filter instance_of == " Q207694 " ^^wd:museum_subdomain && contains ( named_after , " Q1075988 " ^^wd:p_named_after ) ;
 
 ====
 Utterance: Who was the doctoral supervisor of Albert Einstein

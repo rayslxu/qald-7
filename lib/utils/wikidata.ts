@@ -657,6 +657,7 @@ export default class WikidataUtils {
      * @param qids a list of QIDs 
      */
     async getTopLevelDomains(...qids : string[]) : Promise<string[]> {
+        await this.loadAllDomains();
         const domains = [];
         for (const qid of qids) {
             if (qid in this._domains) {
@@ -682,6 +683,7 @@ export default class WikidataUtils {
      * @returns a list of parent class QIDs 
      */
     async getParentDomains(...qids : string[]) : Promise<string[]> {
+        await this.loadAllDomains();
         const domains = [];
         for (const qid of qids) {
             if (qid in this._domains) {
@@ -712,6 +714,7 @@ export default class WikidataUtils {
      * @returns the default to-level domain 
      */
     async getTopLevelDomain(qids : string[], excludes : string[] = []) : Promise<string> {
+        await this.loadAllDomains();
         // if no domains available, return the 'entity' domain - everything is an entity
         if (qids.length === 0)
             return 'Q35120';
