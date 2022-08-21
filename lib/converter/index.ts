@@ -6,7 +6,7 @@ import * as argparse from 'argparse';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
 import { I18n, DatasetStringifier, ThingTalkUtils, EntityUtils } from 'genie-toolkit';
-import { MANUAL_CONVERSION_WITH_DISPLAY, MANUAL_CONVERSION_WITHOUT_DISPLAY } from '../utils/qald';
+import { MANUAL_CONVERSION_WITH_DISPLAY, MANUAL_CONVERSION_WITHOUT_DISPLAY, MANUAL_SPARQL_REWRITE } from '../utils/qald';
 import { waitFinish } from '../utils/misc';
 
 import SPARQLToThingTalkConverter from "./sparql2thingtalk";
@@ -105,24 +105,28 @@ async function main() {
             // Add a hack to fix the tokenizer error for "U.S."
             preprocessed = preprocessed.replace("u . s .", "united states");
             try {
+                let program;
                 if (item.query.sparql in manualConversion) {
-                    output.write({ id: item.id, preprocessed, target_code: manualConversion[item.query.sparql] });
+                    program = await ThingTalkUtils.parse(manualConversion[item.query.sparql], schemas);
                 } else { 
-                    const program = await converter.convert(item.query.sparql, preprocessed);
-                    await program.typecheck(schemas);
-                    const target_code = ThingTalkUtils.serializePrediction(
-                        program, 
-                        preprocessed,
-                        EntityUtils.makeDummyEntities(preprocessed), 
-                        { 
-                            locale: 'en', 
-                            timezone: undefined, 
-                            includeEntityValue: args.include_entity_value, 
-                            excludeEntityDisplay: args.exclude_entity_display
-                        }
-                    ).join(' ');
-                    output.write({ id: item.id, preprocessed, target_code });
+                    let sparql = item.query.sparql;
+                    if (sparql in MANUAL_SPARQL_REWRITE)
+                        sparql = MANUAL_SPARQL_REWRITE[sparql];
+                    program = await converter.convert(sparql, preprocessed);
                 }
+                await program.typecheck(schemas);
+                const target_code = ThingTalkUtils.serializePrediction(
+                    program, 
+                    preprocessed,
+                    EntityUtils.makeDummyEntities(preprocessed), 
+                    { 
+                        locale: 'en', 
+                        timezone: undefined, 
+                        includeEntityValue: args.include_entity_value, 
+                        excludeEntityDisplay: args.exclude_entity_display
+                    }
+                ).join(' ');
+                output.write({ id: item.id, preprocessed, target_code });
             } catch(e) {
                 console.log(`Example ${item.id} failed`);
                 if (args.drop)

@@ -326,3 +326,25 @@ SELECT DISTINCT ?uri WHERE {
 }
 TT:
 [ has_parts ] of @wd . entity ( ) filter id == " Q14169302 " ^^wd:entity ( " chocolate chip cookie " ) ;
+
+====
+Utterance: who played gus fring in breaking bad ?
+SPARQL:
+SELECT DISTINCT ?uri WHERE {  
+  <https://www.wikidata.org/entity/Q1079> <http://www.wikidata.org/prop/P161> ?p.
+  ?p <http://www.wikidata.org/prop/statement/P161> ?uri.
+  ?p <http://www.wikidata.org/prop/qualifier/P453> <http://www.wikidata.org/entity/Q5620660>.
+}
+TT: 
+[ cast_member filter character_role == " Q5620660 " ^^wd:p_character_role ( " gus fring " ) ] of @wd . entity ( ) ;
+
+====
+Utterance: when did boris becker end his active career ?
+SPARQL: 
+SELECT DISTINCT ?date WHERE {  
+    <http://www.wikidata.org/entity/Q76334> <http://www.wikidata.org/prop/P106> ?p. 
+    ?p <http://www.wikidata.org/prop/qualifier/P582> ?date. 
+}
+TT:
+[ occupation . end_time ] of @wd . human ( ) filter id == " Q76334 " ^^wd:human ( " boris becker " ) ;
+
