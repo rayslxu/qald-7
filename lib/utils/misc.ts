@@ -110,6 +110,19 @@ export function getSpans(s : string) : string[] {
     return spans;
 }
 
+export function sampleAltLabels(labels : string[], maximumCount = 5) {
+    const cleanLabels = labels.map((label) => {
+        if (label.startsWith('is '))
+            label = label.slice('is '.length);
+        return label;
+    }).filter((label) => {
+        if (/^[a-zA-Z -]+$/.test(label))
+            return true;
+        return false;
+    });
+    return cleanLabels.sort((a, b) => a.length - b.length).slice(0, maximumCount);
+}
+
 export class ArrayCollection<T> {
     private _values : Record<string, T[]>; 
 

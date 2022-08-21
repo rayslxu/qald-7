@@ -7,7 +7,7 @@ import { I18n, genBaseCanonical } from 'genie-toolkit';
 import { Parser, SparqlParser, AskQuery, IriTerm, VariableTerm } from 'sparqljs';
 import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
-import { cleanName, waitFinish } from './utils/misc';
+import { cleanName, sampleAltLabels, waitFinish } from './utils/misc';
 import { idArgument, elemType, instanceOfArgument } from './utils/thingtalk';
 import WikidataUtils, { PROPERTY_QUALIFIER_PREFIX } from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
@@ -208,7 +208,7 @@ class ManifestGenerator {
         const labels = [label];
         if (this._useWikidataAltLabels) {
             const altLabels = await this._wikidata.getAltLabels(id);
-            labels.push(...altLabels);
+            labels.push(...sampleAltLabels(altLabels));
         } 
         const baseCanonical : Record<string, any> = {};
         if (['P106', 'P27'].includes(id)) // occupation and country of citizenship
