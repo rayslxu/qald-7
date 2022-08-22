@@ -11,7 +11,7 @@ export default class BootlegUtils {
     private _db ! : sqlite3.Database;
 
     constructor(path : string) {
-        this._db = new sqlite3.Database(path, sqlite3.OPEN_READWRITE);
+        this._db = new sqlite3.Database(path, sqlite3.OPEN_READONLY);
     }
 
     async getType(id : string) : Promise<string|null> {

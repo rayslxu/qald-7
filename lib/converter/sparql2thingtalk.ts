@@ -183,6 +183,7 @@ class QueryGenerator {
 
 interface SPARQLToThingTalkConverterOptions {
     cache : string;
+    save_cache : boolean;
     bootleg_db : string;
     human_readable_instance_of : boolean;
 }
@@ -207,7 +208,7 @@ export default class SPARQLToThingTalkConverter {
         this._sparqlParser = new Parser();
         this._class = classDef;
         this._schema = new WikidataSchema(classDef);
-        this._kb = new WikidataUtils(options.cache, options.bootleg_db);
+        this._kb = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
         this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._parser = new QueryParser(this);

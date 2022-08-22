@@ -30,6 +30,7 @@ interface ManifestGeneratorOptions {
     domains ?: string
     type_system : 'flat' | 'hierarchical'
     cache : string,
+    save_cache : boolean,
     output : fs.WriteStream,
     exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean,
@@ -76,7 +77,7 @@ class ManifestGenerator {
         this._experiment = options.experiment;
         this._domains = options.domains? options.domains.split(',') : [];
         this._typeSystem = options.type_system;
-        this._wikidata = new WikidataUtils(options.cache, options.bootleg_db);
+        this._wikidata = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
         this._parser = new Parser();
         this._tokenizer = new I18n.LanguagePack('en-US').getTokenizer();
         this._examples = preprocessQALD(options.experiment);
@@ -728,6 +729,10 @@ async function main() {
     parser.add_argument('--cache', {
         required: false,
         default: 'wikidata_cache.sqlite'
+    });
+    parser.add_argument('--save-cache', {
+        action: 'store_true',
+        default: false
     });
     parser.add_argument('--exclude-non-entity-properties', {
         action: 'store_true',

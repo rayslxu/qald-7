@@ -378,6 +378,7 @@ interface ThingTalkToSPARQLConverterOptions {
     locale : string,
     timezone ?: string,
     cache : string,
+    save_cache : boolean,
     bootleg : string,
     human_readable_instance_of : boolean
 }
@@ -407,7 +408,7 @@ export default class ThingTalkToSPARQLConverter {
         this._locale = options.locale;
         this._timezone = options.timezone;
 
-        this._kb = new WikidataUtils(options.cache, options.bootleg);
+        this._kb = new WikidataUtils(options.cache, options.bootleg, options.save_cache);
         this._propertyMap = { "P31" : "instance_of" };
         for (const property of this._classDef.queries['entity'].iterateArguments()) {
             const qid = property.getImplementationAnnotation('wikidata_id') as string;

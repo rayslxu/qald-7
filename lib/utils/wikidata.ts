@@ -119,8 +119,9 @@ export default class WikidataUtils {
     private _subdomains : Record<string, string[]>; // domains and their subdomains
     private _domainSize : Record<string, number>; // number of entities for each domain
     private _properties : Record<string, WikibaseType>; // all properties to include with their wikibase type
+    private _readonlyCache : boolean;
 
-    constructor(cachePath : string, bootlegPath : string) {
+    constructor(cachePath : string, bootlegPath : string, saveCache = true) {
         this._cachePath = cachePath;
         this._wdk = wikibase({ instance: 'https://www.wikidata.org' });
         this._schemaorg = new SchemaorgUtils();
@@ -130,6 +131,7 @@ export default class WikidataUtils {
         this._subdomains = {};
         this._domainSize = {};
         this._properties = {};
+        this._readonlyCache = !saveCache;
     }
 
     get subdomains() {
@@ -140,13 +142,18 @@ export default class WikidataUtils {
      * Load or create sqlite database for caching
      */
     private async _loadOrCreateSqliteCache() {
-        const db = new sqlite3.Database(this._cachePath, sqlite3.OPEN_CREATE|sqlite3.OPEN_READWRITE);
-        db.serialize(() => {
-            if (!fs.existsSync(this._cachePath)) 
-                db.exec(SQLITE_SCHEMA);
-        });
-        this._cache = db;
-        this._cacheLoaded = true;
+        if (this._readonlyCache) {
+            const db = new sqlite3.Database(this._cachePath, sqlite3.OPEN_READONLY);
+            this._cache = db;
+        } else {
+            const db = new sqlite3.Database(this._cachePath, sqlite3.OPEN_CREATE|sqlite3.OPEN_READWRITE);
+            db.serialize(() => {
+                if (!fs.existsSync(this._cachePath)) 
+                    db.exec(SQLITE_SCHEMA);
+            });
+            this._cache = db;
+            this._cacheLoaded = true;
+        }
     }
 
     /**
@@ -177,6 +184,8 @@ export default class WikidataUtils {
      * @returns undefined
      */
     private async _setCache(table : string, ...values : string[]) {
+        if (this._readonlyCache)
+            return Promise.resolve();
         if (!this._cacheLoaded) 
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {

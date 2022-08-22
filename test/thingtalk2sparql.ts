@@ -17,6 +17,7 @@ async function main() {
         locale: 'en-US',
         timezone: 'utc',
         cache: 'wikidata_cache.sqlite',
+        save_cache: false,
         bootleg: 'bootleg.sqlite',
         human_readable_instance_of: false
     };

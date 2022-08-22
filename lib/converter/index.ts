@@ -47,6 +47,10 @@ async function main() {
         required: false,
         default: 'wikidata_cache.sqlite'
     });
+    parser.add_argument('--save-cache', {
+        action: 'store_true',
+        default: false
+    });
     parser.add_argument('--bootleg-db', {
         required: false,
         default: 'bootleg.sqlite'

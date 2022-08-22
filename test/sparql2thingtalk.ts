@@ -21,6 +21,7 @@ async function main() {
         const excludeEntityDisplay = testFile.endsWith('qid-only.txt');
         const options = {
             cache: 'wikidata_cache.sqlite', 
+            save_cache: false,
             bootleg_db: 'bootleg.sqlite',
             human_readable_instance_of: false
         };
