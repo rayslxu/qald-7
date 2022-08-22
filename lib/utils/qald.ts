@@ -108,52 +108,52 @@ export const MANUAL_CONVERSION_WITH_DISPLAY : Record<string, string> = {
     // qald 7 test
     // id: 8
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>  . ?cave <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q35509> . { ?cave <http://www.wikidata.org/prop/direct/P17> ?uri . }  UNION { ?cave <http://www.wikidata.org/prop/direct/P131>/<http://www.wikidata.org/prop/direct/P17> ?uri . } } GROUP BY ?uri HAVING (COUNT(DISTINCT ?cave) > 10)" : 
-    `[ country ] of count ( @${TP_DEVICE_NAME} . landform ( ) filter instance_of == " Q6256 " ^^${TP_DEVICE_NAME}:landform_subdomain ( " cave " ) ) by country filter count >= 10 ;`,
+    `[country] of count(@${TP_DEVICE_NAME}.landform() filter instance_of == "Q6256"^^${TP_DEVICE_NAME}:landform_subdomain("cave")) by country filter count >= 10;`,
     // id: 14
     "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }": 
-    `[ contains ( capital_of , " Q79 " ^^${TP_DEVICE_NAME}:country ( " egypts " ) ) ] of sort ( population desc of @${TP_DEVICE_NAME} . city ( ) filter contains ( country , " Q79 " ^^${TP_DEVICE_NAME}:p_country ( " egypts " ) ) ) ;`,
+    `[contains(capital_of, "Q79"^^${TP_DEVICE_NAME}:country("egypts"))] of sort (population desc of @${TP_DEVICE_NAME}.city() filter contains(country, "Q79"^^${TP_DEVICE_NAME}:p_country("egypts")));`,
     // id: 29
     "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q211> <http://www.wikidata.org/prop/P463> ?membership . ?membership <http://www.wikidata.org/prop/statement/P463> <http://www.wikidata.org/entity/Q458> . ?membership <http://www.wikidata.org/prop/qualifier/P580> ?date . }" : 
-    `[ start_time of ( member_of filter value == " Q458 " ^^${TP_DEVICE_NAME}:p_member_of ( " eu " ) ) ] of @${TP_DEVICE_NAME} . country ( ) filter id == " Q211 " ^^${TP_DEVICE_NAME}:country ( " latvia " ) ;`,
+    `[start_time of (member_of filter value == "Q458"^^${TP_DEVICE_NAME}:p_member_of("eu"))] of @${TP_DEVICE_NAME}.country() filter id == "Q211"^^${TP_DEVICE_NAME}:country("latvia");`,
 
     // qald 7 train
     // id: 34
     "SELECT (COUNT(DISTINCT ?uri) as ?count) WHERE { <http://www.wikidata.org/entity/Q83233> <http://www.wikidata.org/prop/direct/P40>/<http://www.wikidata.org/prop/direct/P40> ?uri }":
-    `count ( @wd . human ( ) filter in_array ( id , any ( [ < child / child > ] of @wd . entity ( ) filter id == " Q83233 " ^^wd:human ( " jacques cousteau " ) ) ) );`,
+    `count(@wd.human() filter in_array(id, any([<child/child>] of @wd.entity() filter id == "Q83233"^^wd:human("jacques cousteau"))));`,
 
     // id: 48
     // year filter not supported
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q30461> . ?uri <http://www.wikidata.org/prop/direct/P569> ?date . FILTER(year(?date)=1945) }":
-    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ( " presidents " ) ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`,
+    `@wd.human() filter contains( position_held, "Q30461"^^wd:p_position_held ("presidents")) && date_of_birth >= new Date(1945,,) && date_of_birth <= new Date(1945,,) + 1year;`,
 
     // id: 66
     "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
-    `count ( @wd.entity() filter instance_of == " Q8072 " ^^wd:entity_subdomain ( "volcanoes " ) ) by country filter count >= 10 ;`,
+    `count(@wd.entity() filter instance_of == "Q8072"^^wd:entity_subdomain("volcanoes")) by country filter count >= 10;`,
 };
 
 export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
     // qald 7 test
     // id: 8
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>  . ?cave <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q35509> . { ?cave <http://www.wikidata.org/prop/direct/P17> ?uri . }  UNION { ?cave <http://www.wikidata.org/prop/direct/P131>/<http://www.wikidata.org/prop/direct/P17> ?uri . } } GROUP BY ?uri HAVING (COUNT(DISTINCT ?cave) > 10)" : 
-    `[ country ] of count ( @${TP_DEVICE_NAME} . landform ( ) filter instance_of == " Q6256 " ^^${TP_DEVICE_NAME}:landform_subdomain ) by country filter count >= 10 ;`,
+    `[country] of count(@${TP_DEVICE_NAME}.landform() filter instance_of == "Q6256"^^${TP_DEVICE_NAME}:landform_subdomain) by country filter count >= 10;`,
     // id: 14
     "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }": 
-    `[ contains ( capital_of , " Q79 " ^^${TP_DEVICE_NAME}:country ) ] of sort ( population desc of @${TP_DEVICE_NAME} . city ( ) filter contains ( country , " Q79 " ^^${TP_DEVICE_NAME}:p_country ) ) ;`,
+    `[contains(capital_of, "Q79"^^${TP_DEVICE_NAME}:country)] of sort(population desc of @${TP_DEVICE_NAME}.city() filter contains(country, "Q79"^^${TP_DEVICE_NAME}:p_country));`,
     // id: 29
     "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q211> <http://www.wikidata.org/prop/P463> ?membership . ?membership <http://www.wikidata.org/prop/statement/P463> <http://www.wikidata.org/entity/Q458> . ?membership <http://www.wikidata.org/prop/qualifier/P580> ?date . }" : 
-    `[ start_time of ( member_of filter value == " Q458 " ^^${TP_DEVICE_NAME}:p_member_of ) ] of @${TP_DEVICE_NAME} . country ( ) filter id == " Q211 " ^^${TP_DEVICE_NAME}:country ;`,
+    `[start_time of (member_of filter value == "Q458"^^${TP_DEVICE_NAME}:p_member_of)] of @${TP_DEVICE_NAME}.country() filter id == "Q211"^^${TP_DEVICE_NAME}:country;`,
 
     // qald 7 train
     // id: 34
     "SELECT (COUNT(DISTINCT ?uri) as ?count) WHERE { <http://www.wikidata.org/entity/Q83233> <http://www.wikidata.org/prop/direct/P40>/<http://www.wikidata.org/prop/direct/P40> ?uri }":
-    `count ( @wd . human ( ) filter in_array ( id , any ( [ < child / child > ] of @wd . entity ( ) filter id == " Q83233 " ^^wd:human ) ) );`,
+    `count (@wd.human() filter in_array(id, any([<child/child>] of @wd.entity() filter id == "Q83233"^^wd:human)));`,
 
     // id: 48
     // year filter not supported
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q30461> . ?uri <http://www.wikidata.org/prop/direct/P569> ?date . FILTER(year(?date)=1945) }":
-    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`,
+    `@wd.human() filter contains(position_held, "Q30461"^^wd:p_position_held) && date_of_birth >= new Date(1945,,) && date_of_birth <= new Date(1945,,) + 1year;`,
 
     // id: 66
     "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
-    `count ( @wd.entity() filter instance_of == " Q8072 " ^^wd:entity_subdomain ) by country filter count >= 10 ;`,
+    `count(@wd.entity() filter instance_of == "Q8072"^^wd:entity_subdomain) by country filter count >= 10;`,
 };
