@@ -3,7 +3,7 @@ import path from 'path';
 import { TP_DEVICE_NAME } from './wikidata';
 
 export interface Example {
-    id : string,
+    id : number,
     utterance : string,
     sparql : string
 }
@@ -60,11 +60,6 @@ export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
 
 export const MANUAL_SPARQL_REWRITE : Record<string, string> = {
     // qald 7 fewshot
-    // id: 4
-    // missing property, choose a close one
-    "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q43653> <http://www.wikidata.org/prop/direct/P1029> ?uri}":
-    "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q43653> <http://www.wikidata.org/prop/direct/P3092> ?uri}",
-
     // id: 15
     // inverse property path
     "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q5620660> ^<http://www.wikidata.org/prop/qualifier/P453>/<http://www.wikidata.org/prop/statement/P161> ?uri } ":
@@ -88,6 +83,25 @@ export const MANUAL_SPARQL_REWRITE : Record<string, string> = {
     // bad annotation
     "SELECT DISTINCT ?s WHERE { <http://www.wikidata.org/entity/Q43274> <http://www.w3.org/2004/02/skos/core#altLabel> ?s  . }":
     "SELECT DISTINCT ?x ?y WHERE { <http://www.wikidata.org/entity/Q43274> <http://www.wikidata.org/prop/direct/P735> ?x. <http://www.wikidata.org/entity/Q43274> <http://www.wikidata.org/prop/direct/P734> ?y. }",
+
+    // id: 71 
+    // bad annotation
+    "SELECT DISTINCT ?date WHERE {  <http://www.wikidata.org/entity/Q53713> <http://www.wikidata.org/prop/P570> ?date }":
+    "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q53713> <http://www.wikidata.org/prop/direct/P570> ?date }",
+
+    // id: 78
+    // complicated instance of 
+    "SELECT DISTINCT ?uri WHERE { { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q483110> .  } UNION { ?uri <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q483110> } ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q29> .  ?uri <http://www.wikidata.org/prop/direct/P1083> ?num .  } ORDER BY DESC(?num) LIMIT 1":
+    "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q483110> . ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q29> .  ?uri <http://www.wikidata.org/prop/direct/P1083> ?num .  } ORDER BY DESC(?num) LIMIT 1",
+
+    // id: 80
+    // not exist
+    "SELECT DISTINCT ?height WHERE { ?uri <http://www.wikidata.org/prop/direct/P106>  <http://www.wikidata.org/entity/Q3665646> . ?uri <http://www.wikidata.org/prop/direct/P54>/<http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q155223> .  ?uri <http://www.wikidata.org/prop/P54> ?teamMembership . FILTER NOT EXISTS { ?teamMembership <http://www.wikidata.org/prop/qualifier/P582> ?endDate } ?uri  <http://www.wikidata.org/prop/direct/P2048> ?height } ORDER BY ?height LIMIT 1":
+    "SELECT DISTINCT ?height WHERE { ?uri <http://www.wikidata.org/prop/direct/P106>  <http://www.wikidata.org/entity/Q3665646> . ?uri <http://www.wikidata.org/prop/direct/P54>/<http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q155223> .  ?uri  <http://www.wikidata.org/prop/direct/P2048> ?height } ORDER BY ?height LIMIT 1",
+
+    // id: 82
+    "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q159> <http://www.wikidata.org/prop/P122> ?q . ?q <http://www.wikidata.org/prop/statement/P122> ?uri . FILTER NOT EXISTS { ?q <http://www.wikidata.org/prop/qualifier/P582> ?x }} ":
+    "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q159> <http://www.wikidata.org/prop/direct/P122> ?uri . }"
 };
 
 export const MANUAL_CONVERSION_WITH_DISPLAY : Record<string, string> = {
@@ -110,7 +124,11 @@ export const MANUAL_CONVERSION_WITH_DISPLAY : Record<string, string> = {
     // id: 48
     // year filter not supported
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q30461> . ?uri <http://www.wikidata.org/prop/direct/P569> ?date . FILTER(year(?date)=1945) }":
-    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ( " president " ) ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`
+    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ( " presidents " ) ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`,
+
+    // id: 66
+    "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
+    `count ( @wd.entity() filter instance_of == " Q8072 " ^^wd:entity_subdomain ( "volcanoes " ) ) by country filter count >= 10 ;`,
 };
 
 export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
@@ -133,5 +151,9 @@ export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
     // id: 48
     // year filter not supported
     "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q30461> . ?uri <http://www.wikidata.org/prop/direct/P569> ?date . FILTER(year(?date)=1945) }":
-    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`
+    `@wd . human ( ) filter contains ( position_held , " Q30461 " ^^wd:p_position_held ) && date_of_birth >= new Date(1945, ,) && date_of_birth <= new Date(1945, ,) + 1year;`,
+
+    // id: 66
+    "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
+    `count ( @wd.entity() filter instance_of == " Q8072 " ^^wd:entity_subdomain ) by country filter count >= 10 ;`,
 };
