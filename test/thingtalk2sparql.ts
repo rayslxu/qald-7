@@ -6,7 +6,7 @@ import * as ThingTalk from 'thingtalk';
 import { ThingTalkToSPARQLConverter } from '../lib/converter';
 import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
-const entities = JSON.parse(fs.readFileSync('./domain.json', { encoding: 'utf8' })).data;
+const domains = JSON.parse(fs.readFileSync('./domain.json', { encoding: 'utf8' })).data;
 
 async function main() {
     const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
@@ -21,7 +21,7 @@ async function main() {
         bootleg: 'bootleg.sqlite',
         human_readable_instance_of: false
     };
-    const converter = new ThingTalkToSPARQLConverter(classDef, entities, options);
+    const converter = new ThingTalkToSPARQLConverter(classDef, domains, options);
     const tests = fs.readFileSync('./test/tests-reverse.txt').toString('utf-8').split('====');
 
     const index = parseInt(process.argv[2]);

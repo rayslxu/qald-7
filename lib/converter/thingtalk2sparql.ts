@@ -403,7 +403,7 @@ export default class ThingTalkToSPARQLConverter {
     private _aggregation : Aggregation|null;
     private _humanReadableInstanceOf : boolean;
 
-    constructor(classDef : Ast.ClassDef, entities : Entity[], options : ThingTalkToSPARQLConverterOptions) {
+    constructor(classDef : Ast.ClassDef, domains : Entity[], options : ThingTalkToSPARQLConverterOptions) {
         this._classDef = classDef;
         this._locale = options.locale;
         this._timezone = options.timezone;
@@ -415,9 +415,9 @@ export default class ThingTalkToSPARQLConverter {
             this._propertyMap[property.name] = qid;
         }
         this._domainMap = { 'art museum' : 'Q207694' };
-        for (const entity of entities) {
-            const qid = entity.name.match(/Q[0-9]+/g)![0];
-            this._domainMap[entity.value] = qid;
+        for (const domain of domains) {
+            const qid = domain.name.match(/Q[0-9]+/g)![0];
+            this._domainMap[domain.value] = qid;
             this._domainMap[qid] = qid;
         }
         this._variableMap = {};

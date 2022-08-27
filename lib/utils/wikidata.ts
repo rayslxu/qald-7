@@ -239,6 +239,16 @@ export default class WikidataUtils {
         }
     }
 
+    async query(sparql : string) : Promise<string[]|string|null> {
+        const raw = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
+        if (raw === null)
+            return null;
+        if ('boolean' in raw)
+            return raw.boolean;
+        const result = raw.results.bindings.map((r : Record<string, any>) => Object.values(r)[0].value);
+        return result.map((r : string) => r.startsWith(ENTITY_PREFIX) ? r.slice(ENTITY_PREFIX.length) : r);
+    }
+
     /**
      * Obtain the values of property for a given entity
      * @param entityId QID of an entity
