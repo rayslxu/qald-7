@@ -239,12 +239,16 @@ export default class WikidataUtils {
         }
     }
 
-    async query(sparql : string) : Promise<string[]|string|null> {
+    async query(sparql : string) : Promise<string[]> {
         const raw = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
+        return WikidataUtils.processRawResult(raw);
+    }
+
+    static processRawResult(raw : any) : string[] {
         if (raw === null)
-            return null;
+            return [];
         if ('boolean' in raw)
-            return raw.boolean;
+            return [raw.boolean];
         const result = raw.results.bindings.map((r : Record<string, any>) => Object.values(r)[0].value);
         return result.map((r : string) => r.startsWith(ENTITY_PREFIX) ? r.slice(ENTITY_PREFIX.length) : r);
     }

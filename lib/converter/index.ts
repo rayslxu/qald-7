@@ -187,12 +187,7 @@ async function main() {
                     try {
                         ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
                         const result = await wikidata.query(ex.prediction);
-                        if (typeof result === 'string' && ['true', 'false'].includes(result))
-                            ex.target_code = result;
-                        else if (Array.isArray(result) && result.length > 0)
-                            ex.target_code = result.join(' ');
-                        else 
-                            ex.target_code = 'NULL';
+                        ex.target_code = result.join(' ');
                         callback(null, ex);
                     } catch(e) {
                         ex.target_code = '';
