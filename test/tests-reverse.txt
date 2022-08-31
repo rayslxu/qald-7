@@ -313,6 +313,16 @@ TT:
 SPARQL:
 SELECT DISTINCT ?y WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P26> ?y. 
-    <http://www.wikidata.org/entity/Q25310> <http://www.wikidata.org/prop/direct/P40> ?z. 
+    <http://www.wikidata.org/entity/Q25310> <http://www.wikidata.org/prop/direct/P40> ?x. 
     ?x <http://www.wikidata.org/prop/direct/P21> <http://www.wikidata.org/entity/Q6581072>. 
+}
+
+====
+Utterance: how many people live in the capital of australia ?
+TT: 
+[ population ] of @wd . entity ( ) filter in_array ( id , any ( [ capital ] of @wd . entity ( ) filter id == " Q408 " ^^wd:entity ) ) ;
+SPARQL:
+SELECT DISTINCT ?y WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P1082> ?y. 
+    <http://www.wikidata.org/entity/Q408> <http://www.wikidata.org/prop/direct/P36> ?x. 
 }

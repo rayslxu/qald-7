@@ -336,30 +336,34 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     visitComparisonSubqueryBooleanExpression(node : ThingTalk.Ast.ComparisonSubqueryBooleanExpression) : boolean {
         assert(node.lhs instanceof Ast.VarRefValue);
-        let v;
+
+        let filterVariable;
         if (node.lhs.name === 'id') {
-            v = this._subject;
+            filterVariable = this._subject.slice('?'.length);
         } else {
-            const p = this._converter.getWikidataProperty(node.lhs.name);
-            v = this._converter.getEntityVariable(p);
-            this._converter.addStatement(this._triple(p, v));
+            const filterProperty = this._converter.getWikidataProperty(node.lhs.name);
+            filterVariable = this._converter.getEntityVariable(filterProperty);
+            this._converter.addStatement(this._triple(filterProperty, filterVariable));
         }
 
         // set variable map for the subquery (do not use existing mapping)
         const variableMap : Record<string, string> = {};
         let projection  = (node.rhs as Ast.ProjectionExpression).args[0];
         if (projection === 'id') {
-            variableMap[projection] = v;
+            variableMap[projection] = filterVariable;
         } else {
             projection = this._converter.getWikidataProperty(projection);
-            variableMap[projection] = this._converter.getEntityVariable();
+            if (node.lhs.name === 'id')
+                variableMap[projection] = filterVariable;
+            else
+                variableMap[projection] = this._converter.getEntityVariable();
         }
         
         if (node.operator === '==' || node.operator === 'contains' || node.operator === 'in_array') {
             this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
         } else if (node.operator === '>=' || node.operator === '<=' ) {
             this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
-            this._converter.addStatement(`FILTER(?${v} ${node.operator[0]} ?${variableMap[projection]}).`);
+            this._converter.addStatement(`FILTER(?${filterVariable} ${node.operator[0]} ?${variableMap[projection]}).`);
         } else {
             throw new Error('Unsupported operator for subquery: ' + node.operator);
         }
