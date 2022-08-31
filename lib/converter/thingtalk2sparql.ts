@@ -90,6 +90,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _triple(property : string, value : string, subject ?: string) {
+        assert(property && value);
         let s = this._subject;
         if (subject && [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(subject))
             s = `?${subject}`;
@@ -221,6 +222,14 @@ class TripleGenerator extends Ast.NodeVisitor {
             const variable = this._converter.getEntityVariable(p);
             this._converter.addStatement(this._triple(p, variable));
             this._converter.addStatement(`?${variable} <${LABEL}> "${value}"@en.`);
+        } else if (node.value instanceof Ast.EnumValue) {
+            const value = node.value.value;
+            if (value === 'male')
+                this._converter.addStatement(this._triple(p, 'Q6581097'));
+            else if (value === 'female')
+                this._converter.addStatement(this._triple(p, 'Q6581072'));
+            else
+                throw new Error('Unsupported enum value: ' + value);
         } else {
             throw new Error('Unsupported atom filter');
         }
