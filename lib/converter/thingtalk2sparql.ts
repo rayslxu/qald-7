@@ -96,7 +96,9 @@ class TripleGenerator extends Ast.NodeVisitor {
         else if (subject)
             s = `<${ENTITY_PREFIX}${subject}>`;
         let p;
-        if (this._inPredicate)
+        if (property === 'P31')
+            p = `<${PROPERTY_PREFIX}P31>/<${PROPERTY_PREFIX}P279>*`;
+        else if (this._inPredicate)
             p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${this._inPredicate.property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
         else   
             p = PREDICATE_VARIABLES.includes(value) ? `<${PROPERTY_PREDICATE_PREFIX}${property}>` : `<${PROPERTY_PREFIX}${property}>`;
