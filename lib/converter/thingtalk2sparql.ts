@@ -336,9 +336,14 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     visitComparisonSubqueryBooleanExpression(node : ThingTalk.Ast.ComparisonSubqueryBooleanExpression) : boolean {
         assert(node.lhs instanceof Ast.VarRefValue);
-        const p = this._converter.getWikidataProperty(node.lhs.name);
-        const v = this._converter.getEntityVariable(p);
-        this._converter.addStatement(this._triple(p, v));
+        let v;
+        if (node.lhs.name === 'id') {
+            v = this._subject;
+        } else {
+            const p = this._converter.getWikidataProperty(node.lhs.name);
+            v = this._converter.getEntityVariable(p);
+            this._converter.addStatement(this._triple(p, v));
+        }
 
         // set variable map for the subquery (do not use existing mapping)
         const variableMap : Record<string, string> = {};

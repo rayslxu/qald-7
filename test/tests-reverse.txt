@@ -3,7 +3,7 @@ TT:
 @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q207694>.
 }
 
 ====
@@ -12,7 +12,7 @@ TT:
 @wd . entity ( ) filter contains ( named_after , " Q1075988 " ^^wd:p_named_after ) && instance_of == " Q207694 " ^^wd:entity_subdomain ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q207694>.
     ?x <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
 
@@ -22,7 +22,7 @@ TT:
 [ owned_by ] of @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain && contains ( named_after , " Q1075988 " ^^wd:p_named_after ) ;
 SPARQL: 
 SELECT DISTINCT ?y WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q207694>.
     ?x <http://www.wikidata.org/prop/direct/P127> ?y.
     ?x <http://www.wikidata.org/prop/direct/P138> <http://www.wikidata.org/entity/Q1075988>.
 }
@@ -51,7 +51,7 @@ TT:
 @wd . country ( ) filter count ( official_language ) >= 2 ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q6256>. 
     ?x <http://www.wikidata.org/prop/direct/P37> ?y. 
 } GROUP BY ?x HAVING(COUNT(?y) > 2)
 
@@ -61,7 +61,7 @@ TT:
 @wd . city ( ) filter contains ( located_in_the_administrative_territorial_entity , " Q1408 " ^^wd:p_located_in_the_administrative_territorial_entity ) && population >= 10000 ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q515>. 
     ?x <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1408>. 
     ?x <http://www.wikidata.org/prop/direct/P1082> ?y. 
     FILTER(?y > 10000).
@@ -122,7 +122,7 @@ TT:
 SPARQL:
 SELECT DISTINCT ?x WHERE {  
     <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/direct/P20>/<http://www.wikidata.org/prop/direct/P131> ?x. 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515>.  
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q515>.  
 }
 
 ====
@@ -131,7 +131,7 @@ TT:
 sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter contains ( continent , " Q3960 " ^^wd:p_continent ) ) [ 1 ] ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8502>. 
     ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
     ?x <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q3960>. 
 } ORDER BY DESC(?y) LIMIT 1
@@ -151,7 +151,7 @@ TT:
 [ official_website ] of @wd . organization ( ) filter instance_of == " Q4830453 " ^^wd:organization_subdomain && employees >= 500000 ;
 SPARQL:
 SELECT DISTINCT ?y WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q4830453>. 
     ?x <http://www.wikidata.org/prop/direct/P856> ?y. 
     ?x <http://www.wikidata.org/prop/direct/P1128> ?z. 
     FILTER(?z > 500000). 
@@ -163,7 +163,7 @@ TT:
 [ count >= 1 ] of count ( @wd . video_game ( ) filter id =~ " battle chess " ) ;
 SPARQL:  
 ASK WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q7889>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q7889>. 
     ?x <http://www.w3.org/2000/01/rdf-schema#label> "battle chess"@en.
 }
 
@@ -191,7 +191,7 @@ TT:
 sort ( employees desc of @wd . organization ( ) filter contains ( country , " Q668 " ^^wd:p_country ) && instance_of == " Q4830453 " ^^wd:organization_subdomain ) [ 1 ] ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q4830453>. 
     ?x <http://www.wikidata.org/prop/direct/P1128> ?y.  
     ?x <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q668>.
 } ORDER BY DESC(?y) LIMIT 1
@@ -202,7 +202,7 @@ TT:
 @wd . entity ( ) filter instance_of == " Q273120 " ^^wd:entity_subdomain && start_time >= new Date ( 2000 ) ;
 SPARQL:
 SELECT DISTINCT ?x WHERE {
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q273120>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q273120>. 
     ?x <http://www.wikidata.org/prop/direct/P580> ?y.
     FILTER(?y > "2000-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>).
 }
@@ -214,7 +214,7 @@ TT:
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
     <http://www.wikidata.org/entity/Q471379> <http://www.wikidata.org/prop/direct/P527>/<http://www.wikidata.org/prop/direct/P276> ?x. 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q207694>.
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q207694>.
 }
 
 
@@ -247,7 +247,7 @@ TT:
 count ( @wd . country ( ) filter contains ( continent , " Q46 " ^^wd:p_continent ) ) ;
 SPARQL: 
 SELECT (COUNT(DISTINCT ?x) as ?count) WHERE {
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q6256>. 
     ?x <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q46>. 
 }
 
@@ -268,7 +268,7 @@ TT:
 SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q106588> <http://www.wikidata.org/prop/direct/P403> ?x. 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q23397>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q23397>. 
 }
 
 ====
@@ -277,7 +277,7 @@ TT:
 @wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ) ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8502>. 
     ?x <http://www.wikidata.org/prop/direct/P2044> ?y.
     FILTER(?y < ?z). 
     <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
@@ -289,7 +289,7 @@ TT:
 sort ( elevation_above_sea_level desc of @wd . mountain ( ) filter elevation_above_sea_level <= any ( [ elevation_above_sea_level ] of @wd . mountain ( ) filter id == " Q16466024 " ^^wd:mountain ) ) [ 1 ] ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8502>. 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8502>. 
     ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
     FILTER(?y < ?z). 
     <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
@@ -304,4 +304,15 @@ ASK WHERE {
     <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?x. 
     FILTER(?x > ?y).
     <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?y. 
+}
+
+====
+Utterance: who is the daughter of robert kennedy married to ?
+TT: 
+[ spouse ] of @wd . entity ( ) filter in_array ( id , any ( [ child ] of @wd . entity ( ) filter id == " Q25310 " ^^wd:entity ) ) && sex_or_gender == enum female ;
+SPARQL:
+SELECT DISTINCT ?y WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P26> ?y. 
+    <http://www.wikidata.org/entity/Q25310> <http://www.wikidata.org/prop/direct/P40> ?z. 
+    ?x <http://www.wikidata.org/prop/direct/P21> <http://www.wikidata.org/entity/Q6581072>. 
 }
