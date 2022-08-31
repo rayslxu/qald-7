@@ -103,6 +103,7 @@ async function main() {
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
     const classDef = await schemas.getFullMeta(TP_DEVICE_NAME);
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
+    const manualConversion = args.exclude_entity_display ? MANUAL_CONVERSION_WITHOUT_DISPLAY : MANUAL_CONVERSION_WITH_DISPLAY;
 
     if (args.direction === 'to-thingtalk') {
         const converter = new SPARQLToThingTalkConverter(classDef, args);
@@ -110,7 +111,6 @@ async function main() {
         const output = new DatasetStringifier();
         output.pipe(args.output);
         
-        const manualConversion = args.exclude_entity_display ? MANUAL_CONVERSION_WITHOUT_DISPLAY : MANUAL_CONVERSION_WITH_DISPLAY;
         let counter = 0;
         for await (const item of input) {
             counter ++;
@@ -194,7 +194,10 @@ async function main() {
                     try {
                         // use prediction field for SPARQL, target_code field for result 
                         // so we leverage the default DatasetStringifier
-                        ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
+                        if (ex.target_code in manualConversion)
+                            ex.prediction = manualConversion[ex.target_code];
+                        else 
+                            ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
                         const result = await wikidata.query(ex.prediction);
                         ex.target_code = result.join(' ');
                         callback(null, ex);

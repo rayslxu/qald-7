@@ -129,6 +129,13 @@ export const MANUAL_CONVERSION_WITH_DISPLAY : Record<string, string> = {
     // id: 66
     "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
     `count(@wd.entity() filter instance_of == "Q8072"^^wd:entity_subdomain("volcanoes")) by country filter count >= 10;`,
+
+
+
+    // reverse:
+    // qald 7 test
+    '[ contains ( capital_of , " Q79 " ^^wd:entity ( " egypts " ) ) ] of sort ( population desc of @wd . entity ( ) filter instance_of == " Q515 " ^^wd:domain ( " city " ) && contains ( country , " Q79 " ^^wd:entity ( " egypts " ) ) ) ;': 
+    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }"
 };
 
 export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
@@ -156,4 +163,10 @@ export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
     // id: 66
     "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)":
     `count(@wd.entity() filter instance_of == "Q8072"^^wd:entity_subdomain) by country filter count >= 10;`,
+
+    // reverse:
+    // qald 7 test
+    '[ contains ( capital_of , " Q79 " ^^wd:entity ) ] of sort ( population desc of @wd . entity ( ) filter instance_of == " Q515 " ^^wd:domain && contains ( country , " Q79 " ^^wd:entity ) ) ;': 
+    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }"
+
 };
