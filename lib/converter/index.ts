@@ -79,6 +79,11 @@ async function main() {
         default: 'domain.json',
         help: `Json file containing all domain entities`
     });
+    parser.add_argument('--prediction', {
+        action: 'store_true',
+        default: false,
+        help: `convert the prediction instead of the gold thingtalk`
+    });
     parser.add_argument('--include-entity-value', {
         action: 'store_true',
         default: false
@@ -166,8 +171,10 @@ async function main() {
 
                 async transform(ex, encoding, callback) {
                     try {
-                        const [id, utterance, , prediction] = ex.split('\t');
-                        ex = [id, utterance, prediction].join('\t');
+                        if (args.prediction) {
+                            const [id, utterance, , prediction] = ex.split('\t');
+                            ex = [id, utterance, prediction].join('\t');
+                        }
                         callback(null, ex);
                     } catch(e) {
                         console.log(e);
@@ -185,6 +192,8 @@ async function main() {
 
                 async transform(ex, encoding, callback) {
                     try {
+                        // use prediction field for SPARQL, target_code field for result 
+                        // so we leverage the default DatasetStringifier
                         ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
                         const result = await wikidata.query(ex.prediction);
                         ex.target_code = result.join(' ');
