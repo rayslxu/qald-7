@@ -248,7 +248,7 @@ export default class WikidataUtils {
         if (raw === null)
             return [];
         if ('boolean' in raw)
-            return [raw.boolean];
+            return [raw.boolean.toString()];
         const result = raw.results.bindings.map((r : Record<string, any>) => Object.values(r)[0].value);
         return result.map((r : string) => r.startsWith(ENTITY_PREFIX) ? r.slice(ENTITY_PREFIX.length) : r);
     }
