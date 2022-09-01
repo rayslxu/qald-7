@@ -22,6 +22,12 @@ function convertOp(op : string) {
     return ['>=', '<='].includes(op) ? op[0] : op; 
 }
 
+// HACK: replace domain with other domain due to wikidata artifacts
+const DOMAIN_MAP : Record<string, string> = {
+    // replace "book" to "literary work", as book is not commonly used in wikidata
+    'Q571': 'Q7725634'
+};
+
 class TableInfoVisitor extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     subject ?: string;
@@ -105,6 +111,8 @@ class TripleGenerator extends Ast.NodeVisitor {
             p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${this._inPredicate.property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
         else   
             p = PREDICATE_VARIABLES.includes(value) ? `<${PROPERTY_PREDICATE_PREFIX}${property}>` : `<${PROPERTY_PREFIX}${property}>`;
+        if (property === 'P31' && value in DOMAIN_MAP)
+            value = DOMAIN_MAP[value];
         const v = [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(value) ? `?${value}` : `<${ENTITY_PREFIX}${value}>`;
         return `${s} ${p} ${v}.`;
     }
