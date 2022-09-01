@@ -10,19 +10,19 @@ import { waitFinish } from './utils/misc';
 import { instanceOfFilter } from './utils/thingtalk';
 import WikidataUtils, { TP_DEVICE_NAME } from './utils/wikidata';
 
-function hasFilter(ast : Ast.BooleanExpression, property : string) : boolean {
+function hasEqualFilter(ast : Ast.BooleanExpression, property : string) : boolean {
     if (ast instanceof Ast.OrBooleanExpression)
-        return ast.operands.every((op) => hasFilter(op, property));
+        return ast.operands.every((op) => hasEqualFilter(op, property));
     if (ast instanceof Ast.AndBooleanExpression)
         return false;
     if (ast instanceof Ast.NotBooleanExpression)
         return false;
     if (ast instanceof Ast.AtomBooleanExpression) {
-        if (ast.name === property) 
+        if (ast.name === property && ast.operator === '==') 
             return true;
     } 
     if (ast instanceof Ast.ComparisonSubqueryBooleanExpression) {
-        if (ast.lhs instanceof Ast.Value.VarRef && ast.lhs.name === property)
+        if (ast.lhs instanceof Ast.Value.VarRef && ast.lhs.name === property && ast.operator === '==')
             return true;
     }
     return false;
@@ -124,14 +124,14 @@ class NormalizerVisitor extends Ast.NodeVisitor {
     }
 
     visitFilterExpression(node : Ast.FilterExpression) : boolean {
-        if (this._normalizeDomains === 'id-filtered-only' && hasFilter(node.filter, 'id')) {
+        if (this._normalizeDomains === 'id-filtered-only' && hasEqualFilter(node.filter, 'id')) {
             const invocation = (node.expression as Ast.InvocationExpression).invocation;
             invocation.channel = 'entity';
         } else if (this._normalizeDomains === 'always') {
             const invocationExpression = node.expression as Ast.InvocationExpression;
             if (invocationExpression.invocation.channel === 'entity')
                 return true;
-            if (!hasFilter(node.filter, 'id') && !hasFilter(node.filter, 'instance_of')) {
+            if (!hasEqualFilter(node.filter, 'id') && !hasEqualFilter(node.filter, 'instance_of')) {
                 node.filter = new Ast.AndBooleanExpression(
                     null, 
                     [this._instanceOfFilter(invocationExpression), node.filter]
