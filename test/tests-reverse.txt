@@ -279,9 +279,9 @@ TT:
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8502>. 
-    ?x <http://www.wikidata.org/prop/direct/P2044> ?y.
-    FILTER(?y < ?z). 
+    ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
     <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
+    FILTER(?y < ?z). 
 }
 
 ====
@@ -292,8 +292,8 @@ SPARQL:
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8502>. 
     ?x <http://www.wikidata.org/prop/direct/P2044> ?y. 
-    FILTER(?y < ?z). 
     <http://www.wikidata.org/entity/Q16466024> <http://www.wikidata.org/prop/direct/P2044> ?z. 
+    FILTER(?y < ?z). 
 } ORDER BY DESC(?y) LIMIT 1
 
 ====
@@ -303,8 +303,8 @@ TT:
 SPARQL:
 ASK WHERE { 
     <http://www.wikidata.org/entity/Q5513> <http://www.wikidata.org/prop/direct/P2046> ?x. 
-    FILTER(?x > ?y).
     <http://www.wikidata.org/entity/Q5525> <http://www.wikidata.org/prop/direct/P2046> ?y. 
+    FILTER(?x > ?y).
 }
 
 ====
