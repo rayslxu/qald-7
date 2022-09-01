@@ -203,7 +203,7 @@ async function main() {
                         callback(null, ex);
                     } catch(e) {
                         ex.target_code = '';
-                        ex.predictions = ex.prediction ?? '';
+                        ex.prediction = ex.prediction ?? 'NULL';
                         callback(null, ex);
                     }
                 },
