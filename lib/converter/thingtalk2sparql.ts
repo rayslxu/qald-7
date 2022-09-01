@@ -182,7 +182,9 @@ class TripleGenerator extends Ast.NodeVisitor {
         // id string filter
         if (node.name === 'id' && node.operator === '=~') {
             assert(node.value instanceof Ast.StringValue);
-            this._converter.addStatement(`${this._subject} <${LABEL}> "${node.value.value}"@en.`);
+            const variable = this._converter.getEntityVariable();
+            this._converter.addStatement(`${this._subject} <${LABEL}> ?${variable}.`);
+            this._converter.addStatement(`FILTER(LCASE(STR(?${variable})) = "${node.value.value}").`);
             return true;
         }
 

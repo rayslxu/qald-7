@@ -164,7 +164,8 @@ TT:
 SPARQL:  
 ASK WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q7889>. 
-    ?x <http://www.w3.org/2000/01/rdf-schema#label> "battle chess"@en.
+    ?x <http://www.w3.org/2000/01/rdf-schema#label> ?y. 
+    FILTER(LCASE(STR(?y)) = "battle chess"). 
 }
 
 ====
