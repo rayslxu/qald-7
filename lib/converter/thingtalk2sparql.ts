@@ -82,7 +82,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 qualifiedPredicate : QualifiedPredicate|null = null) {
         super();
         this._converter = converter;
-        this._subject = subject;
+        this._subject = subject; // either a variable with ? prefix, or a full path QID
         this._target_projection = projection;
         this._inPredicate = qualifiedPredicate;
         if (subject.startsWith('?') && domain)
@@ -91,7 +91,9 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     private _triple(property : string, value : string, subject ?: string) {
         assert(property && value);
-        let s = this._subject;
+        let s = this._subject; 
+        // this._subject: either a variable with ? prefix, or a full path QID
+        // subject: either a variable WITHOUT ? prefix, or a simple QID
         if (subject && [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(subject))
             s = `?${subject}`;
         else if (subject)
