@@ -192,6 +192,17 @@ class TripleGenerator extends Ast.NodeVisitor {
         throw new Error('Unsupported negative boolean expression');
     }
 
+    visitOrBooleanExpression(node : ThingTalk.Ast.OrBooleanExpression) : boolean {
+        const operands = [];
+        for (const booleanExpression of node.operands) {
+            const tripleGenerator = new TripleGenerator(this._converter, this._subject, null, null);
+            booleanExpression.visit(tripleGenerator);
+            operands.push('{ ' + tripleGenerator.statements.join(' ') + ' }'); 
+        }
+        this._statements.push(operands.join(' UNION '));
+        return false;     
+    }
+
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
         // id string filter
         if (node.name === 'id' && node.operator === '=~') {

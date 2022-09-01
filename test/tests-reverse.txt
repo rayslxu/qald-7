@@ -327,3 +327,14 @@ SELECT DISTINCT ?y WHERE {
     ?x <http://www.wikidata.org/prop/direct/P1082> ?y. 
     <http://www.wikidata.org/entity/Q408> <http://www.wikidata.org/prop/direct/P36> ?x. 
 }
+
+
+====
+Utterance: give me all cosmonauts
+TT: 
+@wd . entity ( ) filter ( contains ( country_of_citizenship , " Q15180 " ^^wd:entity ) || contains ( country_of_citizenship , " Q159 " ^^wd:entity ) ) && contains ( occupation , " Q11631 " ^^wd:entity ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    { ?x <http://www.wikidata.org/prop/direct/P27> <http://www.wikidata.org/entity/Q15180>. } UNION { ?x <http://www.wikidata.org/prop/direct/P27> <http://www.wikidata.org/entity/Q159>. } 
+    ?x <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q11631>. 
+}
