@@ -62,7 +62,7 @@ TT:
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q515>. 
-    ?x <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1408>. 
+    ?x <http://www.wikidata.org/prop/direct/P131>+ <http://www.wikidata.org/entity/Q1408>. 
     ?x <http://www.wikidata.org/prop/direct/P1082> ?y. 
     FILTER(?y > 10000).
 }
@@ -111,7 +111,7 @@ TT:
 @wd . entity ( ) filter contains ( < educated_at / located_in_the_administrative_territorial_entity > , " Q406 " ^^wd:p_located_in_the_administrative_territorial_entity ) && contains ( occupation , " Q36180 " ^^wd:p_occupation ) ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>  <http://www.wikidata.org/entity/Q406>. 
+    ?x <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>+  <http://www.wikidata.org/entity/Q406>. 
     ?x <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q36180>. 
 }
 
@@ -121,7 +121,7 @@ TT:
 [ < place_of_death / located_in_the_administrative_territorial_entity > : Entity ( wd:city ) ] of @wd . human ( ) filter id == " Q9696 " ^^wd:human ;
 SPARQL:
 SELECT DISTINCT ?x WHERE {  
-    <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/direct/P20>/<http://www.wikidata.org/prop/direct/P131> ?x. 
+    <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/direct/P20>/<http://www.wikidata.org/prop/direct/P131>+ ?x. 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q515>.  
 }
 
@@ -183,7 +183,7 @@ TT:
 [ located_in_the_administrative_territorial_entity ] of @wd . mountain ( ) filter id == " Q130018 " ^^wd:mountain ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
-    <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?x.
+    <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131>+ ?x.
 }
 
 ====

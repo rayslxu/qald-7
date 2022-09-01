@@ -101,25 +101,52 @@ class TripleGenerator extends Ast.NodeVisitor {
         return this._statements;
     }
 
+    private _node(node : string) : string {
+        if ([...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node))
+            return '?' + node;
+        if (this._converter.kb.isEntity(node))
+            return `<${ENTITY_PREFIX}${node}>`;
+        assert(node.startsWith(ENTITY_PREFIX));
+        return node;
+    }
+
+    private _edge(property : string, value : string) : string {
+
+        let prefix = PROPERTY_PREFIX;
+        if (this._inPredicate) {
+            if (property === 'value') {
+                property = this._inPredicate.property;
+                prefix = PROPERTY_STATEMENT_PREFIX;
+            } else {
+                prefix = PROPERTY_QUALIFIER_PREFIX;
+            }
+        } else if (PREDICATE_VARIABLES.includes(value)) {
+            prefix = PROPERTY_PREDICATE_PREFIX;
+        }
+
+        const predicate = `<${prefix}${property}>`;
+
+        // SPECIAL CASES: 
+        // P131, located in admin entity, always do property path "+"
+        if (property === 'P131')
+            return predicate + '+';
+        // P31, instance of, always add optional subclass of
+        if (property === 'P31')
+            return `<${prefix}P31>/<${prefix}P279>*`;
+        
+        return predicate;
+    }
+
     private _triple(property : string, value : string, subject ?: string) {
         assert(property && value);
-        let s = this._subject; 
         // this._subject: either a variable with ? prefix, or a full path QID
         // subject: either a variable WITHOUT ? prefix, or a simple QID
-        if (subject && [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(subject))
-            s = `?${subject}`;
-        else if (subject)
-            s = `<${ENTITY_PREFIX}${subject}>`;
-        let p;
-        if (property === 'P31')
-            p = `<${PROPERTY_PREFIX}P31>/<${PROPERTY_PREFIX}P279>*`;
-        else if (this._inPredicate)
-            p = property === 'value' ? `<${PROPERTY_STATEMENT_PREFIX}${this._inPredicate.property}>` : `<${PROPERTY_QUALIFIER_PREFIX}${property}>`;
-        else   
-            p = PREDICATE_VARIABLES.includes(value) ? `<${PROPERTY_PREDICATE_PREFIX}${property}>` : `<${PROPERTY_PREFIX}${property}>`;
+        const s = subject ? this._node(subject) : this._subject;
+        const p = this._edge(property, value);
+
         if (property === 'P31' && value in DOMAIN_MAP)
             value = DOMAIN_MAP[value];
-        const v = [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(value) ? `?${value}` : `<${ENTITY_PREFIX}${value}>`;
+        const v = this._node(value);
         return `${s} ${p} ${v}.`;
     }
 
@@ -150,9 +177,9 @@ class TripleGenerator extends Ast.NodeVisitor {
         
         if (Array.isArray(proj.value)) {
             const path : string[] = [];
-            for (const element of proj.value) {
-                const property = this._converter.getWikidataProperty(element.property);
-                path.push(`<${PROPERTY_PREFIX}${property}>${element.quantifier ?? ''}`);
+            for (const elem of proj.value) {
+                const p = this._converter.getWikidataProperty(elem.property);
+                path.push(elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v));
             }
             this._statements.push(`${this._subject} ${path.join('/')} ?${v}.`);
         } else {
@@ -316,12 +343,12 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitPropertyPathBooleanExpression(node : ThingTalk.Ast.PropertyPathBooleanExpression) : boolean {
+        const v = (node.value as Ast.EntityValue).value!;
         const predicate = node.path.map((elem) => {
             const p = this._converter.getWikidataProperty(elem.property);
-            return elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : `<${PROPERTY_PREFIX}${p}>`;
+            return elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v);
         }).join('/'); 
-        const v = (node.value as Ast.EntityValue).value!;
-        this._statements.push(`${this._subject} ${predicate} <${ENTITY_PREFIX}${v}>.`);
+        this._statements.push(`${this._subject} ${predicate} ${this._node(v)}.`);
         return true;
     }
 
