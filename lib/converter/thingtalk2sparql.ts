@@ -496,9 +496,13 @@ export default class ThingTalkToSPARQLConverter {
         }
         this._domainMap = { 'art museum' : 'Q207694' };
         for (const domain of domains) {
-            const qid = domain.name.match(/Q[0-9]+/g)![0];
-            this._domainMap[domain.value] = qid;
-            this._domainMap[qid] = qid;
+            if (options.human_readable_instance_of) {
+                const qid = domain.name.match(/Q[0-9]+/g)![0];
+                this._domainMap[domain.value] = qid;
+                this._domainMap[qid] = qid;
+            } else {
+                this._domainMap[domain.canonical] = domain.value;
+            }
         }
         this._variableMap = {};
 
