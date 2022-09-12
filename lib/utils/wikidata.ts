@@ -439,7 +439,7 @@ export default class WikidataUtils {
      * @param property PID
      * @returns a list of qualifiers PID 
      */
-    async getQualifiersByProperty(property : string) : Promise<string[]> {
+    async getQualifiersByProperty(property : string, limit = 100) : Promise<string[]> {
         const qualifierCount : Record<string, number> = {};
         const sparql = `SELECT DISTINCT ?entity ?qualifier WHERE {
             ?entity p:${property} ?statement .
@@ -450,7 +450,7 @@ export default class WikidataUtils {
                 ?p wikibase:propertyType ?type .
                 FILTER (?type != wikibase:ExternalId) .
             }
-        } LIMIT 100`;
+        } LIMIT ${limit}`;
         const res = await this._query(sparql);
         res.forEach((r : any) => {
             const q = r.qualifier?.value.slice(PROPERTY_QUALIFIER_PREFIX.length);
@@ -510,6 +510,21 @@ export default class WikidataUtils {
                 delete properties[property];
         });
         return properties;
+    }
+
+    /**
+     * Get sample values for a qualifier 
+     * @param qualifier PID of a qualifier
+     * @returns the sampled values for the qualifier
+     */
+    async getQualifierValues(qualifier : string, limit = 100) : Promise<string[]> {
+        const sparql = `SELECT DISTINCT ?v WHERE {
+            ?any pq:${qualifier} ?v.
+        } limit ${limit}`;
+        const res = await this._query(sparql);
+        return res.map((r : any) => 
+            r.v.value.startsWith(ENTITY_PREFIX) ? r.v.value.slice(ENTITY_PREFIX.length) : r.v.value
+        );
     }
 
 

@@ -331,6 +331,67 @@ class ManifestGenerator {
             await this._processOneExample(example);
     }
 
+    private async _addValues(argumentDef : Ast.ArgumentDef, pname : string, plabel : string, values : string[], valueLabels : Record<string, string|null>) {
+        const vtype = elemType(argumentDef.type);
+        if (vtype instanceof Type.Entity && vtype.type.startsWith(TP_DEVICE_NAME)) {   
+            if (!(pname in this._propertyValues.entities))
+                this._propertyValues.entities[pname] = {};
+            const valueTypes : Set<string> = new Set();
+            const valueTypeQIDs : string[] = [];
+            for (const value of values) {
+                if (value in this._propertyValues.entities[pname])
+                    continue;
+                if (!this._wikidata.isEntity(value))
+                    continue;
+                this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
+
+                if (this._typeSystem === 'flat')
+                    continue; 
+                const type = await this._getEntityType(value);
+                if (type) {
+                    valueTypeQIDs.push(type);
+                    const typeLabel = await this._wikidata.getLabel(type);
+                    if (typeLabel) {
+                        const parentClasses = typeLabel === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`];
+                        valueTypes.add(`${TP_DEVICE_NAME}:${cleanName(typeLabel)}`);
+                        this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
+                    }
+                }
+            }
+            this._addEntity(
+                `p_${pname}`, 
+                plabel, 
+                this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
+            );
+
+            if (valueTypeQIDs.includes('Q5')) {
+                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'who';
+            } else {
+                const locationTypes = await this._wikidata.getSubdomains('Q17334923');
+                if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
+                    argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
+            }
+        }
+        if (vtype === Type.String) {
+            if (!(pname in this._propertyValues.strings))
+                this._propertyValues.strings[pname] = [];
+            for (const value of values)
+                this._propertyValues.strings[pname].push(value);
+        }
+        // load compound fields
+        if (elemType(argumentDef.type, false) instanceof Type.Compound) {
+            const compoundType = elemType(argumentDef.type, false) as Type.Compound;
+            for (const [fname, field] of Object.entries(compoundType.fields)) {
+                if (fname === 'value')
+                    continue;
+                const pid : string = field.getImplementationAnnotation('wikidata_id')!;
+                const label = (await this._wikidata.getLabel(pid))!;
+                const values = await this._wikidata.getQualifierValues(pid);
+                const valueLabels = await this._wikidata.getLabelsByBatch(...values);
+                await this._addValues(field, fname, label, values, valueLabels);
+            }
+        }
+    }
 
     /**
      * Query Wikidata to obtain common properties of a domain
@@ -366,57 +427,8 @@ class ManifestGenerator {
             else if (pname.startsWith('cause_of'))
                 argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'how';
 
-            if (values.length > 0) {
-                const vtype = elemType(ptype);
-                if (vtype instanceof Type.Entity && vtype.type.startsWith(TP_DEVICE_NAME)) {
-                    if (!(pname in this._propertyValues.entities))
-                        this._propertyValues.entities[pname] = {};
-                    const valueTypes : Set<string> = new Set();
-                    const valueTypeQIDs : string[] = [];
-                    for (const value of values) {
-                        if (value in this._propertyValues.entities[pname])
-                            continue;
-                        if (!this._wikidata.isEntity(value))
-                            continue;
-                        this._propertyValues.entities[pname][value] = valueLabels[value] ?? value;
-
-                        if (this._typeSystem === 'flat')
-                            continue; 
-                        const type = await this._getEntityType(value);
-                        if (type) {
-                            valueTypeQIDs.push(type);
-                            const typeLabel = await this._wikidata.getLabel(type);
-                            if (typeLabel) {
-                                const parentClasses = typeLabel === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`];
-                                valueTypes.add(`${TP_DEVICE_NAME}:${cleanName(typeLabel)}`);
-                                this._addEntity(cleanName(typeLabel), typeLabel, parentClasses);
-                            }
-                        }
-                    }
-                    this._addEntity(
-                        `p_${pname}`, 
-                        label, 
-                        this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
-                    );
-                    
-                    if (valueTypeQIDs.includes('Q5')) {
-                        argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'who';
-                    } else {
-                        const locationTypes = await this._wikidata.getSubdomains('Q17334923');
-                        if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
-                            argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
-                    }
-                        
-                }
-                if (vtype === Type.String) {
-                    if (!(pname in this._propertyValues.strings))
-                        this._propertyValues.strings[pname] = [];
-                    for (const value of values)
-                        this._propertyValues.strings[pname].push(value);
-                }
-
-                
-            }
+            if (values.length > 0) 
+                this._addValues(argumentDef, pname, label, values, valueLabels);
 
             args.push(argumentDef);
             if (!(property in this._properties))
@@ -619,6 +631,7 @@ class ManifestGenerator {
         const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/domain.json`);
         paramDataset.end(JSON.stringify({ result: "ok", data: Object.values(domainEntities) }, undefined, 2));
         await waitFinish(paramDataset);
+
         // write entity dataset for other properties
         for (const [pname, values] of Object.entries(this._propertyValues.entities)) {
             index.write(`entity\ten-US\t${TP_DEVICE_NAME}:p_${pname}\tparameter-datasets/p_${pname}.json\n`);
