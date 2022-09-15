@@ -190,7 +190,7 @@ export default class WikidataUtils {
             await this._loadOrCreateSqliteCache();
         return new Promise((resolve, reject) => {
             const placeholders = values.map(() => '?').join(',');
-            const sql = `insert into ${table} values (${placeholders})`; 
+            const sql = `insert into ${table} values (${placeholders}) on conflict do nothing`; 
             this._cache.get(sql, ...values, (err : Error|null, rows : any) => {
                 if (err)
                     reject(err);
