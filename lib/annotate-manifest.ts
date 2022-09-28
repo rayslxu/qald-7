@@ -25,6 +25,7 @@ import * as Tp from 'thingpedia';
 import { genBaseCanonical } from 'genie-toolkit';
 import WikidataUtils from './utils/wikidata';
 import { sampleAltLabels, waitFinish } from './utils/misc';
+import { mergeCanonicalAnnotations } from './utils/thingtalk';
 
 async function addArgumentWikidataAltLabels(wikidata : WikidataUtils, arg : ThingTalk.Ast.ArgumentDef, maxCount = 5) {
     const pid : string = arg.getImplementationAnnotation('wikidata_id')!;
@@ -60,7 +61,9 @@ async function addArgumentWikidataAltLabels(wikidata : WikidataUtils, arg : Thin
             }
         }
     }
-    Object.assign(arg.nl_annotations.canonical, baseCanonical);
+
+    // add annotations
+    mergeCanonicalAnnotations(arg.nl_annotations.canonical, baseCanonical);
 }
 
 async function addQueryWikidataAltLabels(wikidata : WikidataUtils, query : ThingTalk.Ast.FunctionDef, maxCount = 5) {

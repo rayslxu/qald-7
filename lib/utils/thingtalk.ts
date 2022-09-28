@@ -164,3 +164,17 @@ export function getPropertiesInFilter(filter : Ast.BooleanExpression) : string[]
         properties.push((filter.lhs as Ast.VarRefValue).name);
     return properties;
 }
+
+
+export function mergeCanonicalAnnotations(a1 : Record<string, any>, a2 : Record<string, any>) {
+    for (const [key, value] of Object.entries(a2)) {
+        if (!(key in a1)) {
+            a1[key] = value;
+        } else {
+            if (key === 'default')
+                continue;
+            assert(Array.isArray(a1[key]) && Array.isArray(a2[key]));
+            a1[key] = [...a1[key], ...a2[key]];
+        }
+    } 
+}
