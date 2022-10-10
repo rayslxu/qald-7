@@ -90,6 +90,8 @@ async function main() {
 
     console.log('Micro F1: ', MicroF1);
     console.log('Macro F1: ', MacroF1);
+    console.log('Macro Precision: ', MacroTP / (MacroTP + MacroFP));
+    console.log('Macro Recall: ', MacroTP/(MacroTP + MacroFN));
 
     await waitFinish(dataset);
 
