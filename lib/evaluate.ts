@@ -8,6 +8,22 @@ import { waitFinish } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { StreamUtils } from 'genie-toolkit';
 
+function sum(x : number[]) {
+    return x.reduce((sum, a) => sum += a, 0);
+}
+
+function avg(x : number[]) {
+    return sum(x) / x.length;
+}
+
+function safeDivide(x : number, y : number) {
+    if (x === 0 && y === 0)
+        return 1;
+    else if (y === 0)
+        return Infinity;
+    return x/y;
+}
+
 async function main() {
     const parser = new argparse.ArgumentParser({
         add_help : true,
@@ -68,33 +84,29 @@ async function main() {
     }
 
     const predictions = fs.readFileSync(args.prediction, { encoding: 'utf8' }).split('\n');
-    const MicroF1s = [];
-    let [MacroTP, MacroFP, MacroFN] = [0, 0, 0];
+    const TP : number[] = [];
+    const FP : number[] = [];
+    const FN : number[] = [];
     for (const line of predictions) {
         if (line.trim().length === 0)
             continue;
         const [id, , answers, ] = line.split('\t');
         const expected = expectedAnswer[id];
         const predicted = answers.split(' ');
-        const TP = predicted.filter((r) => expected.includes(r)).length;
-        MacroTP += TP;
-        const FP = predicted.filter((r) => !expected.includes(r)).length;
-        MacroFP += FP;
-        const FN = expected.filter((r) => !predicted.includes(r)).length;
-        MacroFN += FN;
-        const F1 = TP / (TP + (FP + FN) / 2);
-        MicroF1s.push(F1);
+        TP.push(predicted.filter((r) => expected.includes(r)).length);
+        FP.push(predicted.filter((r) => !expected.includes(r)).length);
+        FN.push(expected.filter((r) => !predicted.includes(r)).length);
     }
-    const MicroF1 = MicroF1s.reduce((sum, a) => sum += a, 0) / MicroF1s.length;
-    const MacroF1 = MacroTP / (MacroTP + (MacroFP + MacroFN) / 2 );
 
-    console.log('Micro F1: ', MicroF1);
-    console.log('Macro F1: ', MacroF1);
-    console.log('Macro Precision: ', MacroTP / (MacroTP + MacroFP));
-    console.log('Macro Recall: ', MacroTP/(MacroTP + MacroFN));
-
+    const microF1 = sum(TP) / (sum(TP) + (sum(FP) + sum(FN)) / 2);
+    const macroPrecision = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FP[i]))));
+    const macroRecall = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FN[i]))));
+    const macroF1 = 2 * macroPrecision * macroRecall / (macroPrecision + macroRecall);
+    console.log('Micro F1: ', microF1);
+    console.log('Macro F1: ', macroF1);
+    console.log('Macro Precision: ', macroPrecision);
+    console.log('Macro Recall: ', macroRecall);
     await waitFinish(dataset);
-
 }
 
 if (require.main === module)
