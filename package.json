@@ -1,5 +1,8 @@
 {
   "name": "qald-7",
+  "version": "0.1.0",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
   "scripts": {
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./lib ",
     "prepare": "tsc --build",
