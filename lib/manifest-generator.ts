@@ -35,7 +35,8 @@ interface ManifestGeneratorOptions {
     exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean,
     human_readable_instance_of : boolean,
-    bootleg_db : string
+    bootleg_db : string,
+    canonical_annotations : boolean;
 }
 
 class ManifestGenerator {
@@ -72,6 +73,7 @@ class ManifestGenerator {
     private _includeNonEntityProperties : boolean;
     private _useWikidataAltLabels : boolean;
     private _humanReadableInstanceOf : boolean;
+    private _canonicalAnnotations : boolean;
 
     constructor(options : ManifestGeneratorOptions) {
         this._experiment = options.experiment;
@@ -94,6 +96,7 @@ class ManifestGenerator {
         this._includeNonEntityProperties = !options.exclude_non_entity_properties;
         this._useWikidataAltLabels = options.use_wikidata_alt_labels;
         this._humanReadableInstanceOf = options.human_readable_instance_of;
+        this._canonicalAnnotations = options.canonical_annotations;
     }
 
     /**
@@ -140,11 +143,12 @@ class ManifestGenerator {
                 // skip if it does not has a supported type,
                 if (!qtype)
                     continue;
-                const annotation = { 
-                    nl: { canonical: await this._generatePropertyCanonicals(pid, label, elemType(qtype)) }, 
+                const annotations : Record<string, any> = { 
                     impl: { wikidata_id: new Ast.Value.String(pid) } 
                 };
-                fields[qname] = new Ast.ArgumentDef(null, null, qname, elemType(qtype), annotation);
+                if (this._canonicalAnnotations)
+                    annotations.nl = { canonical: await this._generatePropertyCanonicals(pid, label, elemType(qtype)) };
+                fields[qname] = new Ast.ArgumentDef(null, null, qname, elemType(qtype), annotations);
             }
             // if there is more than 1 (value) fields, create a compound type
             if (Object.keys(fields).length > 1) {
@@ -364,12 +368,14 @@ class ManifestGenerator {
                 this._typeSystem === 'flat' ? [`${TP_DEVICE_NAME}:entity`] : [...valueTypes]
             );
 
-            if (valueTypeQIDs.includes('Q5')) {
-                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'who';
-            } else {
-                const locationTypes = await this._wikidata.getSubdomains('Q17334923');
-                if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
-                    argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
+            if (this._canonicalAnnotations) {
+                if (valueTypeQIDs.includes('Q5')) {
+                    argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'who';
+                } else {
+                    const locationTypes = await this._wikidata.getSubdomains('Q17334923');
+                    if (valueTypeQIDs.filter((t) => locationTypes.includes(t)).length >= Math.min(valueTypeQIDs.length * 0.5, 1))
+                        argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
+                }
             }
         }
         if (vtype === Type.String) {
@@ -412,21 +418,22 @@ class ManifestGenerator {
             const ptype = await this._getPropertyType(property, pname);
             if (!ptype) 
                 continue;
+            const annotations : Record<string, any> = { impl: { wikidata_id: new Ast.Value.String(property) } };
+            if (this._canonicalAnnotations)
+                annotations.nl = { canonical: await this._generatePropertyCanonicals(property, label, ptype) };
             const argumentDef = new Ast.ArgumentDef(
                 null,
                 Ast.ArgDirection.OUT,
                 pname, 
                 ptype,
-                { 
-                    nl: { canonical: await this._generatePropertyCanonicals(property, label, ptype) }, 
-                    impl: { wikidata_id: new Ast.Value.String(property) } 
-                }
+                annotations
             );
-            if (pname.startsWith('located_') || pname.startsWith('location_of_') || pname.endsWith('_location'))
-                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
-            else if (pname.startsWith('cause_of'))
-                argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'how';
-
+            if (this._canonicalAnnotations) {
+                if (pname.startsWith('located_') || pname.startsWith('location_of_') || pname.endsWith('_location'))
+                    argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'where';
+                else if (pname.startsWith('cause_of'))
+                    argumentDef.nl_annotations['canonical']['projection_pronoun'] = 'how';
+            }
             if (values.length > 0) 
                 this._addValues(argumentDef, pname, label, values, valueLabels);
 
@@ -467,17 +474,26 @@ class ManifestGenerator {
             const altLabels = await this._wikidata.getAltLabels(domain);
             canonical.push(...altLabels);
         }
-        const functionDef = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
-            is_list: true, 
-            is_monitorable: false
-        }, args, {
-            nl: { canonical },
+        const annotations : Record<string, any> = {
+            nl : {
+                canonical,
+                result: ["Result:"],
+                formatted: {
+                    type: "rdl",
+                    displayTitle: "${title}",
+                    webCallback: "${link}",
+                } 
+            },
             impl : {
                 inherit_arguments: new Ast.Value.Boolean(false),
                 handle_thingtalk: new Ast.Value.Boolean(true),
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String(domain)])
             }
-        });
+        };
+        const functionDef = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
+            is_list: true, 
+            is_monitorable: false
+        }, args, annotations);
         return [fname, functionDef];
     }
 
@@ -531,16 +547,25 @@ class ManifestGenerator {
             }
         }
 
-        queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
-            is_list: true,
-            is_monitorable: false
-        }, [idArgument('entity'), instanceOfArgument('entity'), ...Object.values(this._properties)], {
-            nl: { canonical: ['entity'] },
+        const annotations : Record<string, any> = {
+            nl: { 
+                canonical: ['entity'],
+                result: ["Result:"],
+                formatted: {
+                    type: "rdl",
+                    displayTitle: "${title}",
+                    webCallback: "${link}",
+                } 
+            },
             impl : {
                 handle_thingtalk: new Ast.Value.Boolean(true),
                 wikidata_subject: new Ast.Value.Array([new Ast.Value.String('Q35120')])
             }
-        });
+        };
+        queries['entity'] = new Ast.FunctionDef(null, 'query', null, 'entity',[], {
+            is_list: true,
+            is_monitorable: false
+        }, [idArgument('entity'), instanceOfArgument('entity'), ...Object.values(this._properties)], annotations);
 
         // entity declarations
         this._addEntity('entity', 'Entity');
@@ -553,10 +578,8 @@ class ManifestGenerator {
                 entity.type.slice(`${TP_DEVICE_NAME}:`.length),
                 (entity.subtype_of ?? []).map((e) => e.slice(`${TP_DEVICE_NAME}:`.length)),
                 { 
-                    impl: { 
-                        has_ner: new Ast.Value.Boolean(!!entity.has_ner_support),
-                        description: new Ast.Value.String(entity.name)
-                    } 
+                    nl: { description: entity.name },
+                    impl: { has_ner: new Ast.Value.Boolean(!!entity.has_ner_support) } 
                 }
             );
         });
@@ -764,6 +787,18 @@ async function main() {
     parser.add_argument('--bootleg-db', {
         required: false,
         default: 'bootleg.sqlite'
+    });
+    parser.add_argument('--canonical-annotations', {
+        required: false,
+        action: 'store_true',
+        default: true,
+        help: 'Include canonical annotations in the manifest'
+    });
+    parser.add_argument('--no-canonical-annotations', {
+        required: false,
+        action: 'store_false',
+        dest: 'canonical_annotations',
+        help: 'Exclude canonical annotations in the manifest'
     });
     const args = parser.parse_args();
     const generator = new ManifestGenerator(args);
