@@ -28,10 +28,11 @@ export class Falcon extends Linker {
         const parsed = JSON.parse(raw);
         for (const entity of parsed.entities_wikidata) {
             const id = entity.URI.slice(ENTITY_PREFIX.length);
+            const domainId = await this._wikidata.getDomain(id);
             entities.push({
                 id,
                 label: entity["surface form"],
-                domain: await this._wikidata.getDomain(id),
+                domain: domainId ? (domainId in this._wikidata.subdomains ? await this._wikidata.getLabel(domainId) : domainId) : null,
                 type: 'entity'
             });
         }

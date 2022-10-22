@@ -48,8 +48,12 @@ async function main() {
     for (const ex of data.values()) {
         const nedInfo = [];
         const result = await linker.run(ex.sentence);
-        for (const entity of result.entities) 
-            nedInfo.push(entity.label, '(', entity.domain, ')', '[', entity.id, ']', ';');
+        for (const entity of result.entities) {
+            nedInfo.push(entity.label);
+            if (entity.domain)
+                nedInfo.push('(', entity.domain, ')');
+            nedInfo.push('[', entity.id, ']', ';');
+        }
         for (const property of result.relations)
             nedInfo.push(property.label, '[', property.id, ']', ';');
         args.output.write(`${ex.id}\t${ex.sentence + ' <e> ' + nedInfo.join(' ') + ' </e>'}\t${ex.thingtalk}\n`);
