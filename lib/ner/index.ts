@@ -24,7 +24,11 @@ async function main() {
         help: "the NER module to load",
         choices: ['falcon'],
     });
-    parser.add_argument('--cache', {
+    parser.add_argument('--ner-cache', {
+        required: false,
+        help: `the path to the cache db, default to the module name if absent`
+    });
+    parser.add_argument('--wikidata-cache', {
         required: false,
         default: 'wikidata_cache.sqlite'
     });
@@ -34,6 +38,8 @@ async function main() {
     });
 
     const args = parser.parse_args();
+    if (!args.ner_cache)
+        args.ner_cache = args.module + '.sqlite';
 
     let linker : Linker;
     if (args.module === 'falcon') 
