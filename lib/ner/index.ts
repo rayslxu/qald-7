@@ -4,6 +4,7 @@ import csvparse from 'csv-parse';
 import { StreamUtils } from 'genie-toolkit';
 import { Linker } from './base';
 import { Falcon } from './falcon';
+import { OracleLinker } from './oracle';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -22,7 +23,7 @@ async function main() {
         required: false,
         default: 'falcon',
         help: "the NER module to load",
-        choices: ['falcon'],
+        choices: ['falcon', 'oracle'],
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -44,7 +45,9 @@ async function main() {
     let linker : Linker;
     if (args.module === 'falcon') 
         linker = new Falcon(args);
-    else 
+    else if (args.module === 'oracle')
+        linker = new OracleLinker(args);
+    else
         throw new Error('Unknown NER module');
 
     const columns = ['id', 'sentence', 'thingtalk'];
@@ -52,8 +55,8 @@ async function main() {
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
     for (const ex of data.values()) {
-        const nedInfo = [];
-        const result = await linker.run(ex.sentence);
+        const nedInfo = ['<e>'];
+        const result = await linker.run(ex.sentence, ex.thingtalk);
         for (const entity of result.entities) {
             nedInfo.push(entity.label);
             if (entity.domain)
@@ -62,7 +65,8 @@ async function main() {
         }
         for (const property of result.relations)
             nedInfo.push(property.label, '[', property.id, ']', ';');
-        args.output.write(`${ex.id}\t${ex.sentence + ' <e> ' + nedInfo.join(' ') + ' </e>'}\t${ex.thingtalk}\n`);
+        nedInfo.push('</e>');
+        args.output.write(`${ex.id}\t${ex.sentence + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
     }
     StreamUtils.waitEnd(dataset);
     StreamUtils.waitFinish(args.output);
