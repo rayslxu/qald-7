@@ -299,13 +299,18 @@ export default class WikidataUtils {
     async getLabel(id : string) : Promise<string|null> {
         if (!/[P|Q][0-9]+/.test(id))
             return null;
+        const cache = await this._getCache('labels', 'label', { key : 'id', value : id });
+        if (cache)
+            return cache.label;
         const result = await this._request(this._wdk.getEntities({ 
             ids: [id],
             languages: ['en'],
             props: ['labels']
         }));
         try {
-            return (Object.values(result.entities)[0] as any).labels.en.value;
+            const label = (Object.values(result.entities)[0] as any).labels.en.value;
+            await this._setCache('labels', id, label);
+            return label;
         } catch(e) {
             console.log(`Failed to retrieve label for ${id}`);
             return null;
