@@ -8,6 +8,7 @@ import { OracleLinker } from '../ner/oracle';
 
 const PROMPT_SEP_TOKENS = '#';
 const PROMPT_END_TOKENS = '\n#\n\n';
+const RESPONSE_END_TOKENS = '\n';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -77,7 +78,7 @@ async function main() {
         prompt.push(PROMPT_END_TOKENS);
         args.output.write(JSON.stringify({
             prompt: prompt.join('\n'),
-            completion: ex.thingtalk
+            completion: ex.thingtalk + RESPONSE_END_TOKENS
         }) + '\n');
     }
     StreamUtils.waitEnd(dataset);
