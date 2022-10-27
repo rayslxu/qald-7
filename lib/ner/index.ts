@@ -5,6 +5,7 @@ import { StreamUtils } from 'genie-toolkit';
 import { Linker } from './base';
 import { Falcon } from './falcon';
 import { OracleLinker } from './oracle';
+import { AzureEntityLinker } from './azure';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -23,7 +24,7 @@ async function main() {
         required: false,
         default: 'falcon',
         help: "the NER module to load",
-        choices: ['falcon', 'oracle'],
+        choices: ['falcon', 'oracle', 'azure'],
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -47,6 +48,8 @@ async function main() {
         linker = new Falcon(args);
     else if (args.module === 'oracle')
         linker = new OracleLinker(args);
+    else if (args.module === 'azure')
+        linker = new AzureEntityLinker(args);
     else
         throw new Error('Unknown NER module');
 

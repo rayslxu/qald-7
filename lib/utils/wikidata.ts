@@ -866,4 +866,17 @@ export default class WikidataUtils {
     isEntity(value : string) : boolean {
         return /^Q[0-9]+$/.test(value);
     }
+
+    /**
+     * @param wikipediaUrl Wikipedia url for an entity
+     * @returns QID of the entity in wikidata
+     */
+    async getQIDbyWikipediaUrl(wikipediaUrl : string) : Promise<string|null> {
+        const title = wikipediaUrl.slice('https://en.wikipedia.org/wiki/'.length);
+        const url = 'https://en.wikipedia.org/w/api.php';
+        const params = `action=query&prop=pageprops&titles=${encodeURIComponent(title)}&format=json`;
+        const result = await this._request(`${url}?${params}`);
+        const pageprops = (Object.values(result.query.pages)[0] as any).pageprops;
+        return pageprops ? pageprops.wikibase_item : null;
+    }
 }
