@@ -54,9 +54,20 @@ async function main() {
     const dataset = args.input.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
+    let countFail = 0;
+    let countTotal = 0;
     for (const ex of data.values()) {
+        countTotal += 1;
         const nedInfo = ['<e>'];
         const result = await linker.run(ex.sentence, ex.thingtalk);
+        const oracle = ex.thingtalk.match(/Q[0-9]+/g);
+        for (const qid of oracle ?? []) {
+            if (result.entities.some((e) => e.id === qid))
+                continue;
+            countFail += 1;
+            break;
+        }
+
         for (const entity of result.entities) {
             nedInfo.push(entity.label);
             if (entity.domain)
@@ -68,6 +79,7 @@ async function main() {
         nedInfo.push('</e>');
         args.output.write(`${ex.id}\t${ex.sentence + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
     }
+    console.log('Failure rate: ', countFail/countTotal);
     StreamUtils.waitEnd(dataset);
     StreamUtils.waitFinish(args.output);
 }
