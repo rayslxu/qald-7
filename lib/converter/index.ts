@@ -99,7 +99,7 @@ async function main() {
     });
     const args = parser.parse_args();
 
-    const tpClient = new Tp.FileClient({ thingpedia: './manifest.tt', locale: 'en' });
+    const tpClient = new Tp.FileClient({ thingpedia: args.manifest, locale: 'en' });
     const schemas = new ThingTalk.SchemaRetriever(tpClient, null, true);
     const classDef = await schemas.getFullMeta(TP_DEVICE_NAME);
     const tokenizer = new I18n.LanguagePack('en').getTokenizer();
