@@ -42,6 +42,10 @@ async function main() {
         required: false,
         default: 'bootleg.sqlite'
     });
+    parser.add_argument('--raw-data', {
+        required: false,
+        help: 'path to the original data file to retrieve case sensitive utterance'
+    });
 
     const args = parser.parse_args();
     if (!args.ner_cache)
@@ -66,7 +70,7 @@ async function main() {
         prompt.push('Question: ' + ex.utterance);
         prompt.push(PROMPT_SEP_TOKENS);
         prompt.push('Entities:');
-        const result = await linker.run(ex.utterance, ex.thingtalk);
+        const result = await linker.run(ex.id, ex.utterance, ex.thingtalk);
         for (const entity of result.entities) {
             let entityInfo = entity.label;
             if (entity.domain)

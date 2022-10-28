@@ -14,7 +14,7 @@ export class OracleLinker extends Linker {
         this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
     }
     
-    async run(utterance : string, thingtalk : string) {
+    async run(id : string, utterance : string, thingtalk : string) {
         const matches = thingtalk.match(/Q[0-9]+/g);
         const entities : Entity[] = [];
         for (const match of matches ? [...new Set(matches)] : []) {

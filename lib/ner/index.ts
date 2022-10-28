@@ -38,6 +38,10 @@ async function main() {
         required: false,
         default: 'bootleg.sqlite'
     });
+    parser.add_argument('--raw-data', {
+        required: false,
+        help: 'path to the original data file to retrieve case sensitive utterance'
+    });
 
     const args = parser.parse_args();
     if (!args.ner_cache)
@@ -62,7 +66,7 @@ async function main() {
     for (const ex of data.values()) {
         countTotal += 1;
         const nedInfo = ['<e>'];
-        const result = await linker.run(ex.sentence, ex.thingtalk);
+        const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
         const oracle = ex.thingtalk.match(/Q[0-9]+/g);
         for (const qid of oracle ?? []) {
             if (result.entities.some((e) => e.id === qid))

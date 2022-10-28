@@ -17,5 +17,5 @@ export interface Entity {
 }
 
 export abstract class Linker {
-    abstract run(utterance : string, thingtalk ?: string) : Promise<LinkerResult>;
+    abstract run(id : string, utterance : string, thingtalk ?: string) : Promise<LinkerResult>;
 }

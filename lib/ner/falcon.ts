@@ -1,3 +1,4 @@
+import fs from 'fs';
 import * as Tp from 'thingpedia';
 import { Relation, Entity, Linker } from './base';
 import { ENTITY_PREFIX } from '../utils/wikidata';
@@ -7,28 +8,37 @@ import Cache from '../utils/cache';
 interface FalconOptions {
     ner_cache : string,
     wikidata_cache : string,
-    bootleg : string
+    bootleg : string,
+    raw_data ?: string,
 }
 
 export class Falcon extends Linker {
     private _wikidata : WikidataUtils;
     private _url : string;
     private _cache : Cache;
+    private _rawData : Record<string, string>;
 
     constructor(options : FalconOptions) {
         super();
         this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
         this._url = 'https://labs.tib.eu/falcon/falcon2/api?mode=long';
         this._cache = new Cache(options.ner_cache);
+        this._rawData = {};
+        if (options.raw_data) {
+            for (const ex of JSON.parse(fs.readFileSync(options.raw_data, 'utf-8')).questions)
+                this._rawData[ex.id] = ex.question[0].string;
+        }
     }
     
-    async run(input : string) {
-        const cache = await this._cache.get(input);
+    async run(id : string, utterance : string) {
+        if (id in this._rawData)
+            utterance = this._rawData[id];
+        const cache = await this._cache.get(utterance);
         if (cache)
             return JSON.parse(cache);
         const entities : Entity[] = [];
         const relations : Relation[] = [];
-        const raw = await Tp.Helpers.Http.post(this._url, `{"text":"${input}"}`, {
+        const raw = await Tp.Helpers.Http.post(this._url, `{"text":"${utterance}"}`, {
             dataContentType: 'application/json'
         });
         const parsed = JSON.parse(raw);
@@ -50,7 +60,7 @@ export class Falcon extends Linker {
             });
         }
         const result = { entities, relations };
-        this._cache.set(input, JSON.stringify(result));
+        this._cache.set(utterance, JSON.stringify(result));
         return result;
     }
 
