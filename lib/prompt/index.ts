@@ -84,6 +84,8 @@ async function main() {
             prompt.push(`${property.label}: property.id`);
         prompt.push(PROMPT_END_TOKENS);
         args.output.write(JSON.stringify({
+            id : ex.id,
+            utterance: ex.utterance,
             prompt: prompt.join('\n'),
             completion: ex.thingtalk + RESPONSE_END_TOKENS
         }) + '\n');
