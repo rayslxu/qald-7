@@ -198,8 +198,12 @@ async function main() {
                             ex.prediction = manualConversion[ex.target_code];
                         else 
                             ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
-                        const result = await wikidata.query(ex.prediction);
-                        ex.target_code = result.join(' ');
+                        if (ex.prediction.includes(' null ')) {
+                            ex.target_code = '';
+                        } else {
+                            const result = await wikidata.query(ex.prediction);
+                            ex.target_code = result.join(' ');
+                        }
                         callback(null, ex);
                     } catch(e) {
                         ex.target_code = '';
