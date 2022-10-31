@@ -60,6 +60,7 @@ async function main() {
     });
     const args = parser.parse_args();
     const wikidata = new WikidataUtils(args.cache, args.bootleg_db, args.save_cache);
+    const expectedSPARQL : Record<string, string> = {};
     const expectedAnswer : Record<string, string[]> = {};
     let dataset;
     if (args.from_thingtalk) {
@@ -67,11 +68,14 @@ async function main() {
         dataset = args.dataset.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
             .pipe(new StreamUtils.MapAccumulator());
         const data = await dataset.read(); 
-        for (const ex of data.values()) 
+        for (const ex of data.values()) {
+            expectedSPARQL[ex.id] = ex.sparql;
             expectedAnswer[ex.id] = await wikidata.query(ex.sparql);
+        }
     } else {
         dataset = args.dataset.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
         for await (const item of dataset) {
+            expectedSPARQL[item.id] = item.query.sparql;
             if (args.reevaluate) {
                 const sparql = item.query.sparql;
                 expectedAnswer[item.id] = await wikidata.query(sparql);
@@ -87,10 +91,15 @@ async function main() {
     const TP : number[] = [];
     const FP : number[] = [];
     const FN : number[] = [];
+    let exactMatch = 0;
+    let total = 0;
     for (const line of predictions) {
         if (line.trim().length === 0)
             continue;
-        const [id, , answers, ] = line.split('\t');
+        total += 1;
+        const [id, , answers, sparql] = line.split('\t');
+        if (sparql === expectedSPARQL[id])
+            exactMatch += 1;
         const expected = expectedAnswer[id];
         const predicted = answers.split(' ');
         TP.push(predicted.filter((r) => expected.includes(r)).length);
@@ -102,6 +111,8 @@ async function main() {
     const macroPrecision = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FP[i]))));
     const macroRecall = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FN[i]))));
     const macroF1 = 2 * macroPrecision * macroRecall / (macroPrecision + macroRecall);
+    console.log('Query Accuracy: ' + exactMatch/total);
+    console.log('Answer Accuracy');
     console.log('Micro F1: ', microF1);
     console.log('Macro F1: ', macroF1);
     console.log('Macro Precision: ', macroPrecision);
