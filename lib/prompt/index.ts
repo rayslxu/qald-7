@@ -6,10 +6,42 @@ import { Linker } from '../ner/base';
 import { Falcon } from '../ner/falcon';
 import { OracleLinker } from '../ner/oracle';
 import { AzureEntityLinker } from '../ner/azure';
+import WikidataUtils from '../utils/wikidata';
+import { cleanName } from '../utils/misc';
 
 const PROMPT_SEP_TOKENS = '#';
 const PROMPT_END_TOKENS = '\n#\n\n';
 const RESPONSE_END_TOKENS = '\n';
+
+interface Options {
+    wikidata_cache : string,
+    bootleg : string,
+}
+
+class SchemaRetriever {
+    private _wikidata : WikidataUtils;
+
+    constructor(options : Options) {
+        this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
+    }
+
+    async retrieveOne(entity : string) {
+        const properties = await this._wikidata.getConnectedProperty(entity);
+        const ttProperties = [];
+        for (const property of properties) {
+            const label = await this._wikidata.getLabel(property);
+            ttProperties.push(cleanName(label!));
+        }
+        return ttProperties;
+    }
+
+    async retrieve(entities : string[]) {
+        const properties = [];
+        for (const entity of entities) 
+            properties.push(...(await this.retrieveOne(entity)));
+        return properties;
+    }
+}
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -29,6 +61,12 @@ async function main() {
         default: 'falcon',
         help: "the NER module to load",
         choices: ['falcon', 'oracle', 'azure'],
+    });
+    parser.add_argument('--schema', {
+        required: false,
+        default: false,
+        action: 'store_true',
+        help: "Include schema based on NER"
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -61,13 +99,18 @@ async function main() {
     else
         throw new Error('Unknown NER module');
 
+    const schemaRetriever = new SchemaRetriever(args);
+
     const columns = ['id', 'utterance', 'thingtalk'];
     const dataset = args.input.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
     for (const ex of data.values()) {
         const prompt = [];
+        // add question into prompt
         prompt.push('Question: ' + ex.utterance);
+
+        // add entities into prompt
         prompt.push(PROMPT_SEP_TOKENS);
         prompt.push('Entities:');
         const result = await linker.run(ex.id, ex.utterance, ex.thingtalk);
@@ -82,6 +125,15 @@ async function main() {
             prompt.push(PROMPT_SEP_TOKENS);
         for (const property of result.relations)
             prompt.push(`${property.label}: property.id`);
+
+        // add relations into prompt
+        if (args.schema) {
+            prompt.push(PROMPT_SEP_TOKENS);
+            prompt.push('Properties:');
+            const properties = await schemaRetriever.retrieve(result.entities.map((e) => e.id));
+            prompt.push(properties.join(', '));
+        }
+
         prompt.push(PROMPT_END_TOKENS);
         args.output.write(JSON.stringify({
             id : ex.id,

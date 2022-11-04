@@ -879,4 +879,45 @@ export default class WikidataUtils {
         const pageprops = (Object.values(result.query.pages)[0] as any).pageprops;
         return pageprops ? pageprops.wikibase_item : null;
     }
+
+    async isDomainEntity(entity : string) : Promise<boolean> {
+        const sparql = `SELECT DISTINCT ?v WHERE { 
+            wd:${entity} wdt:P279 ?v.
+        }`;
+        const result = await this._query(sparql);
+        return result.length > 0;
+    }
+
+    /**
+     * 
+     * @param entity qid of an entity
+     * @returns all properties that connect to the entity
+     */
+    async getConnectedProperty(entity : string) : Promise<string[]> {
+        const bidirectionalPropertySparql = `SELECT DISTINCT ?p WHERE {
+            { wd:${entity} ?p ?v.} UNION { ?v ?p wd:${entity}. }
+            FILTER(STRSTARTS(STR(?p), str(wdt:))) . 
+            BIND (IRI(replace(str(?p), str(wdt:), str(wd:)))  AS ?p2)
+            ?p2 wikibase:propertyType ?type .
+            FILTER (?type != wikibase:ExternalId) .
+        }`;
+        const unidirectionalPropertySparql = `SELECT DISTINCT ?p WHERE {
+            wd:${entity} ?p ?v.
+            FILTER(STRSTARTS(STR(?p), str(wdt:))) . 
+            BIND (IRI(replace(str(?p), str(wdt:), str(wd:)))  AS ?p2)
+            ?p2 wikibase:propertyType ?type .
+            FILTER (?type != wikibase:ExternalId) .
+        }`;
+        if (await this.isDomainEntity(entity)) {
+            const result = await this._query(unidirectionalPropertySparql);
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+        }
+        try {
+            const result = await this._query(bidirectionalPropertySparql);
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+        } catch(e) {
+            const result = await this._query(unidirectionalPropertySparql);
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+        }
+    }
 }
