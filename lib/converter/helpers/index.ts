@@ -390,7 +390,7 @@ export default class ConverterHelper {
             const domain = await this._converter.kb.getTopLevelDomain([subdomain]);
             table.name = this._converter.schema.getTable(domain);
             const display = await this._value.getEntityDisplay(subdomain);
-            if (!display)
+            if (!display && this._converter.humanReadableInstanceOf)
                 throw new Error('Failed to find the string span for domain: ' + subdomain);
             table.filters.unshift(instanceOfFilter(subdomain, display!, `${TP_DEVICE_NAME}:${table.name}_subdomain`, this._converter.humanReadableInstanceOf));
         }
