@@ -32,6 +32,7 @@ interface ManifestGeneratorOptions {
     cache : string,
     save_cache : boolean,
     output : fs.WriteStream,
+    prompt : fs.WriteStream,
     exclude_non_entity_properties : boolean,
     use_wikidata_alt_labels : boolean,
     human_readable_instance_of : boolean,
@@ -69,6 +70,7 @@ class ManifestGenerator {
      */
     private _propertyTypes : Record<string, Type|null>;
     private _output : fs.WriteStream;
+    private _prompt : fs.WriteStream;
 
     private _includeNonEntityProperties : boolean;
     private _useWikidataAltLabels : boolean;
@@ -92,6 +94,7 @@ class ManifestGenerator {
         this._propertyValues = { entities: {}, strings: {} };
         this._propertyTypes = {};
         this._output = options.output;
+        this._prompt = options.prompt;
 
         this._includeNonEntityProperties = !options.exclude_non_entity_properties;
         this._useWikidataAltLabels = options.use_wikidata_alt_labels;
@@ -734,6 +737,19 @@ class ManifestGenerator {
         await this._outputEntities();
         await this._outputParameterDatasets(classDef);
         console.log('Done.');
+        
+        console.log('Start generating schema prompt ...');
+        const prompt = [];
+        prompt.push('Translate natural language into SPARQL to query Wikidata.');
+        prompt.push('# Domains in Wikidata:');
+        for (const [domain, domainLabel] of Object.entries(this._domainLabels))
+            prompt.push(`# ${domainLabel}: ${domain}`);
+        prompt.push('# Properties in Wikidata:');
+        for (const arg of Object.values(this._properties))
+            prompt.push(`# ${arg.canonical}: ${arg.getImplementationAnnotation('wikidata_id')}`);
+        this._prompt.end(prompt.join('\n'));
+        await waitFinish(this._prompt);
+        console.log('Done.');
     }
 }
 
@@ -744,6 +760,11 @@ async function main() {
     });
     parser.add_argument('-o', '--output', {
         required: true,
+        type: fs.createWriteStream
+    });
+    parser.add_argument('--prompt', {
+        required: false,
+        default: 'prompt.txt',
         type: fs.createWriteStream
     });
     parser.add_argument('--experiment', {
