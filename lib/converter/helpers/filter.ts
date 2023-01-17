@@ -33,6 +33,10 @@ export default class FilterParser {
             throw new Error(`Unsupported: non-operation type filter: ${expression}`);
         if (expression.operator === '!')
             return this._parseFilter(expression.args[0] as OperationExpression, !negate);
+        else if (expression.operator === '||')
+            return this._parseOrFilter(expression.args as OperationExpression[]);
+        else if (expression.operator === '&&')
+            return this._parseAndFilter(expression.args as OperationExpression[]);
         else if (expression.args.length === 1)
             return this._parseUnaryOperation(expression, negate);
         else if (expression.args.length === 2)
@@ -169,6 +173,23 @@ export default class FilterParser {
             return filtersBySubject;
         } 
         throw new Error(`Unsupported binary operation ${expression.operator} with value ${rhs}`);
+    }
+
+    async _parseOrFilter(expressions : OperationExpression[]) {
+        const filters = new ArrayCollection<Ast.BooleanExpression>();
+        for (const expression of expressions)
+            filters.merge(await this._parseFilter(expression));
+        const merged = new ArrayCollection<Ast.BooleanExpression>();
+        for (const [key, value] of filters.iterate())
+            merged.add(key, new Ast.OrBooleanExpression(null, value));
+        return merged;
+    }
+
+    async _parseAndFilter(expressions : OperationExpression[]) {
+        const filters = new ArrayCollection<Ast.BooleanExpression>();
+        for (const expression of expressions)
+            filters.merge(await this._parseFilter(expression));
+        return filters;
     }
 
     async parse(filter : FilterPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
