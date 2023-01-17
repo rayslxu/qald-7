@@ -138,17 +138,17 @@ export default class ConverterHelper {
             if (isVariable(variable)) {
                 for (const [subject, table] of Object.entries(this._converter.tables)) {
                     if (subject === variable.value) {
-                        projectionsOrAggregationsBySubject.add(subject, { 
+                        projectionsOrAggregationsBySubject.add(subject, new Projection({ 
                             property: 'id', 
                             variable: variable.value 
-                        });
+                        }));
                     }
                     for (const projection of table.projections) {
                         if (projection.variable === variable.value) {
-                            projectionsOrAggregationsBySubject.add(subject, { 
+                            projectionsOrAggregationsBySubject.add(subject, new Projection({ 
                                 property: projection.property, 
                                 variable: variable.value 
-                            });
+                            }));
                         }
                     }
                 }
@@ -158,17 +158,17 @@ export default class ConverterHelper {
                 assert(isVariable(expression));
                 for (const [subject, table] of Object.entries(this._converter.tables)) {
                     if (subject === expression.value) {
-                        projectionsOrAggregationsBySubject.add(subject, { 
+                        projectionsOrAggregationsBySubject.add(subject, new Aggregation({ 
                             op: variable.expression.aggregation, 
                             variable: expression.value 
-                        });
+                        }));
                     } 
                     for (const projection of table.projections) {
                         if (projection.variable === expression.value) {
-                            projectionsOrAggregationsBySubject.add(subject, { 
+                            projectionsOrAggregationsBySubject.add(subject, new Aggregation({ 
                                 op: variable.expression.aggregation, 
                                 variable: projection.property as string
-                            });
+                            }));
                         }
                     }
                 }

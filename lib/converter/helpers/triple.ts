@@ -24,7 +24,7 @@ import {
 import {
     ArrayCollection
 } from '../../utils/misc';
-import SPARQLToThingTalkConverter from "../sparql2thingtalk";
+import SPARQLToThingTalkConverter, { Projection } from "../sparql2thingtalk";
 import {
     elemType
 } from '../../utils/thingtalk';
@@ -93,13 +93,13 @@ export default class TripleParser {
                 for (const [subj, table] of Object.entries(this._converter.tables)) {
                     const projection = table.projections.find((proj) => proj.variable === subject);
                     if (projection) {
-                        this._converter.updateTable(subj, { variable : object, property : projection.property + 'Label' });
+                        this._converter.updateTable(subj, new Projection({ variable : object, property : projection.property + 'Label' }));
                         break;
                     }
                 }
             } else {
                 const property = this._converter.schema.getProperty(predicate.slice(PROPERTY_PREFIX.length));
-                this._converter.updateTable(subject, { variable: object, property });
+                this._converter.updateTable(subject, new Projection({ variable: object, property }));
             }
             
         // Case 4: if both subject and object are entities, create a filter, for verification
@@ -158,7 +158,7 @@ export default class TripleParser {
         }
         const lastPropertyType = this._converter.schema.getPropertyType(sequence[sequence.length - 1].property);
         if (isVariable(triple.object)) {
-            this._converter.updateTable(subject, { property : sequence, variable : object });
+            this._converter.updateTable(subject, new Projection({ property : sequence, variable : object }));
         } else {
             const value = await this._converter.helper.convertValue(object, elemType(lastPropertyType));
             const filter = new Ast.PropertyPathBooleanExpression(

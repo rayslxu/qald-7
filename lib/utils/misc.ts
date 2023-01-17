@@ -123,7 +123,11 @@ export function sampleAltLabels(labels : string[], maximumCount = 5) {
     return cleanLabels.sort((a, b) => a.length - b.length).slice(0, maximumCount);
 }
 
-export class ArrayCollection<T> {
+interface EqualityComparable {
+    equals(x : this) : boolean;
+}
+
+export class ArrayCollection<T extends EqualityComparable> {
     private _values : Record<string, T[]>; 
 
     constructor(subject ?: string, value ?: T) {
@@ -166,7 +170,7 @@ export class ArrayCollection<T> {
                 this._values[key] = values;
             } else {
                 for (const value of values) {
-                    if (!(value in this._values[key]))
+                    if (!this._values[key].some((v) => value.equals(v)))
                         this._values[key].push(value);
                 }
             }

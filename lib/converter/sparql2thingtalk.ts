@@ -28,15 +28,57 @@ import {
 } from '../utils/thingtalk';
 
 
-export interface Projection {
-    property : string|Ast.PropertyPathSequence|Ast.FilterValue|Ast.ArrayFieldValue, 
-    variable ?: string,
-    type ?: string
+export class Projection {
+    public property : string|Ast.PropertyPathSequence|Ast.FilterValue|Ast.ArrayFieldValue;
+    public variable ?: string;
+    public type ?: string;
+
+    constructor(options : {
+        property : string|Ast.PropertyPathSequence|Ast.FilterValue|Ast.ArrayFieldValue, 
+        variable ?: string,
+        type ?: string}
+    ) {
+        this.property = options.property;
+        this.variable = options.variable;
+        this.type = options.type;
+    }
+
+    public equals(other : Projection) : boolean {
+        if (this.variable !== other.variable || this.type !== other.type)
+            return false;
+
+
+        if (typeof this.property === 'string')
+            return this.property === other.property;
+
+        if (Array.isArray(this.property)) {
+            if (!Array.isArray(other.property))
+                return false;
+            for (const propertyPath of this.property) {
+                if (!other.property.some((p) => p.equals(propertyPath)))
+                    return false;
+            }
+            return true;
+        } else {  
+            if (typeof other.property === 'string' || Array.isArray(other.property))
+                return false;
+            return this.property.equals(other.property);
+        }
+    }
 }
 
-export interface Aggregation {
-    op : string,
-    variable : string
+export class Aggregation {
+    public op : string;
+    public variable : string;
+
+    constructor(options : { op : string, variable : string }) {
+        this.op = options.op;
+        this.variable = options.variable;
+    }
+
+    public equals(other : Aggregation) : boolean {
+        return this.op === other.op && this.variable === other.variable;
+    }
 }
 
 // comparison is used for making comparison between two tables

@@ -7,7 +7,7 @@ import {
     isWikidataPropertyQualifierNode,
     isWikidataPropertyStatementNode
 } from '../../utils/sparqljs-typeguard';
-import { Predicate } from '../sparql2thingtalk';
+import { Predicate, Projection } from '../sparql2thingtalk';
 import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 import { 
     PROPERTY_PREDICATE_PREFIX, 
@@ -134,10 +134,10 @@ export default class PredicateParser {
             const filters = [];
             for (const qualifier of predicate.qualifiers) {
                 if (qualifier.isVariable) {
-                    this._converter.updateTable(predicate.table, {
+                    this._converter.updateTable(predicate.table, new Projection({
                         property: `${predicate.property}.${qualifier.property}`,
                         variable: qualifier.value
-                    });
+                    }));
                     continue; 
                 }
                 const qualifierType = this._converter.schema.getPropertyType(`${predicate.property}.${qualifier.property}`);
@@ -156,10 +156,10 @@ export default class PredicateParser {
                     new Ast.VarRefValue(predicate.property),
                     filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
                 );
-                this._converter.updateTable(predicate.table, {
+                this._converter.updateTable(predicate.table, new Projection({
                     property: proj,
                     variable: predicate.value
-                });
+                }));
             // if the predicate has an entity value, but there exists an projection on its field
             // add an ArrayFieldValue projection
             } else if (this._hasFieldProjection(predicate.table, predicate.property)) {
@@ -174,10 +174,10 @@ export default class PredicateParser {
                     filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
                 );
                 const [field, variable] = this._getAndDeleteFieldProjection(predicate.table, predicate.property)!;
-                this._converter.updateTable(predicate.table, {
+                this._converter.updateTable(predicate.table, new Projection({
                     property: new Ast.ArrayFieldValue(proj, field!),
                     variable
-                });
+                }));
             // if the predicate has an entity value, make a qualified filter
             } else {
                 const lhs = new Ast.FilterValue(
@@ -194,10 +194,10 @@ export default class PredicateParser {
         } else {
             for (const qualifier of predicate.qualifiers) {
                 if (qualifier.isVariable) {
-                    this._converter.updateTable(predicate.table, {
+                    this._converter.updateTable(predicate.table, new Projection({
                         property: `${predicate.property}.${qualifier.property}`,
                         variable: qualifier.value
-                    });
+                    }));
                     continue; 
                 }
                 const qualifierType = this._converter.schema.getPropertyType(`${predicate.property}.${qualifier.property}`);
