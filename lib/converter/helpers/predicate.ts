@@ -13,7 +13,7 @@ import {
     PROPERTY_PREDICATE_PREFIX, 
     PROPERTY_QUALIFIER_PREFIX, 
     PROPERTY_STATEMENT_PREFIX } from '../../utils/wikidata';
-import { Ast } from 'thingtalk';
+import { Ast, Type } from 'thingtalk';
 import { ArrayCollection } from '../../utils/misc';
 import { elemType } from '../../utils/thingtalk';
 
@@ -160,36 +160,39 @@ export default class PredicateParser {
                     property: proj,
                     variable: predicate.value
                 }));
-            // if the predicate has an entity value, but there exists an projection on its field
-            // add an ArrayFieldValue projection
-            } else if (this._hasFieldProjection(predicate.table, predicate.property)) {
-                filters.push(await this._converter.helper.makeAtomBooleanExpression(
-                    'value',
-                    predicate.value, 
-                    '==',
-                    elemType(propertyType)
-                ));
-                const proj = new Ast.FilterValue(
-                    new Ast.VarRefValue(predicate.property),
-                    filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
-                );
-                const [field, variable] = this._getAndDeleteFieldProjection(predicate.table, predicate.property)!;
-                this._converter.updateTable(predicate.table, new Projection({
-                    property: new Ast.ArrayFieldValue(proj, field!),
-                    variable
-                }));
-            // if the predicate has an entity value, make a qualified filter
+            // if the predicate has an entity value
             } else {
-                const lhs = new Ast.FilterValue(
-                    new Ast.VarRefValue(predicate.property),
-                    filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
-                );
-                let operator = predicate.op ?? '==';
-                if (operator === '>' || operator === '<') 
-                    operator = operator + '=';
-                const rhs = await this._converter.helper.convertValue(predicate.value, propertyType);
-                const filter = new Ast.ComputeBooleanExpression(null, lhs, operator, rhs, null);
-                filtersBySubject.add(predicate.table, filter);
+                // if there is qualifier, add a qualified filter
+                if (filters.length > 0) {
+                    const lhs = new Ast.FilterValue(
+                        new Ast.VarRefValue(predicate.property),
+                        filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
+                    );
+                    let operator = predicate.op ?? (propertyType instanceof Type.Array ? 'contains' : '==');
+                    if (operator === '>' || operator === '<') 
+                        operator = operator + '=';
+                    const rhs = await this._converter.helper.convertValue(predicate.value, propertyType);
+                    const filter = new Ast.ComputeBooleanExpression(null, lhs, operator, rhs, null);
+                    filtersBySubject.add(predicate.table, filter);
+
+                // if no qualifier exists and there is an projection on its field, add an ArrayFieldValue projection
+                } else if (this._hasFieldProjection(predicate.table, predicate.property)) {
+                    filters.push(await this._converter.helper.makeAtomBooleanExpression(
+                        'value',
+                        predicate.value, 
+                        '==',
+                        elemType(propertyType)
+                    ));
+                    const proj = new Ast.FilterValue(
+                        new Ast.VarRefValue(predicate.property),
+                        filters.length > 1 ? new Ast.AndBooleanExpression(null, filters) : filters[0]
+                    );
+                    const [field, variable] = this._getAndDeleteFieldProjection(predicate.table, predicate.property)!;
+                    this._converter.updateTable(predicate.table, new Projection({
+                        property: new Ast.ArrayFieldValue(proj, field!),
+                        variable
+                    }));
+                }
             }
         } else {
             for (const qualifier of predicate.qualifiers) {

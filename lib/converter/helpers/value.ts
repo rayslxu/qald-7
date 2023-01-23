@@ -89,6 +89,8 @@ export default class ValueConverter {
             return this._toThingTalkDate(value);
         if (type instanceof Type.Compound)
             return this.toThingTalkValue(value, type.fields.value.type);
+        if (type instanceof Type.Array)
+            return this.toThingTalkValue(value, type.elem as Type);
         throw new Error('Unsupported value type: ' + type);
     }
 }
