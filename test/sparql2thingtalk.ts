@@ -8,8 +8,9 @@ import { SPARQLToThingTalkConverter } from '../lib/converter';
 import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
 
 const testFiles = [
+    './test/tests-webq.txt',
     './test/tests.txt',
-    './test/tests-qid-only.txt'
+    './test/tests-qid-only.txt',
 ];
 
 async function main() {
@@ -18,7 +19,7 @@ async function main() {
     const classDef = await schemas.getFullMeta(TP_DEVICE_NAME);
     for (const testFile of testFiles) {
         console.log('Running tests in', testFile);
-        const excludeEntityDisplay = testFile.endsWith('qid-only.txt');
+        const excludeEntityDisplay = testFile !== ('./test/tests.txt');
         const options = {
             cache: 'wikidata_cache.sqlite', 
             save_cache: false,
@@ -43,7 +44,7 @@ async function main() {
                 converted, 
                 preprocessed,
                 EntityUtils.makeDummyEntities(preprocessed),
-                { locale: 'en', timezone: undefined, includeEntityValue: true, excludeEntityDisplay  }
+                { locale: 'en', timezone: undefined, includeEntityValue: true, excludeEntityDisplay }
             ).join(' ');
 
             assert.strictEqual(thingtalk, expected);

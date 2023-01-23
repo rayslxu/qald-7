@@ -1,0 +1,29 @@
+Utterance: where are the netherlands on a world map ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { wd:Q55 wdt:P625 ?x. }
+TT:
+[ location ] of @wd . entity ( ) filter id == " Q55 " ^^wd:entity ;
+
+====
+Utterance: what character did brian austin green play on 90210 ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q117590 p:P161 ?p. 
+    ?p ps:P161 wd:Q313311; pq:P453 ?x. 
+}
+TT: 
+[ character_role of ( cast_member filter value == " Q313311 " ^^wd:p_cast_member ) ] of @wd . television_series ( ) filter id == " Q117590 " ^^wd:television_series ;
+
+====
+
+Utterance: what was the name of frederick douglass book ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q7725634; wdt:P50 wd:Q215562. }
+TT:
+@wd . creative_work ( ) filter contains ( author , " Q215562 " ^^wd:p_author ) && instance_of == " Q7725634 " ^^wd:creative_work_subdomain ;
