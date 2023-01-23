@@ -338,3 +338,12 @@ SELECT DISTINCT ?x WHERE {
     { ?x <http://www.wikidata.org/prop/direct/P27> <http://www.wikidata.org/entity/Q15180>. } UNION { ?x <http://www.wikidata.org/prop/direct/P27> <http://www.wikidata.org/entity/Q159>. } 
     ?x <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q11631>. 
 }
+
+====
+Utterance: where are the netherlands on a world map ?
+TT:
+[ location ] of @wd . entity ( ) filter id == " Q55 " ^^wd:entity ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q55> <http://www.wikidata.org/prop/direct/P276>|<http://www.wikidata.org/prop/direct/P625> ?x. 
+}

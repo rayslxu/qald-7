@@ -110,8 +110,12 @@ class TripleGenerator extends Ast.NodeVisitor {
         return node;
     }
 
-    private _edge(property : string, value : string) : string {
-
+    private _edge(property : string, value : string, entityValue ?: boolean) : string {
+        // entityValue gives hints if the value is an entity or not 
+        // by default, it's undefined and determined by if value is an entity or a variable
+        // however in some cases such as variable with type constraint, we know the value must be an entity
+        if (entityValue === undefined)
+            entityValue = this._converter.kb.isEntity(value);
         let prefix = PROPERTY_PREFIX;
         if (this._inPredicate) {
             if (property === 'value') {
@@ -133,16 +137,18 @@ class TripleGenerator extends Ast.NodeVisitor {
         // P31, instance of, always add optional subclass of
         if (property === 'P31')
             return `<${prefix}P31>/<${prefix}P279>*`;
-        
+        // P276, location -> location | coordinate location (only if the value is a variable)
+        if (property === 'P276' && !entityValue && !this._converter.kb.isEntity(value)) 
+            return `<${prefix}P276>|<${prefix}P625>`;
         return predicate;
     }
 
-    private _triple(property : string, value : string, subject ?: string) {
+    private _triple(property : string, value : string, subject ?: string, entityValue ?: boolean) {
         assert(property && value);
         // this._subject: either a variable with ? prefix, or a full path QID
         // subject: either a variable WITHOUT ? prefix, or a simple QID
         const s = subject ? this._node(subject) : this._subject;
-        const p = this._edge(property, value);
+        const p = this._edge(property, value, entityValue);
 
         if (property === 'P31' && value in DOMAIN_MAP)
             value = DOMAIN_MAP[value];
@@ -175,16 +181,17 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (proj.prettyprint() === this._target_projection)
             this._converter.setResultVariable(`?${v}`);
         
+        const entityValue = proj.types.length > 0;
         if (Array.isArray(proj.value)) {
             const path : string[] = [];
             for (const elem of proj.value) {
                 const p = this._converter.getWikidataProperty(elem.property);
-                path.push(elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v));
+                path.push(elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v, entityValue));
             }
             this._statements.push(`${this._subject} ${path.join('/')} ?${v}.`);
         } else {
             const p = this._converter.getWikidataProperty(proj.value);
-            this._statements.push(this._triple(p, v));
+            this._statements.push(this._triple(p, v, undefined, entityValue));
         }     
 
         if (proj.types.length > 0) {
