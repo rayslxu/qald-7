@@ -139,7 +139,10 @@ class TripleGenerator extends Ast.NodeVisitor {
             return `<${prefix}P31>/<${prefix}P279>*`;
         // P276, location -> location | coordinate location (only if the value is a variable)
         if (property === 'P276' && !entityValue && !this._converter.kb.isEntity(value)) 
-            return `<${prefix}P276>|<${prefix}P625>`;
+            return `(<${prefix}P276>|<${prefix}P625>)`;
+        // P161, cast member -> cast member | voice actor
+        if (property === 'P161')
+            return `(<${prefix}P161>|<${prefix}P725>)`; 
         return predicate;
     }
 
@@ -500,6 +503,15 @@ export default class ThingTalkToSPARQLConverter {
         for (const property of this._classDef.queries['entity'].iterateArguments()) {
             const qid = property.getImplementationAnnotation('wikidata_id') as string;
             this._propertyMap[property.name] = qid;
+            const elemType = property.type instanceof Type.Array ? property.type.elem : property.type;
+            if (elemType instanceof Type.Compound) {
+                for (const field in elemType.fields) {
+                    if (field === 'value')
+                        continue;
+                    const qid = elemType.fields[field].getImplementationAnnotation('wikidata_id') as string;
+                    this._propertyMap[field] = qid;
+                }
+            }
         }
         this._domainMap = { 'art museum' : 'Q207694' };
         for (const domain of domains) {

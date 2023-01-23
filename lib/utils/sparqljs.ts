@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
-import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataPropertyNode } from './sparqljs-typeguard';
+import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataPredicateNode, isWikidataPropertyNode } from './sparqljs-typeguard';
 import { PROPERTY_PREFIX } from './wikidata';
 
 /**
@@ -75,7 +75,14 @@ export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|Variabl
                 if (isWikidataPropertyNode(item, 'P131')) 
                     return item;
             }
-        }     
+        } else if (predicate.pathType === '|') {
+            if (predicate.items.length === 2) {
+                const castMember = predicate.items.find((p) => isWikidataPropertyNode(p, 'P161') || isWikidataPredicateNode(p, 'P161'));
+                const voiceActor = predicate.items.find((p) => isWikidataPropertyNode(p, 'P725') || isWikidataPredicateNode(p, 'P725'));
+                if (castMember !== undefined && voiceActor !== undefined)
+                    return castMember;
+            }
+        }    
     }
     return predicate;
 }

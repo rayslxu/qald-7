@@ -1,3 +1,38 @@
+Utterance: what character did natalie portman play in star wars ?	
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    ?p wdt:P8345 wd:Q462; p:P161|p:P725 ?y. 
+    ?y ps:P161|ps:P725 wd:Q37876; pq:P453 ?x. 
+}
+TT: 
+[ character_role of ( cast_member filter value == " Q37876 " ^^wd:p_cast_member ) ] of @wd . entity ( ) filter contains ( media_franchise , " Q462 " ^^wd:p_media_franchise ) ;
+
+====
+
+Utterance: who is the president of the european union 2011 ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+SELECT DISTINCT ?x WHERE { 
+    ?x p:P39 ?p. 
+    ?p ps:P39 wd:Q740126; 
+       pq:P580 ?y; 
+       pq:P582 ?z. 
+    FILTER((?y < "2012-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2011-01-01T00:00:00Z"^^xsd:dateTime)) 
+}
+TT:
+@wd . entity ( ) filter contains ( position_held filter ( start_time <= new Date ( 12 ) && end_time >= new Date ( 2011 ) ) , " Q740126 " ^^wd:p_position_held ) ;
+
+====
+
 Utterance: where are the netherlands on a world map ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> 

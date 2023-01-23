@@ -34,21 +34,27 @@ export function isWikidataPropertyNode(node : any, pid ?: string) : node is IriT
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_PREFIX);
 }
 
-export function isWikidataPredicateNode(node : any) : node is IriTerm {
-    return isWikidataPropertyStatementNode(node) || isWikidataPropertyQualifierNode(node) || isWikidataPropertyPredicateNode(node);
+export function isWikidataPredicateNode(node : any, pid ?: string) : node is IriTerm {
+    return isWikidataPropertyStatementNode(node, pid) || isWikidataPropertyQualifierNode(node, pid) || isWikidataPropertyPredicateNode(node, pid);
 }
 
-export function isWikidataPropertyStatementNode(node : any) : node is IriTerm {
+export function isWikidataPropertyStatementNode(node : any, pid ?: string) : node is IriTerm {
+    if (pid)
+        return 'termType' in node && node.termType === 'NamedNode' && node.value === PROPERTY_STATEMENT_PREFIX + pid;
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_STATEMENT_PREFIX); 
 } 
 
-export function isWikidataPropertyQualifierNode(node : any) : node is IriTerm {
+export function isWikidataPropertyQualifierNode(node : any, pid ?: string) : node is IriTerm {
+    if (pid)
+        return 'termType' in node && node.termType === 'NamedNode' && node.value === PROPERTY_QUALIFIER_PREFIX + pid;
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_QUALIFIER_PREFIX); 
 } 
 
-export function isWikidataPropertyPredicateNode(node : any) : node is IriTerm {
+export function isWikidataPropertyPredicateNode(node : any, pid ?: string) : node is IriTerm {
     if (isWikidataPropertyNode(node) || isWikidataPropertyQualifierNode(node) || isWikidataPropertyStatementNode(node))
         return false;
+    if (pid)
+        return 'termType' in node && node.termType === 'NamedNode' && node.value === PROPERTY_PREDICATE_PREFIX + pid;
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(PROPERTY_PREDICATE_PREFIX); 
 } 
 

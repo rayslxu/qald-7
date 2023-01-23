@@ -92,9 +92,7 @@ Utterance: Give me the birthdays of all actors of the television show Charmed.
 TT: 
 [ < cast_member / date_of_birth > ] of @wd . television_series ( ) filter id == " Q162371 " ^^wd:television_series ;
 SPARQL: 
-SELECT DISTINCT ?x WHERE { 
-    <http://www.wikidata.org/entity/Q162371> <http://www.wikidata.org/prop/direct/P161>/<http://www.wikidata.org/prop/direct/P569> ?x.
-}
+SELECT DISTINCT ?x WHERE { <http://www.wikidata.org/entity/Q162371> (<http://www.wikidata.org/prop/direct/P161>|<http://www.wikidata.org/prop/direct/P725>)/<http://www.wikidata.org/prop/direct/P569> ?x. }
 
 ====
 Utterance: Who wrote the lyrics for the Polish national anthem?
@@ -345,5 +343,17 @@ TT:
 [ location ] of @wd . entity ( ) filter id == " Q55 " ^^wd:entity ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
-    <http://www.wikidata.org/entity/Q55> <http://www.wikidata.org/prop/direct/P276>|<http://www.wikidata.org/prop/direct/P625> ?x. 
+    <http://www.wikidata.org/entity/Q55> (<http://www.wikidata.org/prop/direct/P276>|<http://www.wikidata.org/prop/direct/P625>) ?x. 
+}
+
+====
+Utterance: what character did natalie portman play in star wars ?	
+TT: 
+[ character_role of ( cast_member filter value == " Q37876 " ^^wd:p_cast_member ) ] of @wd . entity ( ) filter contains ( media_franchise , " Q462 " ^^wd:p_media_franchise ) ;
+SPARQL:
+SELECT DISTINCT ?y WHERE { 
+  ?x <http://www.wikidata.org/prop/direct/P8345> <http://www.wikidata.org/entity/Q462>. 
+  ?x (<http://www.wikidata.org/prop/P161>|<http://www.wikidata.org/prop/P725>) ?p. 
+  ?p <http://www.wikidata.org/prop/qualifier/P453> ?y. 
+  ?p (<http://www.wikidata.org/prop/statement/P161>|<http://www.wikidata.org/prop/statement/P725>) <http://www.wikidata.org/entity/Q37876>. 
 }
