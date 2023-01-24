@@ -140,7 +140,10 @@ export const MANUAL_CONVERSION_WITH_DISPLAY : Record<string, string> = {
     // qald 7 test
     // id: 14
     '[ contains ( capital_of , " Q79 " ^^wd:entity ( " egypts " ) ) ] of sort ( population desc of @wd . entity ( ) filter instance_of == " Q515 " ^^wd:domain ( " city " ) && contains ( country , " Q79 " ^^wd:entity ( " egypts " ) ) ) ;': 
-    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }"
+    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }", 
+
+    '[ producer ] of sort ( count desc of count ( @wd . film ( ) ) by producer ) [ 1 ] ;':
+    'SELECT DISTINCT ?uri WHERE { ?film <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?film <http://www.wikidata.org/prop/direct/P162> ?uri . } GROUP BY ?uri ORDER BY DESC(COUNT(?film)) LIMIT 1'
 };
 
 export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
@@ -173,6 +176,14 @@ export const MANUAL_CONVERSION_WITHOUT_DISPLAY : Record<string, string> = {
     // qald 7 test
     // id: 14
     '[ contains ( capital_of , " Q79 " ^^wd:entity ) ] of sort ( population desc of @wd . entity ( ) filter instance_of == " Q515 " ^^wd:domain && contains ( country , " Q79 " ^^wd:entity ) ) ;': 
-    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }"
+    "ASK WHERE { { SELECT ?largest WHERE { ?largest <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . ?largest <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q79> . ?largest <http://www.wikidata.org/prop/direct/P1082> ?population . } ORDER BY DESC(?population) LIMIT 1 } <http://www.wikidata.org/entity/Q79> <http://www.wikidata.org/prop/direct/P36> ?largest . }",
 
+    '[ producer ] of sort ( count desc of count ( @wd . film ( ) ) by producer ) [ 1 ] ;':
+    'SELECT DISTINCT ?uri WHERE { ?film <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?film <http://www.wikidata.org/prop/direct/P162> ?uri . } GROUP BY ?uri ORDER BY DESC(COUNT(?film)) LIMIT 1',
+
+    'count ( @wd . entity ( ) filter instance_of == " Q8072 " ^^wd:domain ) by country filter count >= 10 ;':
+    'SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)',
+
+    'sort ( count ( official_language ) desc of @wd . country ( ) ) [ 1 ] ;':
+    'SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P37> ?language . } GROUP BY ?uri ORDER BY DESC(COUNT(?language)) LIMIT 1'
 };
