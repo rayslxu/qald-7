@@ -55,7 +55,27 @@ export const ENTITY_SPAN_OVERRIDE : Record<string, string> = {
     "Q4830453": "company",
     "Q668": "indian",
     "Q16": "canadians",
-    "Q33946": "czech"
+    "Q33946": "czech",
+    "Q408": "australian",
+    "Q869": "thai",
+    "Q17": "japanese",
+    "Q51752": "darth vader",
+    "Q694178": "google headquarters",
+    "Q5456": "andean",
+    "Q519490": "crazy stupid love",
+    "Q161885": "british",
+    "Q1033": "nigerians",
+    "Q79": "egyptians",
+    "Q148": "chinese",
+    "Q622769": "superman",
+    "Q174811": "up",
+    "Q218": "romanian",
+    "Q22": "scottish",
+    "Q28": "hungarian",
+    "Q202054": "honda",
+    "Q801": "israeli",
+    "Q766": "jamaican",
+    "Q796": "iraqi"
 };
 
 export const MANUAL_SPARQL_REWRITE : Record<string, string> = {
