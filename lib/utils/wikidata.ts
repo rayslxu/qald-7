@@ -910,14 +910,14 @@ export default class WikidataUtils {
         }`;
         if (await this.isDomainEntity(entity)) {
             const result = await this._query(unidirectionalPropertySparql);
-            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length)).filter((p : string) => !PROPERTY_BLACKLIST.includes(p));
         }
         try {
             const result = await this._query(bidirectionalPropertySparql);
-            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length)).filter((p : string) => !PROPERTY_BLACKLIST.includes(p));
         } catch(e) {
             const result = await this._query(unidirectionalPropertySparql);
-            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length));
+            return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length)).filter((p : string) => !PROPERTY_BLACKLIST.includes(p));
         }
     }
 }
