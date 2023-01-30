@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { WikidataUtils } from '../lib';
 import { Falcon } from '../lib/ner/falcon';
 
 const TEST_CASES = [
@@ -6,7 +7,8 @@ const TEST_CASES = [
 ];
 
 async function main() {
-    const liner = new Falcon({ ner_cache: 'falcon.sqlite', wikidata_cache: 'wikidata_cache.sqlite', bootleg: 'bootleg.sqlite' });
+    const wikidata = new WikidataUtils('wikidata_cache.sqlite', 'bootleg.sqlite');
+    const liner = new Falcon(wikidata, { ner_cache: 'falcon.sqlite' });
     for (const [id, utterance, expectedEntities, expectedRelations] of TEST_CASES) {
         const result = await liner.run(id as string, utterance as string);
         assert.deepStrictEqual(result.entities.map((e : any) => e.id), expectedEntities);

@@ -13,16 +13,11 @@ const PROMPT_SEP_TOKENS = '#';
 const PROMPT_END_TOKENS = '\n#\n\n';
 const RESPONSE_END_TOKENS = '\n';
 
-interface Options {
-    wikidata_cache : string,
-    bootleg : string,
-}
-
 class SchemaRetriever {
     private _wikidata : WikidataUtils;
 
-    constructor(options : Options) {
-        this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
+    constructor(wikidata : WikidataUtils) {
+        this._wikidata = wikidata;
     }
 
     async retrieveOne(entity : string) {
@@ -88,14 +83,15 @@ async function main() {
     const args = parser.parse_args();
     if (!args.ner_cache)
         args.ner_cache = args.module + '.sqlite';
+    const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
     let linker : Linker;
     if (args.module === 'falcon') 
-        linker = new Falcon(args);
+        linker = new Falcon(wikidata, args);
     else if (args.module === 'oracle')
         linker = new OracleLinker(args);
     else if (args.module === 'azure')
-        linker = new AzureEntityLinker(args);
+        linker = new AzureEntityLinker(wikidata, args);
     else
         throw new Error('Unknown NER module');
 

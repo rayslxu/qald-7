@@ -7,8 +7,6 @@ import Cache from '../utils/cache';
 
 interface FalconOptions {
     ner_cache : string,
-    wikidata_cache : string,
-    bootleg : string,
     raw_data ?: string,
 }
 
@@ -18,9 +16,9 @@ export class Falcon extends Linker {
     private _cache : Cache;
     private _rawData : Record<string, string>;
 
-    constructor(options : FalconOptions) {
+    constructor(wikidata : WikidataUtils, options : FalconOptions) {
         super();
-        this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
+        this._wikidata = wikidata;
         this._url = 'https://labs.tib.eu/falcon/falcon2/api?mode=long';
         this._cache = new Cache(options.ner_cache);
         this._rawData = {};

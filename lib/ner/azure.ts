@@ -6,8 +6,6 @@ import Cache from '../utils/cache';
 
 interface AzureEntityLinkerOptions {
     ner_cache : string,
-    wikidata_cache : string,
-    bootleg : string,
     raw_data ?: string
 }
 
@@ -17,9 +15,9 @@ export class AzureEntityLinker extends Linker {
     private _cache : Cache;
     private _rawData : Record<string, string>;
 
-    constructor(options : AzureEntityLinkerOptions) {
+    constructor(wikidata : WikidataUtils, options : AzureEntityLinkerOptions) {
         super();
-        this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
+        this._wikidata = wikidata;
         this._url = 'https://entity-linker.cognitiveservices.azure.com//text/analytics/v3.0/entities/linking';
         this._cache = new Cache(options.ner_cache);
         this._rawData = {};

@@ -6,6 +6,8 @@ import { Linker } from './base';
 import { Falcon } from './falcon';
 import { OracleLinker } from './oracle';
 import { AzureEntityLinker } from './azure';
+import { GPT3Rephraser } from './gpt3-rephraser';
+import WikidataUtils from '../utils/wikidata';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -42,21 +44,29 @@ async function main() {
         required: false,
         help: 'path to the original data file to retrieve case sensitive utterance'
     });
+    parser.add_argument(`--gpt3-rephrase`, {
+        default: false,
+        action: 'store_true',
+        help: 'Enable GPT3 rephrase of the original utterance'
+    });
 
     const args = parser.parse_args();
     if (!args.ner_cache)
         args.ner_cache = args.module + '.sqlite';
+    
+    const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
     let linker : Linker;
     if (args.module === 'falcon') 
-        linker = new Falcon(args);
+        linker = new Falcon(wikidata, args);
     else if (args.module === 'oracle')
-        linker = new OracleLinker(args);
+        linker = new OracleLinker(wikidata);
     else if (args.module === 'azure')
-        linker = new AzureEntityLinker(args);
+        linker = new AzureEntityLinker(wikidata, args);
     else
         throw new Error('Unknown NER module');
 
+    const rephraser = new GPT3Rephraser('https://wikidata.openai.azure.com', wikidata);
     const columns = ['id', 'sentence', 'thingtalk'];
     const dataset = args.input.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
         .pipe(new StreamUtils.MapAccumulator());
@@ -84,7 +94,8 @@ async function main() {
         for (const property of result.relations)
             nedInfo.push(property.label, '[', property.id, ']', ';');
         nedInfo.push('</e>');
-        args.output.write(`${ex.id}\t${ex.sentence + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
+        const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
+        args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
     }
     console.log('Failure rate: ', countFail/countTotal);
     StreamUtils.waitEnd(dataset);

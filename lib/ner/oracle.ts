@@ -1,17 +1,12 @@
 import { Entity, Linker } from './base';
 import WikidataUtils from '../utils/wikidata';
 
-interface OracleLinkerOptions {
-    wikidata_cache : string,
-    bootleg : string,
-}
-
 export class OracleLinker extends Linker {
     private _wikidata : WikidataUtils;
 
-    constructor(options : OracleLinkerOptions) {
+    constructor(wikidata : WikidataUtils) {
         super();
-        this._wikidata = new WikidataUtils(options.wikidata_cache, options.bootleg);
+        this._wikidata = wikidata;
     }
     
     async run(id : string, utterance : string, thingtalk : string) {
