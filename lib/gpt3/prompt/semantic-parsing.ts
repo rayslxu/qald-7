@@ -2,12 +2,12 @@ import fs from 'fs';
 import * as argparse from 'argparse';
 import csvparse from 'csv-parse';
 import { StreamUtils } from 'genie-toolkit';
-import { Linker } from '../ner/base';
-import { Falcon } from '../ner/falcon';
-import { OracleLinker } from '../ner/oracle';
-import { AzureEntityLinker } from '../ner/azure';
-import WikidataUtils from '../utils/wikidata';
-import { cleanName } from '../utils/misc';
+import { Linker } from '../../ner/base';
+import { Falcon } from '../../ner/falcon';
+import { OracleLinker } from '../../ner/oracle';
+import { AzureEntityLinker } from '../../ner/azure';
+import WikidataUtils from '../../utils/wikidata';
+import { cleanName } from '../../utils/misc';
 
 const PROMPT_SEP_TOKENS = '#';
 const PROMPT_END_TOKENS = '\n#\n\n';
@@ -22,7 +22,7 @@ class SchemaRetriever {
 
     async retrieveOne(entity : string) {
         const properties = await this._wikidata.getConnectedProperty(entity);
-        const ttProperties = [];
+        const ttProperties : string[] = [];
         for (const property of properties) {
             const label = await this._wikidata.getLabel(property);
             ttProperties.push(cleanName(label!));
@@ -31,7 +31,7 @@ class SchemaRetriever {
     }
 
     async retrieve(entities : string[]) {
-        const properties = [];
+        const properties : string[] = [];
         for (const entity of entities) 
             properties.push(...(await this.retrieveOne(entity)));
         return properties;
@@ -102,7 +102,7 @@ async function main() {
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
     for (const ex of data.values()) {
-        const prompt = [];
+        const prompt : string[] = [];
         // add question into prompt
         prompt.push('Question: ' + ex.utterance);
 

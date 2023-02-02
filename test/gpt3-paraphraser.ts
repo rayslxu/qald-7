@@ -1,5 +1,5 @@
 import { WikidataUtils } from '../lib';
-import { GPT3Rephraser } from '../lib/ner/gpt3-rephraser';
+import { GPT3Rephraser } from '../lib/gpt3/rephraser';
 
 const TEST_CASES : Array<[string, string[]]> = [
     ['where did the massive allied invasion of northern france take place in june 1944 ?', ['Q16471']],

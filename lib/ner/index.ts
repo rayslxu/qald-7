@@ -6,7 +6,7 @@ import { Linker } from './base';
 import { Falcon } from './falcon';
 import { OracleLinker } from './oracle';
 import { AzureEntityLinker } from './azure';
-import { GPT3Rephraser } from './gpt3-rephraser';
+import { GPT3Rephraser } from '../gpt3/rephraser';
 import WikidataUtils from '../utils/wikidata';
 
 async function main() {

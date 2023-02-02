@@ -1,8 +1,8 @@
 import * as argparse from 'argparse';
-import WikidataUtils from '../utils/wikidata';
-import { cleanName } from '../utils/misc';
+import WikidataUtils from '../../utils/wikidata';
+import { cleanName } from '../../utils/misc';
 
-class NERPromptGenerator {
+export class RephrasePromptGenerator {
     private _wikidata : WikidataUtils;
 
     constructor(wikidata : WikidataUtils) {
@@ -11,7 +11,7 @@ class NERPromptGenerator {
 
     private async _retrieveProperties(entity : string) {
         const properties = await this._wikidata.getConnectedProperty(entity);
-        const ttProperties = [];
+        const ttProperties : string[] = [];
         for (const property of properties) {
             const label = await this._wikidata.getLabel(property);
             ttProperties.push(cleanName(label!));
@@ -20,7 +20,7 @@ class NERPromptGenerator {
     }
 
     async prompt(utterance : string, entities : string[]) {
-        const properties = [];
+        const properties : string[] = [];
         for (const entity of entities) 
             properties.push(...(await this._retrieveProperties(entity)));
         let prompt = '';
@@ -57,7 +57,7 @@ async function main() {
     const args = parser.parse_args();
     const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
-    const prompter = new NERPromptGenerator(wikidata);
+    const prompter = new RephrasePromptGenerator(wikidata);
     const prompt = await prompter.prompt(args.input, args.entities);
     console.log(prompt);
 }
