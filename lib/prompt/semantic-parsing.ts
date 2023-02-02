@@ -41,7 +41,7 @@ class SchemaRetriever {
 async function main() {
     const parser = new argparse.ArgumentParser({
         add_help : true,
-        description : "Generate prompt for GPT-3"
+        description : "Generate prompt for GPT-3 semantic parsing task"
     });
     parser.add_argument('-i', '--input', {
         help: "the file to be processed",
