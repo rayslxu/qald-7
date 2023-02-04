@@ -13,8 +13,10 @@ export default class AzureGPT3Wrapper {
             extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
         });
         const res = JSON.parse(raw);
-        if (res.choices.length > 0)
+        if (res.choices.length > 0) {
+            console.log(res.choices[0].text.trim());
             return res.choices[0].text.trim();
+        }
         return null;
     }
 }

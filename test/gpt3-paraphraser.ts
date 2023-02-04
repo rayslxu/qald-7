@@ -14,6 +14,7 @@ async function main() {
     const rephraser = new GPT3Rephraser('https://wikidata.openai.azure.com', wikidata);
     for (const [utterance, entities] of TEST_CASES) {
         const rephrase = await rephraser.rephrase(utterance, entities);
+        console.log(utterance);
         console.log(rephrase);
     }
 }
