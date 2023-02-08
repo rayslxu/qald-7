@@ -97,8 +97,8 @@ async function main() {
         const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
         args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
     }
-    console.log('Failure rate: ', countFail/countTotal);
-    StreamUtils.waitEnd(dataset);
+    console.log('Failed: ', countFail);
+    console.log('Total: ', countTotal);
     StreamUtils.waitFinish(args.output);
 }
 
