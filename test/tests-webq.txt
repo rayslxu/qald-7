@@ -1,3 +1,16 @@
+Utterance: what books did beverly cleary right ?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    ?x wdt:P31/wdt:P279* wd:Q47461344; 
+       wdt:P50 wd:Q1316719. 
+}
+TT: 
+@wd . book ( ) filter contains ( author , " Q1316719 " ^^wd:p_author ) ;
+
+====
+
 Utterance: what character did natalie portman play in star wars ?	
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 

@@ -9,7 +9,7 @@ import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, sampleAltLabels, waitFinish } from './utils/misc';
 import { idArgument, elemType, instanceOfArgument, fakeProperty } from './utils/thingtalk';
-import WikidataUtils from './utils/wikidata';
+import WikidataUtils, { DOMAIN_OVERRIDE } from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
 
 interface Entity {
@@ -455,6 +455,7 @@ class ManifestGenerator {
     private async _processDomain(domain : string) : Promise<[string, Ast.FunctionDef|null]> {
         const domainLabel = this._domainLabels[domain];
         console.log(`Sampling ${domainLabel} domain ...`);
+        domain = DOMAIN_OVERRIDE[domain] ?? domain;
         const fname = cleanName(domainLabel);
         this._addEntity(fname, domainLabel, fname === 'entity' ? [] : [`${TP_DEVICE_NAME}:entity`]);
         this._addEntity(fname + '_subdomain', `Subdomains of ${domainLabel} (${domain})`, null);

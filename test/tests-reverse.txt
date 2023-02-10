@@ -1,3 +1,14 @@
+Utterance: what books did beverly cleary right ?
+TT: 
+@wd . book ( ) filter contains ( author , " Q1316719 " ^^wd:p_author ) ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q47461344>. 
+    ?x <http://www.wikidata.org/prop/direct/P50> <http://www.wikidata.org/entity/Q1316719>. 
+}
+
+====
+
 Utterance: show me all museums
 TT: 
 @wd . entity ( ) filter instance_of == " Q207694 " ^^wd:entity_subdomain ;

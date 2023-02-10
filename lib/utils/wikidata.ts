@@ -16,6 +16,12 @@ export const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
 export const DATETIME = 'http://www.w3.org/2001/XMLSchema#dateTime';
 export const TP_DEVICE_NAME = 'wd';
 
+// the key domains will be replaced by the value domains when querying
+// (use the natural language of key domains)
+export const DOMAIN_OVERRIDE : Record<string, string> = {
+    "Q571": "Q47461344" // book -> written work
+};
+
 const PROPERTY_BLACKLIST = [
     'P31',
     // obsolete properties
