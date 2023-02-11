@@ -133,6 +133,9 @@ class ManifestGenerator {
             qualifiers.push('P582');
         if (qualifiers.includes('P582') && !qualifiers.includes('P580'))
             qualifiers.push('P580');
+
+        if (qualifiers.includes('P580') || qualifiers.includes('P582'))
+            qualifiers.push('P585');
         
         if (type && qualifiers.length > 0) {
             const fields : Record<string, Ast.ArgumentDef> = {
@@ -413,6 +416,15 @@ class ManifestGenerator {
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
         const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
         const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
+
+        // hack: 
+        // - start time and end time always come in pairs
+        // - if there are start time & end time, also add point in time (but not vice versa)
+        if ('P580' in propertyValues || 'P582' in propertyValues) {
+            for (const p of ['P580', 'P582', 'P585'])
+                propertyValues[p] = [];
+        }
+
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
             if (label.startsWith('category for') || label.startsWith('category of'))
