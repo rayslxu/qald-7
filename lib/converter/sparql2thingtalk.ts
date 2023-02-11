@@ -26,6 +26,7 @@ import {
     makeProgram,
     baseQuery
 } from '../utils/thingtalk';
+import { PostProcessor } from './helpers/post-processor';
 
 
 export class Projection {
@@ -176,9 +177,11 @@ class QueryParser {
 
 class QueryGenerator {
     private _converter : SPARQLToThingTalkConverter;
+    private _postprocessor : PostProcessor;
 
     constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
+        this._postprocessor = new PostProcessor();
     }
 
     private async _generateSelectQuery(query : SelectQuery) : Promise<Ast.Expression> {
@@ -218,7 +221,7 @@ class QueryGenerator {
 
     async generate(query : SelectQuery|AskQuery) : Promise<Ast.Program> {
         const expression = isSelectQuery(query) ? (await this._generateSelectQuery(query)) : this._generateAskQuery(query);
-        return makeProgram(expression).optimize();
+        return this._postprocessor.postProcess(makeProgram(expression));
     }
 }
 
