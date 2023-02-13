@@ -899,7 +899,7 @@ export default class WikidataUtils {
      * @param entity qid of an entity
      * @returns all properties that connect to the entity
      */
-    async getConnectedProperty(entity : string) : Promise<string[]> {
+    async getConnectedProperty(entity : string, incoming = true) : Promise<string[]> {
         const bidirectionalPropertySparql = `SELECT DISTINCT ?p WHERE {
             { wd:${entity} ?p ?v.} UNION { ?v ?p wd:${entity}. }
             FILTER(STRSTARTS(STR(?p), str(wdt:))) . 
@@ -914,7 +914,7 @@ export default class WikidataUtils {
             ?p2 wikibase:propertyType ?type .
             FILTER (?type != wikibase:ExternalId) .
         }`;
-        if (await this.isDomainEntity(entity)) {
+        if (!incoming || await this.isDomainEntity(entity)) {
             const result = await this._query(unidirectionalPropertySparql);
             return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length)).filter((p : string) => !PROPERTY_BLACKLIST.includes(p));
         }
@@ -925,5 +925,27 @@ export default class WikidataUtils {
             const result = await this._query(unidirectionalPropertySparql);
             return result.map((r : any) => r.p.value.slice(PROPERTY_PREFIX.length)).filter((p : string) => !PROPERTY_BLACKLIST.includes(p));
         }
+    }
+
+    async getConnectedPropertyQualifiers(entity : string, properties : string[]) : Promise<string[]> {
+        const qualifiers = [];
+        for (const property of properties) {
+            const sparql = `SELECT DISTINCT ?qualifier WHERE {
+                wd:${entity} p:${property} ?statement .
+                OPTIONAL { 
+                    ?statement ?qualifier ?x. 
+                    FILTER(STRSTARTS(STR(?qualifier), "${exports.PROPERTY_QUALIFIER_PREFIX}P")). 
+                    BIND (IRI(replace(str(?qualifier), str(pq:), str(wd:)))  AS ?p)
+                    ?p wikibase:propertyType ?type .
+                    FILTER (?type != wikibase:ExternalId) .
+                }
+            }`;
+            const result = await this._query(sparql);
+            qualifiers.push(...result.filter((r : any) => !!r.qualifier)
+                .map((r : any) => r.qualifier.value.slice(PROPERTY_QUALIFIER_PREFIX.length))
+                .filter((p : string) => !PROPERTY_BLACKLIST.includes(p))
+                .map((p : string) => `${property}.${p}`));
+        }
+        return qualifiers;
     }
 }

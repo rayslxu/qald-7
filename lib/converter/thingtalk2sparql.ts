@@ -78,18 +78,21 @@ interface QualifiedPredicate {
 class TripleGenerator extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     private _subject : string;
+    private _subjectProperties : string[]; 
     private _target_projection : string|null;
     private _inPredicate : QualifiedPredicate|null;
     private _statements : string[];
 
     constructor(converter : ThingTalkToSPARQLConverter, 
                 subject : string, 
+                subjectProperties : string[], // list properties available for the subject 
                 projection : string|null, 
                 domain : string|null,
                 qualifiedPredicate : QualifiedPredicate|null = null) {
         super();
         this._converter = converter;
         this._subject = subject; // either a variable with ? prefix, or a full path QID
+        this._subjectProperties = subjectProperties;
         this._target_projection = projection;
         this._inPredicate = qualifiedPredicate;
         this._statements = [];
@@ -232,7 +235,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     visitOrBooleanExpression(node : ThingTalk.Ast.OrBooleanExpression) : boolean {
         const operands = [];
         for (const booleanExpression of node.operands) {
-            const tripleGenerator = new TripleGenerator(this._converter, this._subject, null, null);
+            const tripleGenerator = new TripleGenerator(this._converter, this._subject, this._subjectProperties, null, null);
             booleanExpression.visit(tripleGenerator);
             operands.push('{ ' + tripleGenerator.statements.join(' ') + ' }'); 
         }
@@ -263,6 +266,30 @@ class TripleGenerator extends Ast.NodeVisitor {
             throw new Error('Unsupported aggregation');
         } 
 
+        // filter on point in time 
+        if (node.name === 'point_in_time') {
+            assert(node.value instanceof Ast.DateValue && node.value.value instanceof Date);
+            const date = new Date(node.value.value);
+            if (node.operator === '==' && date.getUTCMonth() === 0 && date.getUTCDate() === 1) {
+                const beginValue = `"${date.toISOString()}"^^<${DATETIME}>`;
+                date.setUTCFullYear(date.getUTCFullYear() + 1);
+                const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
+                // if (this._subject.startsWith('?')) 
+                //    throw Error('TODO: generic filter on time for search questions');
+                if (this._subjectProperties.includes('P580')) {
+                    const variable1 = this._converter.getEntityVariable('P580');
+                    this._statements.push(this._triple('P580', variable1));
+                    const variable2 = this._converter.getEntityVariable('P582');
+                    this._statements.push(this._triple('P582', variable2));
+                    this._statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
+                } else {
+                    const variable = this._converter.getEntityVariable('P585');
+                    this._statements.push(this._triple('P585', variable));
+                    this._statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
+                }
+                return true;
+            }
+        }
 
         // generic atom filters 
         let p = node.name;
@@ -368,7 +395,13 @@ class TripleGenerator extends Ast.NodeVisitor {
         const predicate = this._createQualifier(node.value.name);
         const entityVariable = this._converter.getEntityVariable();
         this._statements.push(`?${predicate.predicateVariable} <${PROPERTY_STATEMENT_PREFIX}${predicate.property}> ?${entityVariable}.`);
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, null, null, predicate);
+        // update subject properties to qualifiers of the predicate
+        const subjectProperties = this._subjectProperties.filter((p) => {
+            return p.startsWith(predicate.property + '.');
+        }).map((p) => {
+            return p.slice(predicate.property.length + 1);
+        });
+        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
         node.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
@@ -383,7 +416,13 @@ class TripleGenerator extends Ast.NodeVisitor {
         const field = this._converter.getWikidataProperty(node.field);
         const fieldVariable = this._converter.getEntityVariable(field);
         this._statements.push(`?${predicate.predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${field}> ?${fieldVariable}.`);
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, null, null, predicate);
+        // update subject properties to qualifiers of the predicate
+        const subjectProperties = this._subjectProperties.filter((p) => {
+            return p.startsWith(predicate.property + '.');
+        }).map((p) => {
+            return p.slice(predicate.property.length + 1);
+        });
+        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
         node.value.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
@@ -428,10 +467,10 @@ class TripleGenerator extends Ast.NodeVisitor {
         }
         
         if (node.operator === '==' || node.operator === 'contains' || node.operator === 'in_array') {
-            const statements = this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
+            const statements = this._converter.convertExpression(node.rhs.optimize(), this._subjectProperties, false, variableMap);
             this._statements.push(...statements);
         } else if (node.operator === '>=' || node.operator === '<=' ) {
-            const statements = this._converter.convertExpression(node.rhs.optimize(), false, variableMap);
+            const statements = this._converter.convertExpression(node.rhs.optimize(), this._subjectProperties, false, variableMap);
             this._statements.push(...statements);
             this._statements.push(`FILTER(?${filterVariable} ${node.operator[0]} ?${variableMap[projection]}).`);
         } else {
@@ -632,7 +671,7 @@ export default class ThingTalkToSPARQLConverter {
         return null;
     }
 
-    convertExpression(ast : Ast.Expression, isMainExpression = true, variableMapping : Record<string, string> = {}) : string[] {
+    convertExpression(ast : Ast.Expression, subjectProperties : string[] = [], isMainExpression = true, variableMapping : Record<string, string> = {}) : string[] {
         // save out of scope variable mapping, load in scope variable mapping 
         const outVariableMapping = this._variableMap;
         this._variableMap = variableMapping;
@@ -652,7 +691,7 @@ export default class ThingTalkToSPARQLConverter {
             this.setResultVariable(subject);
         const domain = tableInfoVisitor.domainName ? this.getWikidataDomain(tableInfoVisitor.domainName) : null;
         this._variableMap = variableMapping;
-        const tripleGenerator = new TripleGenerator(this, subject, isMainExpression ? this._targetProjectionName(ast) : null, domain);
+        const tripleGenerator = new TripleGenerator(this, subject, subjectProperties, isMainExpression ? this._targetProjectionName(ast) : null, domain);
         ast.visit(tripleGenerator);
 
         // restore out of scope variable
@@ -670,7 +709,21 @@ export default class ThingTalkToSPARQLConverter {
         const expr = (ast.statements[0] as Ast.ExpressionStatement).expression;
         assert(expr instanceof Ast.ChainExpression && expr.expressions.length === 1);
         const table = expr.expressions[0];
-        const statements = this.convertExpression(table);  
+
+        // hack: collect properties for the subject
+        // node visitors can not be async, so we need to prepare this information ahead of time
+        // this won't work for subquery where subject is different
+        const tableInfoVisitor = new TableInfoVisitor(this);
+        table.visit(tableInfoVisitor);
+        const properties = [];
+        if (tableInfoVisitor.subject) {
+            const subject = tableInfoVisitor.subject.slice(ENTITY_PREFIX.length + 1, -1);
+            const connectedProperties = await this._kb.getConnectedProperty(subject, false);
+            const connectedQualifiers = await this._kb.getConnectedPropertyQualifiers(subject, connectedProperties);
+            properties.push(...connectedProperties, ...connectedQualifiers);
+        }
+
+        const statements = await this.convertExpression(table, properties);  
         statements.forEach((stmt) => this.addStatement(stmt));
 
         let sparql = '';

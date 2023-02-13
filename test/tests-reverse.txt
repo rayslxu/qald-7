@@ -1,3 +1,29 @@
+Utterance:who does sonny bill williams play for 2012 ?
+TT: 
+[ member_of_sports_team filter ( point_in_time == new Date ( 2012 ) ) ] of @wd . human ( ) filter id == " Q2481789 " ^^wd:human ;
+SPARQL: 
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q2481789> <http://www.wikidata.org/prop/P54> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P54> ?x. 
+    ?p <http://www.wikidata.org/prop/qualifier/P580> ?y. 
+    ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+    FILTER((y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (z >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+}
+
+====
+
+Utterance: get concerts in 2012
+TT: 
+@wd . concert ( ) filter point_in_time == new Date ( 2012 ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q182832>. 
+    ?x <http://www.wikidata.org/prop/direct/P585> ?y. 
+    FILTER((y >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+}
+
+====
+
 Utterance: what books did beverly cleary right ?
 TT: 
 @wd . book ( ) filter contains ( author , " Q1316719 " ^^wd:p_author ) ;
