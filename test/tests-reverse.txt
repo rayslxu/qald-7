@@ -1,17 +1,3 @@
-Utterance: who are the current senators from missouri ?
-TT: 
-@wd . entity ( ) filter contains ( position_held filter electoral_district / located_in_the_administrative_territorial_entity == " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity , " Q4416090 " ^^wd:p_position_held ) ;
-SPARQL:
-SELECT DISTINCT ?x WHERE { 
-    ?x <http://www.wikidata.org/prop/P39> ?p. 
-    ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
-    ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
-    ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1581>. 
-    FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
-}
-
-====
-
 Utterance:who does sonny bill williams play for 2012 ?
 TT: 
 [ member_of_sports_team filter ( point_in_time == new Date ( 2012 ) ) ] of @wd . human ( ) filter id == " Q2481789 " ^^wd:human ;
