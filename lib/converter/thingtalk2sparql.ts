@@ -13,8 +13,6 @@ import {
     PROPERTY_QUALIFIER_PREFIX,
     PROPERTY_STATEMENT_PREFIX
 } from '../utils/wikidata';
-import { PatternConverter } from './helpers/pattern-convertor';
-import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z'];
 const PREDICATE_VARIABLES = ['p', 'q', 'r'];
@@ -107,15 +105,11 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _node(node : string) : string {
-        if (typeof node !== 'string')
-            console.log('HHH');
-        if (node.startsWith('?'))
-            node = node.slice('?'.length);
         if ([...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node))
             return '?' + node;
         if (this._converter.kb.isEntity(node))
             return `<${ENTITY_PREFIX}${node}>`;
-        assert(node.startsWith(`<${ENTITY_PREFIX}`));
+        assert(node.startsWith(ENTITY_PREFIX));
         return node;
     }
 
@@ -166,89 +160,6 @@ class TripleGenerator extends Ast.NodeVisitor {
             value = DOMAIN_MAP[value];
         const v = this._node(value);
         return `${s} ${p} ${v}.`;
-    }
-
-    private _toStatements(property : string, operator : string, value : Ast.Value, subject ?: string, subjectProperties ?: string[]) : string[] {
-        subject = subject ?? this._subject;
-        subjectProperties = subjectProperties ?? this._subjectProperties;
-        const statements : string[] = [];
-        // id string filter
-        if (property === 'id' && operator === '=~') {
-            assert(value instanceof Ast.StringValue);
-            const variable = this._converter.getEntityVariable();
-            statements.push(`${subject} <${LABEL}> ?${variable}.`);
-            statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
-            return statements;
-        }
-
-        // skip all other filters on id and instance_of
-        if (property === 'id' || property === 'instance_of')
-            return [];
-
-        // filter on aggregation result
-        if (property === 'count') {
-            assert(value instanceof Ast.NumberValue);
-            // check if any node satisfying the filters exists, no need to do anything
-            if (value.value === 1 && operator === '>=')
-                return [];
-            throw new Error('Unsupported aggregation');
-        } 
-
-        // filter on point in time 
-        if (property === 'point_in_time') {
-            assert(value instanceof Ast.DateValue && value.value instanceof Date);
-            const date = new Date(value.value);
-            if (operator === '==' && date.getUTCMonth() === 0 && date.getUTCDate() === 1) {
-                const beginValue = `"${date.toISOString()}"^^<${DATETIME}>`;
-                date.setUTCFullYear(date.getUTCFullYear() + 1);
-                const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
-                // if (this._subject.startsWith('?')) 
-                //    throw Error('TODO: generic filter on time for search questions');
-                if (subjectProperties.includes('P580')) {
-                    const variable1 = this._converter.getEntityVariable('P580');
-                    statements.push(this._triple('P580', variable1, subject));
-                    const variable2 = this._converter.getEntityVariable('P582');
-                    statements.push(this._triple('P582', variable2, subject));
-                    statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
-                } else {
-                    const variable = this._converter.getEntityVariable('P585');
-                    statements.push(this._triple('P585', variable, subject));
-                    statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
-                }
-                return statements;
-            }
-        }
-
-        // generic atom filters 
-        const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
-        if (value instanceof Ast.EntityValue) {
-            statements.push(this._triple(p, value.value!, subject));
-        } else if (value instanceof Ast.NumberValue) {
-            const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable, subject));
-            statements.push(`FILTER(?${variable} ${convertOp(operator)} ${value.value}).`);
-        } else if (value instanceof Ast.DateValue) {
-            const date = (value.toJS() as Date).toISOString();
-            const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable, subject));
-            statements.push(`FILTER(?${variable} ${convertOp(operator)} "${date}"^^<${DATETIME}>).`);
-        } else if (value instanceof Ast.StringValue) {
-            const str = value.value;
-            const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable, subject));
-            statements.push(`?${variable} <${LABEL}> "${str}"@en.`);
-        } else if (value instanceof Ast.EnumValue) {
-            if (value.value === 'male')
-                this._statements.push(this._triple(p, 'Q6581097', subject));
-            else if (value.value === 'female')
-                this._statements.push(this._triple(p, 'Q6581072', subject));
-            else
-                throw new Error('Unsupported enum value: ' + value);
-        } else {
-            throw new Error('Unsupported atom filter');
-        }
-        
-        return statements;
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
@@ -333,8 +244,88 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
-        const statements = this._toStatements(node.name, node.operator, node.value);
-        this._statements.push(...statements);
+        // id string filter
+        if (node.name === 'id' && node.operator === '=~') {
+            assert(node.value instanceof Ast.StringValue);
+            const variable = this._converter.getEntityVariable();
+            this._statements.push(`${this._subject} <${LABEL}> ?${variable}.`);
+            this._statements.push(`FILTER(LCASE(STR(?${variable})) = "${node.value.value}").`);
+            return true;
+        }
+
+        // skip all other filters on id and instance_of
+        if (node.name === 'id' || node.name === 'instance_of')
+            return true;
+
+        // filter on aggregation result
+        if (node.name === 'count') {
+            assert(node.value instanceof Ast.NumberValue);
+            // check if any node satisfying the filters exists, no need to do anything
+            if (node.value.value === 1 && node.operator === '>=')
+                return true;
+            throw new Error('Unsupported aggregation');
+        } 
+
+        // filter on point in time 
+        if (node.name === 'point_in_time') {
+            assert(node.value instanceof Ast.DateValue && node.value.value instanceof Date);
+            const date = new Date(node.value.value);
+            if (node.operator === '==' && date.getUTCMonth() === 0 && date.getUTCDate() === 1) {
+                const beginValue = `"${date.toISOString()}"^^<${DATETIME}>`;
+                date.setUTCFullYear(date.getUTCFullYear() + 1);
+                const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
+                // if (this._subject.startsWith('?')) 
+                //    throw Error('TODO: generic filter on time for search questions');
+                if (this._subjectProperties.includes('P580')) {
+                    const variable1 = this._converter.getEntityVariable('P580');
+                    this._statements.push(this._triple('P580', variable1));
+                    const variable2 = this._converter.getEntityVariable('P582');
+                    this._statements.push(this._triple('P582', variable2));
+                    this._statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
+                } else {
+                    const variable = this._converter.getEntityVariable('P585');
+                    this._statements.push(this._triple('P585', variable));
+                    this._statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
+                }
+                return true;
+            }
+        }
+
+        // generic atom filters 
+        let p = node.name;
+        if (!(node.name === 'value' && this._inPredicate)) {
+            const property = node.name;
+            p = this._converter.getWikidataProperty(property);
+        }
+        if (node.value instanceof Ast.EntityValue) {
+            const v = node.value.value!;
+            this._statements.push(this._triple(p, v));
+        } else if (node.value instanceof Ast.NumberValue) {
+            const value = node.value.value;
+            const variable = this._converter.getEntityVariable(p);
+            this._statements.push(this._triple(p, variable));
+            this._statements.push(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
+        } else if (node.value instanceof Ast.DateValue) {
+            const value = (node.value.toJS() as Date).toISOString();
+            const variable = this._converter.getEntityVariable(p);
+            this._statements.push(this._triple(p, variable));
+            this._statements.push(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
+        } else if (node.value instanceof Ast.StringValue) {
+            const value = node.value.value;
+            const variable = this._converter.getEntityVariable(p);
+            this._statements.push(this._triple(p, variable));
+            this._statements.push(`?${variable} <${LABEL}> "${value}"@en.`);
+        } else if (node.value instanceof Ast.EnumValue) {
+            const value = node.value.value;
+            if (value === 'male')
+                this._statements.push(this._triple(p, 'Q6581097'));
+            else if (value === 'female')
+                this._statements.push(this._triple(p, 'Q6581072'));
+            else
+                throw new Error('Unsupported enum value: ' + value);
+        } else {
+            throw new Error('Unsupported atom filter');
+        }
         return true;
     }
 
@@ -351,21 +342,6 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
             }
-        } else if (node.lhs instanceof Ast.Value.Filter) {
-            const property = (node.lhs.value as Ast.VarRefValue).name;
-            const predicate = this._createQualifier(property);
-            assert(node.operator === 'contains' || node.operator === '==');
-            // update subject properties to qualifiers of the predicate
-            const subjectProperties = this._subjectProperties.filter((p) => {
-                return p.startsWith(predicate.property + '.');
-            }).map((p) => {
-                return p.slice(predicate.property.length + 1);
-            });
-            this._statements.push(...this._toStatements(property, node.operator, node.rhs, predicate.predicateVariable, subjectProperties));
-            const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
-            node.lhs.filter.visit(tripleGenerator);
-            this._statements.push(...tripleGenerator.statements);  
-            return true; 
         }
         throw new Error('Unsupported compute boolean expression: ' + node.prettyprint());
     }
@@ -540,8 +516,6 @@ export default class ThingTalkToSPARQLConverter {
     private _locale : string;
     private _timezone ?: string;
     private _kb : WikidataUtils;
-    private _preprocessor : RuleBasedPreprocessor;
-    private _patternConverter : PatternConverter;
     private _propertyMap : Record<string, string>;
     private _domainMap : Record<string, string>;
     private _variableMap : Record<string, string>;
@@ -564,8 +538,6 @@ export default class ThingTalkToSPARQLConverter {
         this._timezone = options.timezone;
 
         this._kb = new WikidataUtils(options.cache, options.bootleg, options.save_cache);
-        this._preprocessor = new RuleBasedPreprocessor(this._kb);
-        this._patternConverter = new PatternConverter();
         this._propertyMap = { "P31" : "instance_of" };
         for (const property of this._classDef.queries['entity'].iterateArguments()) {
             const qid = property.getImplementationAnnotation('wikidata_id') as string;
@@ -729,15 +701,6 @@ export default class ThingTalkToSPARQLConverter {
 
     async convert(utterance : string, thingtalk : string) : Promise<string> {
         this._reset();
-
-        // preprocess
-        thingtalk = await this._preprocessor.preprocess(thingtalk, 'thingtalk');
-
-        // try pattern match first
-        const patternConverterResult = this._patternConverter.toSPARQL(thingtalk);
-        if (patternConverterResult)
-            return patternConverterResult;
-
         const entities = EntityUtils.makeDummyEntities(utterance);
         const ast = Syntax.parse(thingtalk, Syntax.SyntaxType.Tokenized, entities, {
             locale : this._locale, timezone: this._timezone
