@@ -621,7 +621,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q550395. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q550395; wdt:P31/wdt:P279* wd:Q5398426. }"
       }
     },
     {
@@ -1986,7 +1986,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?x WHERE { c }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { wd:Q132863 p:P161|p:P725 ?p. ?p pq:P453 ?x. ?p ps:P161|ps:P725 wd:Q483325. }"
       }
     },
     {
@@ -2025,7 +2025,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q348533. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q348533. }"
       }
     },
     {
@@ -2454,7 +2454,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q235754. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q235754. ?x wdt:P31/wdt:P279* wd:Q5398426. }"
       }
     },
     {
@@ -6497,7 +6497,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q484662. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q484662. }"
       }
     },
     {
@@ -12958,7 +12958,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q432993. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q432993. ?x wdt:P31/wdt:P279* wd:Q5398426. }"
       }
     },
     {
@@ -32848,7 +32848,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?x p:P161 ?y; wdt:P31/wdt:P279* wd:Q5398426. ?y ps:P161 wd:Q2341056. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q2341056. ?x wdt:P31/wdt:P279* wd:Q5398426. }"
       }
     },
     {
