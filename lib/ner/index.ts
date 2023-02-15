@@ -9,6 +9,12 @@ import { AzureEntityLinker } from './azure';
 import { GPT3Rephraser } from '../gpt3/rephraser';
 import WikidataUtils from '../utils/wikidata';
 
+export {
+    Linker,
+    Falcon,
+    AzureEntityLinker
+};
+
 async function main() {
     const parser = new argparse.ArgumentParser({
         add_help : true,
