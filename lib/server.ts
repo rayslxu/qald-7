@@ -1,7 +1,6 @@
 import * as argparse from 'argparse';
 import fs from 'fs';
 import express from 'express';
-import cors from 'cors';
 import fetch from 'node-fetch';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
@@ -10,7 +9,6 @@ import { Linker, AzureEntityLinker, Falcon } from './ner';
 import WikidataUtils from './utils/wikidata';
 import { ThingTalkToSPARQLConverter } from './converter';
 import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
-import { GPT3Linker } from './ner/gpt3';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -39,7 +37,8 @@ async function main() {
     });
     parser.add_argument('--ned', {
         required: false,
-        choices: ['azure', 'falcon', 'gpt3']
+        default: 'azure',
+        choices: ['azure', 'falcon']
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -73,30 +72,23 @@ async function main() {
     if (args.ned) {
         if (args.ned === 'azure')
             entityLinker = new AzureEntityLinker(wikidata, args);
-        else if (args.ned === 'falcon')
+        else
             entityLinker = new Falcon(wikidata, args);
-        else 
-            entityLinker = new GPT3Linker(wikidata, args);
     }
 
     const app = express();
-    app.use(cors());
     app.get('/query', async (req, res) => {
         console.log('Query received: ' + req.query.q);
         const utterance = req.query.q as string;
-        const entities = [];
-        const entityInfo = [];
-        if (args.ned) {
-            entities.push(...(await entityLinker.run((new Date()).toISOString(), utterance)).entities);
-            entityInfo.push('<e>');
-            for (const entity of entities) {
-                entityInfo.push(entity.label);
-                if (entity.domain)
-                    entityInfo.push('(', entity.domain, ')');
-                entityInfo.push('[', entity.id, ']', ';');
-            }
-            entityInfo.push('</e>');
+        const entities = (await entityLinker.run((new Date()).toISOString(), utterance)).entities;
+        const entityInfo = ['<e>'];
+        for (const entity of entities) {
+            entityInfo.push(entity.label);
+            if (entity.domain)
+                entityInfo.push('(', entity.domain, ')');
+            entityInfo.push('[', entity.id, ']', ';');
         }
+        entityInfo.push('</e>');
         const tokenized = tokenizer.tokenize(utterance).rawTokens.join(' ');
         const processed = tokenized + ' ' + entityInfo.join(' ');
         const response = await fetch(args.nlu_server, {
