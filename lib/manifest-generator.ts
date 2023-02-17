@@ -127,6 +127,9 @@ class ManifestGenerator {
         // HACK: force occupation to have start time and end time
         if (propertyId === 'P106')
             qualifiers.push('P580', 'P582');
+        // HACK: force position_held to have electoral_district
+        if (propertyId === 'P39')
+            qualifiers.push('P768');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
