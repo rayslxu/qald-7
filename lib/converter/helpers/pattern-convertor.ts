@@ -7,70 +7,15 @@ import {
 } from '../../utils/wikidata';
 
 const patterns = {
-    // what is XXX ? 
-    '@wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
-    `SELECT DISTINCT ?x WHERE { 
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". wd:$0 schema:description ?x. } 
-    }`,
-
     // who are the current senators from XXX (state) ?
-    '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;': 
+    '@wd . entity ( ) filter contains ( position_held filter electoral_district / located_in_the_administrative_territorial_entity == " $0 " ^^wd:p_located_in_the_administrative_territorial_entity , " Q4416090 " ^^wd:p_position_held ) ;': 
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
-    }`, 
-
-    // what state is barack obama senator for ?
-    '[ < electoral_district / located_in_the_administrative_territorial_entity > of position_held filter value == " Q4416090 " ^^wd:p_position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
-        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
-        ?y <http://www.wikidata.org/prop/direct/P131> ?x. 
-    }`,
-
-    // when did X join league Y
-    'min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P54> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
-        ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/$1>. 
-        ?p pq:P580 ?x. 
-    } ORDER BY ?x LIMIT 1`,
-
-    // when did X leave league Y
-    'max ( end_time of [ end_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P54> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
-        ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/$1>. 
-        ?p pq:582 ?x. 
-    } ORDER BY DESC(?x) LIMIT 1`,
-
-    // who was the vp of X
-    '@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11699>; 
-           <http://www.wikidata.org/prop/qualifier/P580> ?y. 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?q. 
-        ?q <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; 
-           <http://www.wikidata.org/prop/qualifier/P580> ?z. 
-        FILTER(?y = ?z) 
-    }`,
-
-    // WebQTrn-3551
-    '@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P6> ?x; 
-        <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
-        <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
-        FILTER((?y < ?w) && (?z >= ?w)) }
-    `,
+    }`
 };
 
 const prefixes : Record<string, string> = {
@@ -107,6 +52,7 @@ export class PatternConverter {
     private _loadPatterns() {
         for (const [thingtalk, sparql] of Object.entries(patterns)) {
             const normalized = this._normalize(sparql);
+            console.log(normalized);
             this._patterns.push({ thingtalk, sparql: normalized });
         }
     }
@@ -115,7 +61,7 @@ export class PatternConverter {
         // make regex out of the pattern
         // replace(/[.*+?^${}()|[\]\\]/g, '\\$&'): escape special characters in pattern
         // replace(/\\\$[0-9]/g, '(Q[0-9]+)')): replace $? with regex for QID
-        const regex = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)') + '$');
+        const regex = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)'));
         const match = regex.exec(code);
         if (!match) 
             return null;

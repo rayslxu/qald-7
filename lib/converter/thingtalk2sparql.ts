@@ -14,7 +14,6 @@ import {
     PROPERTY_STATEMENT_PREFIX
 } from '../utils/wikidata';
 import { PatternConverter } from './helpers/pattern-convertor';
-import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 
 const ENTITY_VARIABLES = ['x', 'y', 'z', 'w'];
 const PREDICATE_VARIABLES = ['p', 'q', 'r'];
@@ -721,7 +720,6 @@ export default class ThingTalkToSPARQLConverter {
     private _locale : string;
     private _timezone ?: string;
     private _kb : WikidataUtils;
-    private _preprocessor : RuleBasedPreprocessor;
     private _patternConverter : PatternConverter;
     private _propertyMap : Record<string, string>;
     private _domainMap : Record<string, string>;
@@ -745,7 +743,6 @@ export default class ThingTalkToSPARQLConverter {
         this._timezone = options.timezone;
 
         this._kb = new WikidataUtils(options.cache, options.bootleg, options.save_cache);
-        this._preprocessor = new RuleBasedPreprocessor(this._kb);
         this._patternConverter = new PatternConverter();
         this._propertyMap = { "P31" : "instance_of" };
         for (const property of this._classDef.queries['entity'].iterateArguments()) {
@@ -910,9 +907,6 @@ export default class ThingTalkToSPARQLConverter {
 
     async convert(utterance : string, thingtalk : string) : Promise<string> {
         this._reset();
-
-        // preprocess
-        thingtalk = await this._preprocessor.preprocess(thingtalk, 'thingtalk');
 
         // try pattern match first
         const patternConverterResult = this._patternConverter.toSPARQL(thingtalk);
