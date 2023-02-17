@@ -27,7 +27,6 @@ import {
     baseQuery
 } from '../utils/thingtalk';
 import { PostProcessor } from './helpers/post-processor';
-import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 import { PatternConverter } from './helpers/pattern-convertor';
 
 
@@ -240,7 +239,6 @@ export default class SPARQLToThingTalkConverter {
     private _class : Ast.ClassDef;
     private _schema : WikidataSchema;
     private _kb : WikidataUtils;
-    private _preprocessor : RuleBasedPreprocessor;
     private _patternConverter : PatternConverter;
     private _helper : ConverterHelper;
     private _tokenizer : I18n.BaseTokenizer;
@@ -258,7 +256,6 @@ export default class SPARQLToThingTalkConverter {
         this._class = classDef;
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
-        this._preprocessor = new RuleBasedPreprocessor(this._kb);
         this._patternConverter = new PatternConverter();
         this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
@@ -353,9 +350,6 @@ export default class SPARQLToThingTalkConverter {
     }
 
     async convert(sparql : string, utterance : string) : Promise<Ast.Program> {
-        // preprocess
-        sparql = await this._preprocessor.preprocess(sparql, 'sparql');
-
         // try pattern match first
         const patternConverterResult = this._patternConverter.fromSPARQL(sparql);
         if (patternConverterResult) {
