@@ -1097,7 +1097,7 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current president of the dominican republic in 2010?",
+          "string": "who is the current president of the dominican republic?",
           "keywords": ""
         }
       ],
@@ -12906,7 +12906,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q29514606; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2010-01-01T00:00:00Z\"^^xsd:dateTime) && (?z >= \"2009-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q29514964; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2010-01-01T00:00:00Z\"^^xsd:dateTime) && (?z >= \"2009-01-01T00:00:00Z\"^^xsd:dateTime)) }"
       }
     },
     {
@@ -13140,7 +13140,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q274948; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
       }
     },
     {
@@ -13582,7 +13582,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q849418; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
       }
     },
     {
@@ -16268,12 +16268,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who does cristiano ronaldo play for now 2011?",
+          "string": "who does cristiano ronaldo play for now?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { wd:Q11571 p:P54 ?p. ?p ps:P54 ?x; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q11571 wdt:P54 ?x. }"
       }
     },
     {
@@ -19609,12 +19609,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current president of china 2010?",
+          "string": "who is the current president of china?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q148 wdt:P6 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q148 wdt:P35 ?x. }"
       }
     },
     {
@@ -20298,7 +20298,7 @@
       "question": [
         {
           "language": "en",
-          "string": "where does selena gomez live right now 2010?",
+          "string": "where does selena gomez live right now?",
           "keywords": ""
         }
       ],
@@ -21161,7 +21161,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q29514606; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2010-01-01T00:00:00Z\"^^xsd:dateTime) && (?z >= \"2009-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q1370482; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2010-01-01T00:00:00Z\"^^xsd:dateTime) && (?z >= \"2009-01-01T00:00:00Z\"^^xsd:dateTime)) }"
       }
     },
     {
@@ -22573,12 +22573,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current president of dominican republic 2011?",
+          "string": "who is the current president of dominican republic?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q786 wdt:P6 ?x. }"
       }
     },
     {
@@ -24406,12 +24406,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who does allen iverson play for now 2010?",
+          "string": "who does allen iverson play for now?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { wd:Q190094 p:P54 ?p. ?p ps:P54 ?x; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2011-01-01T00:00:00Z\"^^xsd:dateTime) && (?z >= \"2010-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q190094 wdt:P54 ?x. }"
       }
     },
     {
@@ -26187,12 +26187,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current governor of georgia 2011?",
+          "string": "who is the current governor of georgia?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q739 wdt:P6 ?x. }"
       }
     },
     {
@@ -26746,12 +26746,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current president of chile 2011?",
+          "string": "who is the current president of chile?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q298 wdt:P6 ?x. }"
       }
     },
     {
@@ -32778,7 +32778,7 @@
       "question": [
         {
           "language": "en",
-          "string": "who does hank baskett play for now nov 2010?",
+          "string": "who does hank baskett play for now?",
           "keywords": ""
         }
       ],
@@ -37042,12 +37042,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is the current president of colombia 2011?",
+          "string": "who is the current president of colombia?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q739 wdt:P6 ?x. }"
       }
     },
     {
@@ -37250,12 +37250,12 @@
       "question": [
         {
           "language": "en",
-          "string": "who is mexico's president right now 2011?",
+          "string": "who is mexico's president right now?",
           "keywords": ""
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q17989863; pq:P580 ?y; pq:P582 ?z. FILTER((?y < \"2012-01-01T00:00:00Z\"^^xsd:dateTime) && (?z > \"2011-01-01T00:00:00Z\"^^xsd:dateTime)) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q96 wdt:P6 ?x. }"
       }
     },
     {
