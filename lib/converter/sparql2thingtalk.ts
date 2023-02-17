@@ -1,4 +1,4 @@
-import { Ast } from 'thingtalk';
+import { Ast, Syntax } from 'thingtalk';
 import { I18n } from 'genie-toolkit';
 import {  
     Parser, 
@@ -27,6 +27,7 @@ import {
     baseQuery
 } from '../utils/thingtalk';
 import { PostProcessor } from './helpers/post-processor';
+import { PatternConverter } from './helpers/pattern-convertor';
 
 
 export class Projection {
@@ -238,6 +239,7 @@ export default class SPARQLToThingTalkConverter {
     private _class : Ast.ClassDef;
     private _schema : WikidataSchema;
     private _kb : WikidataUtils;
+    private _patternConverter : PatternConverter;
     private _helper : ConverterHelper;
     private _tokenizer : I18n.BaseTokenizer;
     private _utterance ?: string;
@@ -254,6 +256,7 @@ export default class SPARQLToThingTalkConverter {
         this._class = classDef;
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
+        this._patternConverter = new PatternConverter();
         this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._parser = new QueryParser(this);
@@ -347,6 +350,13 @@ export default class SPARQLToThingTalkConverter {
     }
 
     async convert(sparql : string, utterance : string) : Promise<Ast.Program> {
+        // try pattern match first
+        const patternConverterResult = this._patternConverter.fromSPARQL(sparql);
+        if (patternConverterResult) {
+            const program = Syntax.parse(patternConverterResult, Syntax.SyntaxType.Tokenized, {}, { timezone: 'utc' });
+            return program as Ast.Program;
+        }
+
         this._init(sparql, utterance);
         const query = this._sparqlParser.parse(sparql) as SelectQuery|AskQuery;
         await this._parser.parse(query);

@@ -1,3 +1,38 @@
+Utterance: who are the current senators from missouri ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+SELECT DISTINCT ?x WHERE { 
+    ?x p:P39 ?p. 
+    ?p ps:P39 wd:Q4416090. 
+    ?p pq:P768 ?y.
+    ?y wdt:P131 wd:Q1581. 
+    FILTER NOT EXISTS { ?p pq:P582 ?z. }
+} 
+TT: 
+@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;
+
+====
+
+
+Utterance: who are the current senators from missouri ?
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/P39> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
+    ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
+    ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q1581>. 
+    FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
+}
+TT: 
+@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;
+
+====
+
+
 Utterance: who does sonny bill williams play for 2012 ?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 
