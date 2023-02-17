@@ -130,18 +130,6 @@ class ManifestGenerator {
         // HACK: force position_held to have electoral_district
         if (propertyId === 'P39')
             qualifiers.push('P768');
-        // HACK: force spouse to have place of marriage
-        if (propertyId === 'P26')
-            qualifiers.push('P2842');
-        // HACK: force point in time for draft by
-        if (propertyId === 'P647')
-            qualifiers.push('P585');
-        // HACK: force point in time for notable work
-        if (propertyId === 'P800')
-            qualifiers.push('P585');
-        // HACK: force point in time and "for work" for winner
-        if (propertyId === 'P1346')
-            qualifiers.push('P585', 'P1686');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
