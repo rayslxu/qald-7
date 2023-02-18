@@ -180,69 +180,32 @@ class TripleGenerator extends Ast.NodeVisitor {
         return `${s} ${p} ${v}.`;
     }
 
-    private _add(subject : string, property : string, operator : string, value : Ast.Value|string, options ?: TripleOptions) {
-        const type = options?.type ?? 'direct';
-        const availableProperties = options?.availableProperties ?? (subject === this._subject ? this._subjectProperties : []);
-        options = { type, availableProperties };
-
-        // if value is an variable
-        if (typeof value === 'string') {
-            assert(isVariable(value) && ['==', 'contains', 'in_array'].includes(operator));
-            const p = this._converter.getWikidataProperty(property);
-            if (p in ABSTRACT_PROPERTIES) {
-                if (ABSTRACT_PROPERTIES[p].type === 'all') {
-                    const realProperties = ABSTRACT_PROPERTIES[p].properties;
-                    this._statements.push(this._triple(subject, realProperties.join('|'), value, options));
-                } else {
-                    const variables = [];
-                    const availableRealProperties = ABSTRACT_PROPERTIES[p].properties.filter((rp) => availableProperties.includes(rp));
-                    // if there is no properties available, return the abstract property, it probably won't return anything anyway 
-                    if (availableRealProperties.length === 0) {
-                        this._statements.push(this._triple(subject, p, value, options));
-                    } else if (availableRealProperties.length === 1) {
-                        this._statements.push(this._triple(subject, availableRealProperties[0], value, options));
-                    } else {
-                        for (const [i, realProperty] of Object.entries(ABSTRACT_PROPERTIES[p].properties)) {
-                            const variable = value + i;
-                            variables.push(variable);
-                            this._statements.push(`OPTIONAL { ${this._triple(subject, realProperty, variable, options)} }`);
-                        }
-                        this._statements.push(`BIND(COALESCE(${variables.map((v) => `?${v}`).join(', ')}) AS ?${value}).`);
-                    }
-                }
-            } else {
-                this._statements.push(this._triple(subject, p, value, options));
-            }
-            return;
-        }
-
-        // if value is a non-variable 
+    private _toStatements(property : string, operator : string, value : Ast.Value) : string[] {
+        const statements : string[] = [];
         // id string filter
         if (property === 'id' && operator === '=~') {
             assert(value instanceof Ast.StringValue);
             const variable = this._converter.getEntityVariable();
-            this._statements.push(`${this._node(subject)} <${LABEL}> ?${variable}.`);
-            this._statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
-            return;
+            statements.push(`${this._subject} <${LABEL}> ?${variable}.`);
+            statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
+            return statements;
         }
 
         // skip all other filters on id and instance_of
         if (property === 'id' || property === 'instance_of')
-            return;
+            return [];
 
         // filter on aggregation result
         if (property === 'count') {
             assert(value instanceof Ast.NumberValue);
             // check if any node satisfying the filters exists, no need to do anything
             if (value.value === 1 && operator === '>=')
-                return;
+                return [];
             throw new Error('Unsupported aggregation');
         } 
 
-        const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
-
         // filter on point in time 
-        if (p === 'P585') {
+        if (property === 'point_in_time') {
             assert(value instanceof Ast.DateValue && value.value instanceof Date);
             const date = new Date(value.value);
             if (operator === '==' && date.getUTCMonth() === 0 && date.getUTCDate() === 1) {
@@ -251,72 +214,52 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
                 // if (this._subject.startsWith('?')) 
                 //    throw Error('TODO: generic filter on time for search questions');
-                if (availableProperties.includes('P580')) {
+                if (this._subjectProperties.includes('P580')) {
                     const variable1 = this._converter.getEntityVariable('P580');
-                    this._statements.push(this._triple(subject, 'P580', variable1, options));
+                    statements.push(this._triple('P580', variable1));
                     const variable2 = this._converter.getEntityVariable('P582');
-                    this._statements.push(this._triple(subject, 'P582', variable2, options));
-                    this._statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
+                    statements.push(this._triple('P582', variable2));
+                    statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
                 } else {
                     const variable = this._converter.getEntityVariable('P585');
-                    this._statements.push(this._triple(subject, 'P585', variable, options));
-                    this._statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
+                    statements.push(this._triple('P585', variable));
+                    statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
                 }
-                return;
+                return statements;
             }
-        } else if (p in ABSTRACT_PROPERTIES) {
-            assert(value instanceof Ast.EntityValue && ['==', 'contains', 'in_array'].includes(operator));
-            const type = ABSTRACT_PROPERTIES[p].type;
-            if (type === 'any') {
-                for (const realProperty of ABSTRACT_PROPERTIES[p].properties) {
-                    if (availableProperties.includes(realProperty)) {
-                        this._statements.push(this._triple(subject, property, value.value!));
-                        return;
-                    }
-                }
-            } else {
-                const or = [];
-                for (const realProperty of ABSTRACT_PROPERTIES[p].properties) {
-                    if (availableProperties.includes(realProperty)) 
-                        or.push(realProperty);
-                }
-                if (or.length === 1)
-                    this._statements.push(this._triple(subject, or[0], value.value!));
-                else 
-                    this._statements.push(this._triple(subject, or.join('|'), value.value!));
-            }
-            // no real properties found, return the abstract property
-            this._statements.push(this._triple(subject, p, value.value!));
-            return;
         }
 
         // generic atom filters 
+        const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
         if (value instanceof Ast.EntityValue) {
-            this._statements.push(this._triple(subject, p, value.value!, options));
+            const v = value.value!;
+            statements.push(this._triple(p, v));
         } else if (value instanceof Ast.NumberValue) {
             const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(subject, p, variable, options));
-            this._statements.push(`FILTER(?${variable} ${convertOp(operator)} ${value.value}).`);
+            statements.push(this._triple(p, variable));
+            statements.push(`FILTER(?${variable} ${convertOp(operator)} ${value.value}).`);
         } else if (value instanceof Ast.DateValue) {
             const date = (value.toJS() as Date).toISOString();
             const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(subject, p, variable, options));
-            this._statements.push(`FILTER(?${variable} ${convertOp(operator)} "${date}"^^<${DATETIME}>).`);
+            statements.push(this._triple(p, variable));
+            statements.push(`FILTER(?${variable} ${convertOp(operator)} "${date}"^^<${DATETIME}>).`);
         } else if (value instanceof Ast.StringValue) {
             const str = value.value;
             const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(subject, p, variable, options));
-            this._statements.push(`?${variable} <${LABEL}> "${str}"@en.`);
+            statements.push(this._triple(p, variable));
+            statements.push(`?${variable} <${LABEL}> "${str}"@en.`);
         } else if (value instanceof Ast.EnumValue) {
             if (value.value === 'male')
-                this._statements.push(this._triple(subject, p, 'Q6581097', options));
+                this._statements.push(this._triple(p, 'Q6581097'));
             else if (value.value === 'female')
-                this._statements.push(this._triple(subject, p, 'Q6581072', options));
+                this._statements.push(this._triple(p, 'Q6581072'));
             else
                 throw new Error('Unsupported enum value: ' + value);
         } else {
             throw new Error('Unsupported atom filter');
         }
+        
+        return statements;
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
@@ -434,88 +377,8 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitAtomBooleanExpression(node : ThingTalk.Ast.AtomBooleanExpression) : boolean {
-        // id string filter
-        if (node.name === 'id' && node.operator === '=~') {
-            assert(node.value instanceof Ast.StringValue);
-            const variable = this._converter.getEntityVariable();
-            this._statements.push(`${this._subject} <${LABEL}> ?${variable}.`);
-            this._statements.push(`FILTER(LCASE(STR(?${variable})) = "${node.value.value}").`);
-            return true;
-        }
-
-        // skip all other filters on id and instance_of
-        if (node.name === 'id' || node.name === 'instance_of')
-            return true;
-
-        // filter on aggregation result
-        if (node.name === 'count') {
-            assert(node.value instanceof Ast.NumberValue);
-            // check if any node satisfying the filters exists, no need to do anything
-            if (node.value.value === 1 && node.operator === '>=')
-                return true;
-            throw new Error('Unsupported aggregation');
-        } 
-
-        // filter on point in time 
-        if (node.name === 'point_in_time') {
-            assert(node.value instanceof Ast.DateValue && node.value.value instanceof Date);
-            const date = new Date(node.value.value);
-            if (node.operator === '==' && date.getUTCMonth() === 0 && date.getUTCDate() === 1) {
-                const beginValue = `"${date.toISOString()}"^^<${DATETIME}>`;
-                date.setUTCFullYear(date.getUTCFullYear() + 1);
-                const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
-                // if (this._subject.startsWith('?')) 
-                //    throw Error('TODO: generic filter on time for search questions');
-                if (this._subjectProperties.includes('P580')) {
-                    const variable1 = this._converter.getEntityVariable('P580');
-                    this._statements.push(this._triple('P580', variable1));
-                    const variable2 = this._converter.getEntityVariable('P582');
-                    this._statements.push(this._triple('P582', variable2));
-                    this._statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
-                } else {
-                    const variable = this._converter.getEntityVariable('P585');
-                    this._statements.push(this._triple('P585', variable));
-                    this._statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
-                }
-                return true;
-            }
-        }
-
-        // generic atom filters 
-        let p = node.name;
-        if (!(node.name === 'value' && this._inPredicate)) {
-            const property = node.name;
-            p = this._converter.getWikidataProperty(property);
-        }
-        if (node.value instanceof Ast.EntityValue) {
-            const v = node.value.value!;
-            this._statements.push(this._triple(p, v));
-        } else if (node.value instanceof Ast.NumberValue) {
-            const value = node.value.value;
-            const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(p, variable));
-            this._statements.push(`FILTER(?${variable} ${convertOp(node.operator)} ${value}).`);
-        } else if (node.value instanceof Ast.DateValue) {
-            const value = (node.value.toJS() as Date).toISOString();
-            const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(p, variable));
-            this._statements.push(`FILTER(?${variable} ${convertOp(node.operator)} "${value}"^^<${DATETIME}>).`);
-        } else if (node.value instanceof Ast.StringValue) {
-            const value = node.value.value;
-            const variable = this._converter.getEntityVariable(p);
-            this._statements.push(this._triple(p, variable));
-            this._statements.push(`?${variable} <${LABEL}> "${value}"@en.`);
-        } else if (node.value instanceof Ast.EnumValue) {
-            const value = node.value.value;
-            if (value === 'male')
-                this._statements.push(this._triple(p, 'Q6581097'));
-            else if (value === 'female')
-                this._statements.push(this._triple(p, 'Q6581072'));
-            else
-                throw new Error('Unsupported enum value: ' + value);
-        } else {
-            throw new Error('Unsupported atom filter');
-        }
+        const statements = this._toStatements(node.name, node.operator, node.value);
+        this._statements.push(...statements);
         return true;
     }
 
@@ -532,22 +395,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
             }
-        } else if (node.lhs instanceof Ast.Value.Filter) {
-            const property = (node.lhs.value as Ast.VarRefValue).name;
-            const predicate = this._createQualifiedPredicate(property);
-            assert(node.operator === 'contains' || node.operator === '==');
-            // update subject properties to qualifiers of the predicate
-            const availableProperties = this._subjectProperties.filter((p) => {
-                return p.startsWith(predicate.property + '.');
-            }).map((p) => {
-                return p.slice(predicate.property.length + 1);
-            });
-            this._add(predicate.predicateVariable, property, node.operator, node.rhs, { availableProperties, type: 'statement' });
-            const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, availableProperties, null, null, predicate);
-            node.lhs.filter.visit(tripleGenerator);
-            this._statements.push(...tripleGenerator.statements);  
-            return true; 
-        }
+        } 
         throw new Error('Unsupported compute boolean expression: ' + node.prettyprint());
     }
 
