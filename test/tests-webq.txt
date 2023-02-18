@@ -1,3 +1,22 @@
+Utterance: who is the president of cuba in 2009?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+SELECT DISTINCT ?x WHERE { 
+    ?x p:P39 ?p. 
+    ?p ps:P39 wd:Q1370482; 
+       pq:P580 ?y; 
+       pq:P582 ?z. 
+    FILTER((?y < "2010-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2009-01-01T00:00:00Z"^^xsd:dateTime)) 
+}
+TT: 
+[ head_of_state filter ( point_in_time == new Date ( 2009 ) ) ] of @wd . country ( ) filter id == " Q241 " ^^wd:country ;
+
+====
+
 Utterance: who are the current senators from missouri ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 
