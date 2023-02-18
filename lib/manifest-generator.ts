@@ -661,7 +661,7 @@ class ManifestGenerator {
         }
         // add top-level domains as well
         for (const query of Object.values(classDef.queries)) {
-            const qid = query.getImplementationAnnotation('wikidata_subject') as string;
+            const qid = (query.getImplementationAnnotation('wikidata_subject') as string[])[0];
             const display = (query.getNaturalLanguageAnnotation('canonical') as string[])[0] ;
             const tokenized = this._tokenizer.tokenize(display);
             const name = tokenized.rawTokens.join(' ');
