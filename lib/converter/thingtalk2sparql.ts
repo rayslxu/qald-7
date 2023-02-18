@@ -107,11 +107,15 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _node(node : string) : string {
+        if (typeof node !== 'string')
+            console.log('HHH');
+        if (node.startsWith('?'))
+            node = node.slice('?'.length);
         if ([...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node))
             return '?' + node;
         if (this._converter.kb.isEntity(node))
             return `<${ENTITY_PREFIX}${node}>`;
-        assert(node.startsWith(ENTITY_PREFIX));
+        assert(node.startsWith(`<${ENTITY_PREFIX}`));
         return node;
     }
 
@@ -164,13 +168,15 @@ class TripleGenerator extends Ast.NodeVisitor {
         return `${s} ${p} ${v}.`;
     }
 
-    private _toStatements(property : string, operator : string, value : Ast.Value) : string[] {
+    private _toStatements(property : string, operator : string, value : Ast.Value, subject ?: string, subjectProperties ?: string[]) : string[] {
+        subject = subject ?? this._subject;
+        subjectProperties = subjectProperties ?? this._subjectProperties;
         const statements : string[] = [];
         // id string filter
         if (property === 'id' && operator === '=~') {
             assert(value instanceof Ast.StringValue);
             const variable = this._converter.getEntityVariable();
-            statements.push(`${this._subject} <${LABEL}> ?${variable}.`);
+            statements.push(`${subject} <${LABEL}> ?${variable}.`);
             statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
             return statements;
         }
@@ -198,15 +204,15 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
                 // if (this._subject.startsWith('?')) 
                 //    throw Error('TODO: generic filter on time for search questions');
-                if (this._subjectProperties.includes('P580')) {
+                if (subjectProperties.includes('P580')) {
                     const variable1 = this._converter.getEntityVariable('P580');
-                    statements.push(this._triple('P580', variable1));
+                    statements.push(this._triple('P580', variable1, subject));
                     const variable2 = this._converter.getEntityVariable('P582');
-                    statements.push(this._triple('P582', variable2));
+                    statements.push(this._triple('P582', variable2, subject));
                     statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
                 } else {
                     const variable = this._converter.getEntityVariable('P585');
-                    statements.push(this._triple('P585', variable));
+                    statements.push(this._triple('P585', variable, subject));
                     statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
                 }
                 return statements;
@@ -216,27 +222,26 @@ class TripleGenerator extends Ast.NodeVisitor {
         // generic atom filters 
         const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
         if (value instanceof Ast.EntityValue) {
-            const v = value.value!;
-            statements.push(this._triple(p, v));
+            statements.push(this._triple(p, value.value!, subject));
         } else if (value instanceof Ast.NumberValue) {
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable));
+            statements.push(this._triple(p, variable, subject));
             statements.push(`FILTER(?${variable} ${convertOp(operator)} ${value.value}).`);
         } else if (value instanceof Ast.DateValue) {
             const date = (value.toJS() as Date).toISOString();
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable));
+            statements.push(this._triple(p, variable, subject));
             statements.push(`FILTER(?${variable} ${convertOp(operator)} "${date}"^^<${DATETIME}>).`);
         } else if (value instanceof Ast.StringValue) {
             const str = value.value;
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(p, variable));
+            statements.push(this._triple(p, variable, subject));
             statements.push(`?${variable} <${LABEL}> "${str}"@en.`);
         } else if (value instanceof Ast.EnumValue) {
             if (value.value === 'male')
-                this._statements.push(this._triple(p, 'Q6581097'));
+                this._statements.push(this._triple(p, 'Q6581097', subject));
             else if (value.value === 'female')
-                this._statements.push(this._triple(p, 'Q6581072'));
+                this._statements.push(this._triple(p, 'Q6581072', subject));
             else
                 throw new Error('Unsupported enum value: ' + value);
         } else {
@@ -346,7 +351,22 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
             }
-        } 
+        } else if (node.lhs instanceof Ast.Value.Filter) {
+            const property = (node.lhs.value as Ast.VarRefValue).name;
+            const predicate = this._createQualifier(property);
+            assert(node.operator === 'contains' || node.operator === '==');
+            // update subject properties to qualifiers of the predicate
+            const subjectProperties = this._subjectProperties.filter((p) => {
+                return p.startsWith(predicate.property + '.');
+            }).map((p) => {
+                return p.slice(predicate.property.length + 1);
+            });
+            this._statements.push(...this._toStatements(property, node.operator, node.rhs, predicate.predicateVariable, subjectProperties));
+            const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+            node.lhs.filter.visit(tripleGenerator);
+            this._statements.push(...tripleGenerator.statements);  
+            return true; 
+        }
         throw new Error('Unsupported compute boolean expression: ' + node.prettyprint());
     }
 
