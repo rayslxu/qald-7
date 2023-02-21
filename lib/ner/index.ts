@@ -7,6 +7,7 @@ import { Falcon } from './falcon';
 import { OracleLinker } from './oracle';
 import { AzureEntityLinker } from './azure';
 import { GPT3Rephraser } from '../gpt3/rephraser';
+import { GPT3Linker } from './gpt3';
 import WikidataUtils from '../utils/wikidata';
 
 export {
@@ -32,7 +33,7 @@ async function main() {
         required: false,
         default: 'falcon',
         help: "the NER module to load",
-        choices: ['falcon', 'oracle', 'azure'],
+        choices: ['falcon', 'oracle', 'azure', 'gpt3'],
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -69,6 +70,8 @@ async function main() {
         linker = new OracleLinker(wikidata);
     else if (args.module === 'azure')
         linker = new AzureEntityLinker(wikidata, args);
+    else if (args.module === 'gpt3')
+        linker = new GPT3Linker(wikidata, args);
     else
         throw new Error('Unknown NER module');
 

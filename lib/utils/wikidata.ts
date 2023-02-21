@@ -271,6 +271,12 @@ export default class WikidataUtils {
         return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
     }
 
+    async getPropertyRawValue(entityId : string, propertyId : string) : Promise<string[]> {
+        const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. }`;
+        const res = await this._query(sparql);
+        return res.map((r : any) => r.v.value);
+    }
+
     /**
      * Get the domain of a given entity: 
      * if there are multiple domains, pick the one that has the most instances;
@@ -828,6 +834,21 @@ export default class WikidataUtils {
         const result = await this._request(this._wdk.searchEntities(name));
         try {
             return result.search[0].id;
+        } catch(e) {
+            console.log(`Failed to find domain for ${name}`);
+            return null;
+        }
+    }
+
+    /**
+     * Given a name of an entity, return all matches
+     * @param name to search
+     * @returns a list of matches
+     */
+    async getAllEntitiesByName(name : string) {
+        const result = await this._request(this._wdk.searchEntities(name));
+        try {
+            return result.search;
         } catch(e) {
             console.log(`Failed to find domain for ${name}`);
             return null;
