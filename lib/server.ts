@@ -37,7 +37,6 @@ async function main() {
     });
     parser.add_argument('--ned', {
         required: false,
-        default: 'azure',
         choices: ['azure', 'falcon']
     });
     parser.add_argument('--ner-cache', {
@@ -80,15 +79,19 @@ async function main() {
     app.get('/query', async (req, res) => {
         console.log('Query received: ' + req.query.q);
         const utterance = req.query.q as string;
-        const entities = (await entityLinker.run((new Date()).toISOString(), utterance)).entities;
-        const entityInfo = ['<e>'];
-        for (const entity of entities) {
-            entityInfo.push(entity.label);
-            if (entity.domain)
-                entityInfo.push('(', entity.domain, ')');
-            entityInfo.push('[', entity.id, ']', ';');
+        const entities = [];
+        const entityInfo = [];
+        if (args.ned) {
+            entities.push(...(await entityLinker.run((new Date()).toISOString(), utterance)).entities);
+            entityInfo.push('<e>');
+            for (const entity of entities) {
+                entityInfo.push(entity.label);
+                if (entity.domain)
+                    entityInfo.push('(', entity.domain, ')');
+                entityInfo.push('[', entity.id, ']', ';');
+            }
+            entityInfo.push('</e>');
         }
-        entityInfo.push('</e>');
         const tokenized = tokenizer.tokenize(utterance).rawTokens.join(' ');
         const processed = tokenized + ' ' + entityInfo.join(' ');
         const response = await fetch(args.nlu_server, {
