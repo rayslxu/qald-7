@@ -1,6 +1,6 @@
 Utterance: who are the current senators from missouri ?
 TT: 
-@wd . entity ( ) filter contains ( position_held filter electoral_district / located_in_the_administrative_territorial_entity == " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity , " Q4416090 " ^^wd:p_position_held ) ;
+@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/P39> ?p. 

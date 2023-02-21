@@ -8,7 +8,7 @@ import {
 
 const patterns = {
     // who are the current senators from XXX (state) ?
-    '@wd . entity ( ) filter contains ( position_held filter electoral_district / located_in_the_administrative_territorial_entity == " $0 " ^^wd:p_located_in_the_administrative_territorial_entity , " Q4416090 " ^^wd:p_position_held ) ;': 
+    '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;': 
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
@@ -52,7 +52,6 @@ export class PatternConverter {
     private _loadPatterns() {
         for (const [thingtalk, sparql] of Object.entries(patterns)) {
             const normalized = this._normalize(sparql);
-            console.log(normalized);
             this._patterns.push({ thingtalk, sparql: normalized });
         }
     }
