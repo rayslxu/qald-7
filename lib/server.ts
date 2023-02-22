@@ -9,6 +9,7 @@ import { Linker, AzureEntityLinker, Falcon } from './ner';
 import WikidataUtils from './utils/wikidata';
 import { ThingTalkToSPARQLConverter } from './converter';
 import { TP_DEVICE_NAME } from '../lib/utils/wikidata';
+import { GPT3Linker } from './ner/gpt3';
 
 async function main() {
     const parser = new argparse.ArgumentParser({
@@ -37,7 +38,7 @@ async function main() {
     });
     parser.add_argument('--ned', {
         required: false,
-        choices: ['azure', 'falcon']
+        choices: ['azure', 'falcon', 'gpt3']
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -71,8 +72,10 @@ async function main() {
     if (args.ned) {
         if (args.ned === 'azure')
             entityLinker = new AzureEntityLinker(wikidata, args);
-        else
+        else if (args.ned === 'falcon')
             entityLinker = new Falcon(wikidata, args);
+        else 
+            entityLinker = new GPT3Linker(wikidata, args);
     }
 
     const app = express();
