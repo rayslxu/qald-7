@@ -9,6 +9,10 @@ interface GPT3EntityLinkerOptions {
     raw_data ?: string
 }
 
+function sleep(ms : number) {
+    return new Promise((res) => setTimeout(res, ms));
+}
+
 export class GPT3Linker extends Linker {
     private _wikidata : WikidataUtils;
     private _url : string;
@@ -42,6 +46,7 @@ export class GPT3Linker extends Linker {
 
         const prompt = this._prompt(utterance);
 
+        await sleep(550);
         const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
              dataContentType: 'application/json',
              extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
@@ -198,6 +203,7 @@ export class GPT3Linker extends Linker {
 
         const prompt = description + examples + question;
 
+        await sleep(550);
         const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
              dataContentType: 'application/json',
              extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
