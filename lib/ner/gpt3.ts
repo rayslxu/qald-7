@@ -54,7 +54,7 @@ export class GPT3Linker extends Linker {
                 if (!entity)
                     continue;
                 const [name, toi, propertiesReturnedUncleaned] = entity.split('; ');
-                let propertiesReturned = propertiesReturnedUncleaned.trim().replace('#', '');
+                const propertiesReturned = propertiesReturnedUncleaned.trim().replace('#', '');
                 if (!name || name === '')
                     continue;
                 const potentialEntities = await this._wikidata.getAllEntitiesByName(name);
