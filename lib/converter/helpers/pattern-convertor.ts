@@ -7,6 +7,12 @@ import {
 } from '../../utils/wikidata';
 
 const patterns = {
+    // what is XXX ? 
+    '@wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". wd:$0 schema:description ?x. } 
+    }`,
+
     // who are the current senators from XXX (state) ?
     '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;': 
     `SELECT DISTINCT ?x WHERE { 

@@ -1,3 +1,12 @@
+Utterance: 
+what is mount st helens ?	
+TT:
+@wd . entity ( ) filter id == " Q4675 " ^^wd:entity ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language "en". wd:Q4675 schema:description ?x. } }
+
+====
+
 Utterance: what state is barack obama senator for ?
 TT:
 [ < electoral_district / located_in_the_administrative_territorial_entity > of ( position_held filter value == " Q4416090 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q76 " ^^wd:entity ;
