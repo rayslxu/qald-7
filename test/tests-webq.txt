@@ -1,3 +1,21 @@
+Utterance: what state is barack obama senator for ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q76 p:P39 ?p. 
+    ?p ps:P39 wd:Q4416090. 
+    ?p pq:P768 ?y. 
+    ?y wdt:P131 ?x. 
+}
+TT:
+[ < electoral_district / located_in_the_administrative_territorial_entity > of ( position_held filter value == " Q4416090 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q76 " ^^wd:entity ;
+
+====
+
 Utterance: who is the president of cuba in 2009?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 

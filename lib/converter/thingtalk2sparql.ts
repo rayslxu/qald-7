@@ -437,15 +437,30 @@ class TripleGenerator extends Ast.NodeVisitor {
     visitArrayFieldValue(node : ThingTalk.Ast.ArrayFieldValue) : boolean {
         assert(node.value instanceof Ast.FilterValue && node.value.value instanceof Ast.VarRefValue);
         const predicate = this._createQualifier(node.value.value.name);
-        const field = this._converter.getWikidataProperty(node.field);
-        const fieldVariable = this._converter.getEntityVariable(field);
-        this._statements.push(`?${predicate.predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${field}> ?${fieldVariable}.`);
+        let fieldVariable;
+        if (typeof node.field === 'string') {
+            const field = this._converter.getWikidataProperty(node.field);
+            fieldVariable = this._converter.getEntityVariable(field);
+            this._statements.push(`?${predicate.predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${field}> ?${fieldVariable}.`);
+        } else {
+            fieldVariable = this._converter.getEntityVariable();
+            const path = [];
+            assert(!node.field[0].quantifier);
+            path.push(`<${PROPERTY_QUALIFIER_PREFIX}${this._converter.getWikidataProperty(node.field[0].property)}>`);
+            node.field.slice(1).forEach((elem) => {
+                const p = this._converter.getWikidataProperty(elem.property);
+                path.push('/');
+                path.push(elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : `<${PROPERTY_PREFIX}${p}>`);
+            });
+            this._statements.push(`?${predicate.predicateVariable} ${path.join('')} ?${fieldVariable}.`);
+        }
         // update subject properties to qualifiers of the predicate
         const subjectProperties = this._subjectProperties.filter((p) => {
             return p.startsWith(predicate.property + '.');
         }).map((p) => {
             return p.slice(predicate.property.length + 1);
         });
+        
         const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
         node.value.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);

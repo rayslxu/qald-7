@@ -15,6 +15,15 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
+    }`, 
+
+    // what state is barack obama senator for ?
+    '[ < electoral_district / located_in_the_administrative_territorial_entity > of position_held filter value == " Q4416090 " ^^wd:p_position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
+        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
+        ?y <http://www.wikidata.org/prop/direct/P131> ?x. 
     }`
 };
 
