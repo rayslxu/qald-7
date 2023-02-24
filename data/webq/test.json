@@ -1622,7 +1622,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q17714 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q17714 wdt:P800 ?x. }"
       }
     },
     {
@@ -2402,7 +2402,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q882 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q882 wdt:P800 ?x. }"
       }
     },
     {
@@ -3104,7 +3104,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q692 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q692 wdt:P800 ?x. }"
       }
     },
     {
@@ -3715,7 +3715,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q81960 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q81960 wdt:P800 ?x. }"
       }
     },
     {
@@ -5093,7 +5093,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q34597 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q34597 wdt:P800 ?x. }"
       }
     },
     {
@@ -5470,7 +5470,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q35648 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q35648 wdt:P800 ?x. }"
       }
     },
     {
@@ -6094,7 +6094,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q867813 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q867813 wdt:P800 ?x. }"
       }
     },
     {
@@ -7290,7 +7290,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q1405 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q1405 wdt:P800 ?x. }"
       }
     },
     {
@@ -14297,7 +14297,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q237514 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q237514 wdt:P800 ?x. }"
       }
     },
     {
@@ -17014,7 +17014,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q298237 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q298237 wdt:P800 ?x. }"
       }
     },
     {
@@ -17963,7 +17963,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> PREFIX schema: <http://schema.org/> SELECT DISTINCT ?x WHERE { SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". wd:Q43718 schema:description ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q43718 wdt:P800 ?x. }"
       }
     },
     {
