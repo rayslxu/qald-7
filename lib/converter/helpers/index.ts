@@ -11,7 +11,8 @@ import {
     Ordering,
     SelectQuery,
     AskQuery,
-    Triple
+    Triple,
+    ServicePattern
 } from 'sparqljs';
 import {
     isVariable,
@@ -19,7 +20,8 @@ import {
     isBasicGraphPattern,
     isAggregateExpression,
     isAskQuery,
-    isSelectQuery
+    isSelectQuery,
+    isNamedNode
 } from '../../utils/sparqljs-typeguard';
 import {
     ENTITY_PREFIX,
@@ -130,6 +132,34 @@ export default class ConverterHelper {
             operands.push(filter);
         }
         return new ArrayCollection(existedSubject!, new Ast.OrBooleanExpression(null, operands));
+    }
+
+    async parseWikidataLabel(clause : ServicePattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+        assert(clause.patterns.length === 1);
+        assert(isBasicGraphPattern(clause.patterns[0]));
+        const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
+        for (const triple of clause.patterns[0].triples) {
+            assert(isNamedNode(triple.subject) && isNamedNode(triple.predicate));
+            const subject = triple.subject.value;
+            if (triple.subject.value === 'http://www.bigdata.com/rdf#serviceParam')
+                continue;
+            if (triple.predicate.value === 'http://schema.org/description') {
+                const domain = (await this._converter.kb.getDomain(subject.slice(ENTITY_PREFIX.length))) ?? 'Q35120';
+                const table = this._converter.schema.getTable(domain);
+                assert(table);
+                const filter = new Ast.AtomBooleanExpression(
+                    null,
+                    'id',
+                    '==',
+                    await this._converter.helper.convertValue(subject, new Type.Entity(`${TP_DEVICE_NAME}:${table}`)),
+                    null
+                );
+                filtersBySubject.add(subject, filter);
+                continue;
+            }
+            throw new Error('Unsupported triple in service pattern: ' + JSON.stringify(triple));
+        }
+        return filtersBySubject;
     }
 
     parseVariables(variables : Variable[]|[Wildcard]) : ArrayCollection<Projection|Aggregation> {

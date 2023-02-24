@@ -13,7 +13,8 @@ import {
     isFilterPattern,
     isBasicGraphPattern,
     isUnionPattern,
-    isSelectQuery
+    isSelectQuery,
+    isWikidataLabelServicePattern
 } from '../utils/sparqljs-typeguard';
 import ConverterHelper from './helpers';
 import { 
@@ -145,6 +146,8 @@ class QueryParser {
             return this._converter.helper.parseFilter(clause);
         if (isUnionPattern(clause)) 
             return this._converter.helper.parseUnion(clause);
+        if (isWikidataLabelServicePattern(clause))
+            return this._converter.helper.parseWikidataLabel(clause);
         throw new Error(`Unsupported where clause ${JSON.stringify(clause)}`);
     }
 
@@ -187,10 +190,7 @@ class QueryGenerator {
     }
 
     private async _generateSelectQuery(query : SelectQuery) : Promise<Ast.Expression> {
-        const projectionsAndAggregationsBySubject = this._converter.helper.parseVariables(query.variables);
-        if (projectionsAndAggregationsBySubject.size === 0)
-            throw new Error('No variable found in SPARQL');
-            
+        const projectionsAndAggregationsBySubject = this._converter.helper.parseVariables(query.variables);            
         await this._converter.helper.preprocessTables(projectionsAndAggregationsBySubject);
         const mainSubject = this._converter.helper.getMainSubject(query);
         const table = this._converter.tables[mainSubject];
@@ -313,14 +313,14 @@ export default class SPARQLToThingTalkConverter {
         return this._humanReadableInstanceOf;
     }
      
-    updateTable(subject : string, update : Ast.BooleanExpression|Projection|string) {
+    updateTable(subject : string, update ?: Ast.BooleanExpression|Projection|string) {
         if (!(subject in this._tables)) 
             this._tables[subject] = { name: 'entity', projections: [], filters: [] };
         if (update instanceof Ast.BooleanExpression)  
             this._tables[subject].filters.push(update);
         else if (typeof update === 'string') 
             this._tables[subject].name = this._schema.getTable(update) ?? update;
-        else 
+        else if (update instanceof Projection)
             this._tables[subject].projections.push(update);
     }
     

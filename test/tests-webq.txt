@@ -1,3 +1,19 @@
+Utterance: 
+what is mount st helens ?	
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX wikibase: <http://wikiba.se/ontology#> 
+PREFIX bd: <http://www.bigdata.com/rdf#> 
+PREFIX schema: <http://schema.org/> 
+SELECT DISTINCT ?x WHERE { 
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". wd:Q4675 schema:description ?x. } 
+}
+TT:
+@wd . entity ( ) filter id == " Q4675 " ^^wd:mountain ;
+
+====
+
 Utterance: what state is barack obama senator for ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 

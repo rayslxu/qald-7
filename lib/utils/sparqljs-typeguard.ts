@@ -17,7 +17,8 @@ import {
     AggregateExpression,
     OperationExpression,
     SelectQuery,
-    AskQuery
+    AskQuery,
+    ServicePattern
 } from 'sparqljs';
 
 export function isNamedNode(node : any) : node is IriTerm {
@@ -94,6 +95,14 @@ export function isFilterPattern(node : any) : node is FilterPattern {
 
 export function isUnionPattern(node : any) : node is UnionPattern {
     return 'type' in node && node.type === 'union';
+}
+
+export function isServicePattern(node : any) : node is ServicePattern {
+    return 'type' in node && node.type === 'service';
+}
+
+export function isWikidataLabelServicePattern(node : any) : node is ServicePattern {
+    return isServicePattern(node) && node.name.value === 'http://wikiba.se/ontology#label';
 }
 
 export function isAggregateExpression(node : any, aggregation ?: string) : node is AggregateExpression {
