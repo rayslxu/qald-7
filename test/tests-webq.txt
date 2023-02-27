@@ -1,3 +1,15 @@
+Utterance: who is john cabot ' s parents ?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q85642 wdt:P22|wdt:P25 ?x. 
+}
+TT:
+[ father , mother ] of @wd . human ( ) filter id == " Q85642 " ^^wd:human ;
+
+====
+
 Utterance: 
 when did shaq come to the nba ?
 SPARQL:
