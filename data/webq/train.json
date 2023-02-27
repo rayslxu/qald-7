@@ -5808,7 +5808,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q193637 p:P54 ?p. ?p ps:P54 ?y; pq:P580 ?x. ?y wdt:P118 wd:Q155223. } ORDER BY ?x LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q193637 p:P54 ?p. ?p ps:P54 ?y. ?y wdt:P118 wd:Q155223. ?p pq:P580 ?x. } ORDER BY ?x LIMIT 1"
       }
     },
     {
@@ -9500,7 +9500,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?y; pq:P580 ?x. ?y wdt:P118 wd:Q155223. } ORDER BY ?x LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?y. ?y wdt:P118 wd:Q155223. ?p pq:P580 ?x. } ORDER BY ?x LIMIT 1"
       }
     },
     {
@@ -22877,7 +22877,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q31683 p:P54 ?p. ?p ps:P54 ?y; pq:P580 ?x. ?y wdt:P118 wd:Q155223. } ORDER BY ?x LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q31683 p:P54 ?p. ?p ps:P54 ?y. ?y wdt:P118 wd:Q155223. ?p pq:P580 ?x. } ORDER BY ?x LIMIT 1"
       }
     },
     {
@@ -34607,19 +34607,6 @@
       }
     },
     {
-      "id": "WebQTrn-3424",
-      "question": [
-        {
-          "language": "en",
-          "string": "what year doug williams won the super bowl?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q32096; wdt:P1346 ?y; wdt:P585 ?z. wd:Q951164 p:P54 ?p. ?p ps:P54 ?w; pq:P580 ?v; pq:P582 ?u. FILTER((?w = ?y) && ((?z >= ?v) && (?z <= ?u))) }"
-      }
-    },
-    {
       "id": "WebQTrn-3425",
       "question": [
         {
@@ -34799,19 +34786,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q11813 wdt:P19 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTrn-3442",
-      "question": [
-        {
-          "language": "en",
-          "string": "when was the last time iran invaded another country?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> SELECT DISTINCT ?x WHERE { ?p wdt:P31 wd:Q198; wdt:P710 wd:Q794; wdt:P276 ?y; wdt:P585 ?x. FILTER(?y NOT IN(wd:Q794)) }"
       }
     },
     {
@@ -35045,7 +35019,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?y; pq:P580 ?x. ?y wdt:P118 wd:Q155223. } ORDER BY ?x LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?y. ?y wdt:P118 wd:Q155223. ?p pq:P580 ?x. } ORDER BY ?x LIMIT 1"
       }
     },
     {
@@ -35123,7 +35097,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { wd:Q11702 p:P39 ?p. ?p ps:P39 ?x. ?x ((wdt:P31*)/(wdt:P279*)) wd:Q294414. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q11702 wdt:P39 ?x. }"
       }
     },
     {
@@ -35852,19 +35826,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q370092 wdt:P551 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTrn-3540",
-      "question": [
-        {
-          "language": "en",
-          "string": "when did the mets win the pennant?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?y wdt:P3450 wd:Q265538; p:P1923 ?z; wdt:P585 ?x. ?z ps:P1923 wd:Q692417. }"
       }
     },
     {
@@ -37142,19 +37103,6 @@
       }
     },
     {
-      "id": "WebQTrn-3671",
-      "question": [
-        {
-          "language": "en",
-          "string": "who does queen elizabeth hair?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P166 ?p. ?p pq:P1686 wd:Q499656. }"
-      }
-    },
-    {
       "id": "WebQTrn-3673",
       "question": [
         {
@@ -37385,7 +37333,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { wd:Q165911 p:P551 ?p. ?p ps:P551 ?x. ?x wdt:P131 wd:Q1428. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q165911 wdt:P551 ?x. ?x wdt:P131 wd:Q1428. }"
       }
     },
     {
@@ -37593,7 +37541,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?x. ?x wdt:P31/wdt:P279* wd:Q847017; wdt:P641 wd:Q5369. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { wd:Q41421 p:P54 ?p. ?p ps:P54 ?x. ?x wdt:P641 wd:Q5369. }"
       }
     },
     {
@@ -37698,19 +37646,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q801 wdt:P122 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTrn-3723",
-      "question": [
-        {
-          "language": "en",
-          "string": "what year did the florida marlins win their 2nd world series title?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> SELECT DISTINCT ?x WHERE { ?p wdt:P3450 wd:Q265538; p:P1346 ?y; wdt:P585 ?x. ?y ps:P1346 wd:Q652879. } ORDER BY ?x OFFSET 1 LIMIT 1"
       }
     },
     {
