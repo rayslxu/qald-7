@@ -105,7 +105,7 @@ export class PatternConverter {
         // make regex out of the pattern
         // replace(/[.*+?^${}()|[\]\\]/g, '\\$&'): escape special characters in pattern
         // replace(/\\\$[0-9]/g, '(Q[0-9]+)')): replace $? with regex for QID
-        const regex = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)'));
+        const regex = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)') + '$');
         const match = regex.exec(code);
         if (!match) 
             return null;
