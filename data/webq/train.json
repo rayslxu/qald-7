@@ -8525,7 +8525,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q1124 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y > ?z) } ORDER BY ?y LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q1124 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y = ?z) }"
       }
     },
     {
@@ -22773,7 +22773,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q9960 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y > ?z) } ORDER BY ?y LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q9960 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y = ?z) }"
       }
     },
     {
@@ -25750,7 +25750,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q33866 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y > ?z) } ORDER BY ?y LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q33866 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y = ?z) }"
       }
     },
     {
@@ -34148,7 +34148,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q207 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y > ?z) } ORDER BY ?y LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q207 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y = ?z) }"
       }
     },
     {
@@ -35565,7 +35565,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q91 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y > ?z) } ORDER BY ?y LIMIT 1"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q11699; pq:P580 ?y. wd:Q91 p:P39 ?q. ?q ps:P39 wd:Q11696; pq:P580 ?z. FILTER(?y = ?z) }"
       }
     },
     {
