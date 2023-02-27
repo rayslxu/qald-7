@@ -275,43 +275,20 @@ class TripleGenerator extends Ast.NodeVisitor {
                 return true;
             if (arg.includes('.')) {
                 const [property, qualifier] = arg.split('.');
-                const predicate = this._converter.getWikidataProperty(property);
-                const availableProperties = this._subjectProperties.filter((p) => {
-                    return p.startsWith(predicate + '.');
-                }).map((p) => {
-                    return p.slice(predicate.length + 1);
-                });
+                const p = this._converter.getWikidataProperty(property);
+                const q = this._converter.getWikidataProperty(qualifier);
                 const predicateVariable = this._converter.getPredicateVariable();
                 const valueVariable = this._converter.getEntityVariable();
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(valueVariable);
-                this._add(this._subject, property, '==', predicateVariable, { type: 'predicate' });
-                this._add(predicateVariable, qualifier, '==', valueVariable, { type: 'qualifier', availableProperties });
+                    this._converter.setResultVariable(`?${valueVariable}`);
+                this._statements.push(`${this._subject} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
+                this._statements.push(`?${predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${q}> ?${valueVariable}.`);
             } else {
                 const p = this._converter.getWikidataProperty(arg);
                 const v = this._converter.getEntityVariable(p);
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(v);
-                this._add(this._subject, arg, '==', v);
-            }
-        } else {
-            const computation = node.computations[0];
-            if (computation instanceof Ast.FilterValue) {
-                if (!(computation.filter instanceof Ast.ComparisonSubqueryBooleanExpression))
-                    return true;
-                if (!(computation.filter.lhs instanceof Ast.VarRefValue && computation.filter.lhs.name === 'value'))
-                    return true;
-                assert(computation.value instanceof Ast.VarRefValue);
-                const p = this._converter.getWikidataProperty(computation.value.name);
-                const v = this._converter.getEntityVariable(p);
-                this._add(this._subject, computation.value.name, '==', v);
-                const tripleGenerator = new TripleGenerator(this._converter, v, this._subjectProperties, null, null, null);
-                computation.filter.visit(tripleGenerator);
-                this._statements.push(...tripleGenerator.statements);
-
-                if (computation.prettyprint() === this._target_projection)
-                    this._converter.setResultVariable(v);
-                return false;
+                    this._converter.setResultVariable(`?${v}`);
+                this._statements.push(this._triple(p, v));
             }
         }
         return true;
