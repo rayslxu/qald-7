@@ -48,7 +48,19 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
         ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/$1>. 
         ?p pq:582 ?x. 
-    } ORDER BY DESC(?x) LIMIT 1`
+    } ORDER BY DESC(?x) LIMIT 1`,
+
+    // who was the vp of X
+    '@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11699>; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?q. 
+        ?q <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?z. 
+        FILTER(?y = ?z) 
+    }`
 };
 
 const prefixes : Record<string, string> = {
