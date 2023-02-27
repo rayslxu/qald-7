@@ -1,3 +1,39 @@
+Utterance: who was vp for nixon?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    ?x p:P39 ?p. 
+    ?p ps:P39 wd:Q11699; 
+       pq:P580 ?y. 
+    wd:Q9588 p:P39 ?q. 
+    ?q ps:P39 wd:Q11696; 
+       pq:P580 ?z. 
+    FILTER(?y = ?z) 
+}
+TT:
+@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;
+
+====
+
+Utterance: who succeeded william mckinley as president ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q35041 p:P39 ?p. 
+    ?p ps:P39 wd:Q11696; 
+       pq:P1366 ?x.  
+}
+TT:
+[ replaced_by of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . human ( ) filter id == " Q35041 " ^^wd:human ;
+
+====
+
 Utterance: who is john cabot ' s parents ?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 
