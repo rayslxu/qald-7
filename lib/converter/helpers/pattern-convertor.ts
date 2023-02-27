@@ -30,7 +30,25 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
         ?y <http://www.wikidata.org/prop/direct/P131> ?x. 
-    }`
+    }`,
+
+    // when did X join league Y
+    'min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P54> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
+        ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/$1>. 
+        ?p pq:P580 ?x. 
+    } ORDER BY ?x LIMIT 1`,
+
+    // when did X leave league Y
+    'max ( end_time of [ end_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P54> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
+        ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/$1>. 
+        ?p pq:582 ?x. 
+    } ORDER BY DESC(?x) LIMIT 1`
 };
 
 const prefixes : Record<string, string> = {
