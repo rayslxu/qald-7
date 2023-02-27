@@ -130,6 +130,12 @@ class ManifestGenerator {
         // HACK: force position_held to have electoral_district
         if (propertyId === 'P39')
             qualifiers.push('P768');
+        // HACK: force spouse to have place of marriage
+        if (propertyId === 'P26')
+            qualifiers.push('P2842');
+        // HACK: force point in time for draft by
+        if (propertyId === 'P647')
+            qualifiers.push('P585');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
@@ -571,28 +577,7 @@ class ManifestGenerator {
                     continue;
                 const type = await this._getPropertyType(id, pname);
                 console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
-                // add entity 
-                this._addEntity(
-                    `p_${pname}`, 
-                    label!, 
-                    [`${TP_DEVICE_NAME}:entity`]
-                );
-                // add the entity domain
                 this._properties[id] = fakeProperty(id, pname, type ?? undefined);
-                // add to the dedicated domain as well for domain that is not "entity" (Q35120)
-                if (domain === 'Q35120' || !domainLabel)
-                    continue;
-                const fname = cleanName(domainLabel);
-                const oldFunctionDef = queries[fname];
-                const args = oldFunctionDef.args.map((arg) => oldFunctionDef.getArgument(arg)!);
-                args.push(this._properties[id]);
-                queries[fname] = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
-                    is_list: true, 
-                    is_monitorable: false
-                }, args, {
-                    nl: oldFunctionDef.nl_annotations,
-                    impl: oldFunctionDef.impl_annotations
-                });
             }
         }
 
