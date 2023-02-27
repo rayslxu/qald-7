@@ -130,6 +130,12 @@ class ManifestGenerator {
         // HACK: force position_held to have electoral_district
         if (propertyId === 'P39')
             qualifiers.push('P768');
+        // HACK: force spouse to have place of marriage
+        if (propertyId === 'P26')
+            qualifiers.push('P2842');
+        // HACK: force point in time for draft by
+        if (propertyId === 'P647')
+            qualifiers.push('P585');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
@@ -561,8 +567,9 @@ class ManifestGenerator {
                 const pname = cleanName(label!);
                 if (id in this._properties || id === 'P31')
                     continue;
-                console.log(`Adding missing property in domain ${domain}: ${pname} (${id})`);
-                this._properties[id] = fakeProperty(id, pname);
+                const type = await this._getPropertyType(id, pname);
+                console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
+                this._properties[id] = fakeProperty(id, pname, type ?? undefined);
             }
         }
 

@@ -39,12 +39,12 @@ export function instanceOfArgument(entityType : string) : Ast.ArgumentDef {
 }
 
 // return a property just for representation, it won't get synthesized 
-export function fakeProperty(qid : string, pname : string) : Ast.ArgumentDef {
+export function fakeProperty(qid : string, pname : string, type ?: Type) : Ast.ArgumentDef {
     return new Ast.ArgumentDef(
         null,
         Ast.ArgDirection.OUT,
         pname,
-        new Type.Array(new Type.Entity(`${TP_DEVICE_NAME}:entity`)),
+        type ?? new Type.Array(new Type.Entity(`${TP_DEVICE_NAME}:entity`)),
         {
             impl: {
                 wikidata_id: new Ast.Value.String(qid),

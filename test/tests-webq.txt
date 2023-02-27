@@ -1,3 +1,17 @@
+Utterance: what year did michael jordan get drafted ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q41421 p:P647 ?y. 
+    ?y pq:P585 ?x. 
+}
+TT:
+[ drafted_by . point_in_time ] of @wd . human ( ) filter id == " Q41421 " ^^wd:human ;
+
+====
+
 Utterance: who was vp for nixon?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 
@@ -77,7 +91,7 @@ SELECT DISTINCT ?x WHERE {
        wdt:P585 ?x. 
 }
 TT:
-[ point_in_time ] of @wd . entity ( ) filter instance_of == " Q858439 " ^^wd:entity_subdomain && contains ( candidate , " Q491019 " ^^wd:entity ) ;
+[ point_in_time ] of @wd . entity ( ) filter instance_of == " Q858439 " ^^wd:entity_subdomain && contains ( candidate , " Q491019 " ^^wd:p_candidate ) ;
 
 ====
 
