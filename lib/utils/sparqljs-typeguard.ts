@@ -79,6 +79,10 @@ export function isSequencePropertyPath(node : any) : node is PropertyPath {
     return 'pathType' in node && node.pathType === '/' && node.items.length > 1;
 }
 
+export function isOrPropertyPath(node : any) : node is PropertyPath {
+    return 'pathType' in node && node.pathType === '|' && node.items.length > 1;
+}
+
 export function isUnaryPropertyPath(node : any, type ?: '+'|'*'|'!') : node is PropertyPath {
     if (type)
         return 'pathType' in node && node.pathType === type && node.items.length === 1;

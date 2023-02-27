@@ -13,7 +13,8 @@ import {
     isLiteral,
     isVariable,
     isUnaryPropertyPath,
-    isWikidataPredicateNode
+    isWikidataPredicateNode,
+    isOrPropertyPath
 } from '../../utils/sparqljs-typeguard';
 import { 
     ENTITY_PREFIX,
@@ -176,12 +177,27 @@ export default class TripleParser {
         filtersBySubject.add(subject, ...filters);
         return filtersBySubject;
     }
+
+    async _parseOrPathTriple(triple : Triple) : Promise<ArrayCollection<Ast.BooleanExpression>> {
+        assert(isOrPropertyPath(triple.predicate));
+        const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
+        const predicate = triple.predicate;
+        for (const elem of predicate.items) {
+            assert(isWikidataPropertyNode(elem));
+            triple.predicate = elem;
+            filtersBySubject.merge(await this._parseBasicTriple(triple));
+        }
+        triple.predicate = predicate;
+        return filtersBySubject;
+    }
         
     async parse(pattern : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
         for (const triple of pattern.triples) {
             triple.predicate = postprocessPropertyPath(triple.predicate);
-            if (isPropertyPath(triple.predicate))
+            if (isOrPropertyPath(triple.predicate))
+                filtersBySubject.merge(await this._parseOrPathTriple(triple));
+            else if (isPropertyPath(triple.predicate))
                 filtersBySubject.merge(await this._parseSequencePathTriple(triple));
             else 
                 filtersBySubject.merge(await this._parseBasicTriple(triple));
