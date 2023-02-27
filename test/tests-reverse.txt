@@ -1,3 +1,14 @@
+Utterance: what year did michael jordan get drafted ?
+TT:
+[ drafted_by . point_in_time ] of @wd . human ( ) filter id == " Q41421 " ^^wd:human ;
+SPARQL:
+SELECT DISTINCT ?x WHERE {
+     <http://www.wikidata.org/entity/Q41421> <http://www.wikidata.org/prop/P647> ?p.
+     ?p <http://www.wikidata.org/prop/qualifier/P585> ?x. 
+}
+
+====
+
 Utterance: who was vp for nixon?
 TT:
 @wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;

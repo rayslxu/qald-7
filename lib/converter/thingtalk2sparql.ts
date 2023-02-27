@@ -257,11 +257,23 @@ class TripleGenerator extends Ast.NodeVisitor {
             const arg = node.args[0];
             if (arg === 'id')
                 return true;
-            const p = this._converter.getWikidataProperty(arg);
-            const v = this._converter.getEntityVariable(p);
-            if (arg === this._target_projection) 
-                this._converter.setResultVariable(`?${v}`);
-            this._statements.push(this._triple(p, v));
+            if (arg.includes('.')) {
+                const [property, qualifier] = arg.split('.');
+                const p = this._converter.getWikidataProperty(property);
+                const q = this._converter.getWikidataProperty(qualifier);
+                const predicateVariable = this._converter.getPredicateVariable();
+                const valueVariable = this._converter.getEntityVariable();
+                if (arg === this._target_projection) 
+                    this._converter.setResultVariable(`?${valueVariable}`);
+                this._statements.push(`${this._subject} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
+                this._statements.push(`?${predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${q}> ?${valueVariable}.`);
+            } else {
+                const p = this._converter.getWikidataProperty(arg);
+                const v = this._converter.getEntityVariable(p);
+                if (arg === this._target_projection) 
+                    this._converter.setResultVariable(`?${v}`);
+                this._statements.push(this._triple(p, v));
+            }
         }
         return true;
     }
