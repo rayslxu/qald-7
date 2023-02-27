@@ -1,4 +1,18 @@
 Utterance: 
+when did shaq come to the nba ?
+TT:
+min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " Q155223 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " Q169452 " ^^wd:entity ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q155223> <http://www.wikidata.org/prop/P54> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
+    ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q169452>. 
+    ?p <http://www.wikidata.org/prop/qualifier/P580> ?x. 
+} ORDER BY ?x LIMIT 1
+
+====
+
+Utterance: 
 what is mount st helens ?	
 TT:
 @wd . entity ( ) filter id == " Q4675 " ^^wd:entity ;
