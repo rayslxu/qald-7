@@ -1,3 +1,14 @@
+Utterance: what professional baseball team did michael jordan play for ?
+TT:
+[ member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( sport , " Q5369 " ^^wd:p_sport ) ) ] of @wd . human ( ) filter id == " Q41421 " ^^wd:human ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q41421> <http://www.wikidata.org/prop/direct/P54> ?x. 
+    ?x <http://www.wikidata.org/prop/direct/P641> <http://www.wikidata.org/entity/Q5369>. 
+}
+
+====
+
 Utterance: what year did michael jordan get drafted ?
 TT:
 [ drafted_by . point_in_time ] of @wd . human ( ) filter id == " Q41421 " ^^wd:human ;

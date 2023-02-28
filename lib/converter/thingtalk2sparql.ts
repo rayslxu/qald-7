@@ -290,6 +290,25 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.setResultVariable(`?${v}`);
                 this._statements.push(this._triple(p, v));
             }
+        } else {
+            const computation = node.computations[0];
+            if (computation instanceof Ast.FilterValue) {
+                if (!(computation.filter instanceof Ast.ComparisonSubqueryBooleanExpression))
+                    return true;
+                if (!(computation.filter.lhs instanceof Ast.VarRefValue && computation.filter.lhs.name === 'value'))
+                    return true;
+                assert(computation.value instanceof Ast.VarRefValue);
+                const p = this._converter.getWikidataProperty(computation.value.name);
+                const v = this._converter.getEntityVariable(p);
+                this._statements.push(this._triple(p, v));
+                const tripleGenerator = new TripleGenerator(this._converter, `?${v}`, this._subjectProperties, null, null, null);
+                computation.filter.visit(tripleGenerator);
+                this._statements.push(...tripleGenerator.statements);
+
+                if (computation.prettyprint() === this._target_projection)
+                    this._converter.setResultVariable(`?${v}`);
+                return false;
+            }
         }
         return true;
     }
@@ -511,7 +530,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
         let filterVariable;
         if (node.lhs.name === 'id' || node.lhs.name === 'value') {
-            filterVariable = this._subject;
+            filterVariable = this._subject.slice('?'.length);
         } else {
             const filterProperty = this._converter.getWikidataProperty(node.lhs.name);
             filterVariable = this._converter.getEntityVariable(filterProperty);
