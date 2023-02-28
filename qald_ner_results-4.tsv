@@ -1,0 +1,2 @@
+51	what was the first queen album ? <e> Queen ( musical group ) [ Q15862 ] ; studio album ( creative work ) [ Q208569 ] ; </e>	sort ( publication_date asc of @wd . entity ( ) filter contains ( performer , " Q15862 " ^^wd:entity ) && instance_of == " Q482994 " ^^wd:domain ) [ 1 ] ;
+52	did elvis presley have children ? <e> Elvis Presley ( human ) [ Q303 ] ; </e>	[ count ( child ) >= 1 ] of @wd . entity ( ) filter id == " Q303 " ^^wd:entity ;
