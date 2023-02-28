@@ -562,6 +562,7 @@ class ManifestGenerator {
             }
         );
         for (const domain in this._propertiesByDomainInQald) {
+            const domainLabel = this._domainLabels[domain];
             for (const id of this._propertiesByDomainInQald[domain]) {
                 const label = await this._wikidata.getLabel(id);
                 const pname = cleanName(label!);
@@ -569,7 +570,22 @@ class ManifestGenerator {
                     continue;
                 const type = await this._getPropertyType(id, pname);
                 console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
+                // add the entity domain
                 this._properties[id] = fakeProperty(id, pname, type ?? undefined);
+                // add to the dedicated domain as well for domain that is not "entity" (Q35120)
+                if (domain === 'Q35120' || !domainLabel)
+                    continue;
+                const fname = cleanName(domainLabel);
+                const oldFunctionDef = queries[fname];
+                const args = oldFunctionDef.args.map((arg) => oldFunctionDef.getArgument(arg)!);
+                args.push(this._properties[id]);
+                queries[fname] = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
+                    is_list: true, 
+                    is_monitorable: false
+                }, args, {
+                    nl: oldFunctionDef.nl_annotations,
+                    impl: oldFunctionDef.impl_annotations
+                });
             }
         }
 
