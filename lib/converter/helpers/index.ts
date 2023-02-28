@@ -369,8 +369,8 @@ export default class ConverterHelper {
             const verification = operands.length > 1 ? new Ast.AndBooleanExpression(null, operands) : operands[0];
             return new Ast.BooleanQuestionExpression(null, base, verification, null);
         } else {
-            const filterdTable = this.addFilters(base, operands);
-            const aggregatedTable = new Ast.AggregationExpression(null, filterdTable, '*', 'count', null);
+            const filteredTable = this.addFilters(base, operands);
+            const aggregatedTable = new Ast.AggregationExpression(null, filteredTable, '*', 'count', null);
             return new Ast.BooleanQuestionExpression(
                 null,
                 aggregatedTable,
@@ -575,6 +575,29 @@ export default class ConverterHelper {
             );
         } 
         throw new Error('Failed to generate subquery');
+    }
+    
+    makeFilterValue(mainSubject : string, subject : string) : Projection {
+        const table = this._converter.tables[subject];
+        assert(table.projections.length === 0);
+        assert(table.filters.length > 0);
+        // const filter = table.filters.length === 1 ? table.filters[0] : new Ast.AndBooleanExpression(null, table.filters);
+        const subquery = this.addFilters(baseQuery(table.name), table.filters);
+        const filter = new Ast.ComparisonSubqueryBooleanExpression(
+            null,
+            new Ast.Value.VarRef('value'),
+            '==',
+            subquery,
+            null
+        );
+        const proj = this._converter.tables[mainSubject].projections.find((p) => p.variable === subject)!;
+        if (typeof proj.property !== 'string')
+            throw new Error('Unsupported filter over projection');
+        return new Projection({
+            property: new Ast.FilterValue(new Ast.VarRefValue(proj.property), filter),
+            variable: proj.variable,
+            type: proj.type
+        });
     }
 
     async makeAtomBooleanExpression(property : string, 

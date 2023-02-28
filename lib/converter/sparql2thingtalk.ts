@@ -195,16 +195,23 @@ class QueryGenerator {
         const mainSubject = this._converter.helper.getMainSubject(query);
         const table = this._converter.tables[mainSubject];
         const filters = [...table.filters];
+        const projections = projectionsAndAggregationsBySubject.get(mainSubject);
         for (const subject in this._converter.tables) {
             if (subject === mainSubject)
                 continue;
-            filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
+            const projIndex = projections.findIndex((p) => p.variable === subject);
+            // if subject matches a projection of the mainSubject, update the projection to be a filtered value
+            // otherwise, add a subquery as filter
+            if (projIndex !== -1)
+                projections.splice(projIndex, 1, this._converter.helper.makeFilterValue(mainSubject, subject));
+            else
+                filters.push(this._converter.helper.makeSubquery(mainSubject, subject));
         }
         let expression : Ast.Expression = baseQuery(table.name);
         expression = this._converter.helper.addFilters(expression, filters);
         expression = this._converter.helper.addOrdering(expression, table, query.order);
         expression = this._converter.helper.addLimit(expression, query.limit);
-        expression = this._converter.helper.addProjectionsAndAggregations(expression, mainSubject, projectionsAndAggregationsBySubject.get(mainSubject));
+        expression = this._converter.helper.addProjectionsAndAggregations(expression, mainSubject, projections);
         return expression;
     }
 
