@@ -1,3 +1,23 @@
+Utterance: who was president when the us navy department was established ?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+  ?x p:P39 ?p. 
+  ?p ps:P39 wd:Q11696; 
+     pq:P580 ?y; 
+     pq:P582 ?z. 
+  wd:Q742787 wdt:P571 ?w. 
+  FILTER((?y < ?w) && (?z >= ?w)) 
+}
+TT:
+@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;
+
+====
+
 Utterance: what state is the george washington university in ?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 

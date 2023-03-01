@@ -60,7 +60,17 @@ const patterns = {
         ?q <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; 
            <http://www.wikidata.org/prop/qualifier/P580> ?z. 
         FILTER(?y = ?z) 
-    }`
+    }`,
+
+    // WebQTrn-3551
+    '@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P6> ?x; 
+        <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+        <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
+        FILTER((?y < ?w) && (?z >= ?w)) }
+    `,
 };
 
 const prefixes : Record<string, string> = {
