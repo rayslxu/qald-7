@@ -1,3 +1,17 @@
+Utterance: who was president when the us navy department was established ?
+TT:
+@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q30> <http://www.wikidata.org/prop/P6> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P6> ?x; 
+    <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+    <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
+    FILTER((?y < ?w) && (?z >= ?w)) 
+}
+
+====
+
 Utterance: what state is the george washington university in ?
 TT:
 [ located_in_the_administrative_territorial_entity : Entity ( wd:state ) ] of @wd . higher_education_institution ( ) filter id == " Q432637 " ^^wd:higher_education_institution ;
