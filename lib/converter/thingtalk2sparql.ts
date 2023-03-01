@@ -172,12 +172,15 @@ class TripleGenerator extends Ast.NodeVisitor {
         return predicate;
     }
 
-    private _triple(subject : string, property : string, value : string, options ?: TripleOptions) {
-        const s = this._node(subject);
-        const p = this._edge(property, value, options);
+    private _triple(property : string, value : string, subject ?: string, entityValue ?: boolean) {
+        assert(property && value);
+        // this._subject: either a variable with ? prefix, or a full path QID
+        // subject: either a variable WITHOUT ? prefix, or a simple QID
+        const s = subject ? this._node(subject) : this._subject;
+        const p = this._edge(property, value, entityValue);
         const v = this._node(value);
 
-        if (property === 'P31' && value === 'Q107390')
+        if (property === 'P31' && value === 'Q7275')
             return `{ ${s} ${p} ${v}. } UNION { ${s} ${p} ${this._node('Q475050')}. }`;
         if (property === 'P31' && value in DOMAIN_MAP)
             value = DOMAIN_MAP[value];

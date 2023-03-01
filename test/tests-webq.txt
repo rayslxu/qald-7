@@ -1,3 +1,16 @@
+Utterance: what state is the george washington university in ?
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q432637 wdt:P131+ ?x. 
+    { ?x wdt:P31/wdt:P279* wd:Q475050. } UNION { ?x wdt:P31/wdt:P279* wd:Q7275. } 
+}
+TT:
+[ located_in_the_administrative_territorial_entity : Entity ( wd:state ) ] of @wd . higher_education_institution ( ) filter id == " Q432637 " ^^wd:higher_education_institution ;
+
+====
+
 Utterance: what professional baseball team did michael jordan play for ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
-import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPropertyNode } from './sparqljs-typeguard';
-import { ABSTRACT_PROPERTIES, PROPERTY_PREDICATE_PREFIX, PROPERTY_PREFIX, PROPERTY_QUALIFIER_PREFIX, PROPERTY_STATEMENT_PREFIX } from './wikidata';
+import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPredicateNode, isWikidataPropertyNode } from './sparqljs-typeguard';
+import { PROPERTY_PREFIX } from './wikidata';
 
 /**
  * Given a parsed object returned by sparqljs, extract rdf triples out of it
@@ -114,8 +114,8 @@ function isInstanceOf(triple : Triple) : boolean {
  * @param predicate A predicate
  * @returns a parsed triple for the special cases, and false if not matched 
  */
-export function preprocessSpecialUnion(union : UnionPattern) : Triple|false {
-    const result = _preprocessUSStateSpecialUnion(union);
+export function parseSpecialUnion(union : UnionPattern) : Triple|false {
+    const result = _parseUSStateSpecialUnion(union);
     if (result)
         return result;
 
@@ -152,9 +152,9 @@ export function preprocessSpecialUnion(union : UnionPattern) : Triple|false {
 }
 
 
-// { ?s P31/P279* Q475050. } union { ?s P31/P279* Q107390 } => { ?s P31 Q107390 } 
+// { ?s P31/P279* Q475050. } union { ?s P31/P279* Q7275 } => { ?s P31 Q7275 } 
 // this includes DC when talking about states in united states
-function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
+function _parseUSStateSpecialUnion(union : UnionPattern) : Triple|false {
     if (union.patterns.length !== 2)
         return false;
     
@@ -165,7 +165,7 @@ function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
         if (pattern.triples.length !== 1)
             return false;
         const triple = pattern.triples[0];
-        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q107390')) 
+        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q7275')) 
             stateTriple = triple;
         if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q475050'))
             federalDistrictTriple = triple;
