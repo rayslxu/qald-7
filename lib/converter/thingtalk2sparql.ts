@@ -161,10 +161,12 @@ class TripleGenerator extends Ast.NodeVisitor {
         // subject: either a variable WITHOUT ? prefix, or a simple QID
         const s = subject ? this._node(subject) : this._subject;
         const p = this._edge(property, value, entityValue);
+        const v = this._node(value);
 
+        if (property === 'P31' && value === 'Q7275')
+            return `{ ${s} ${p} ${v}. } UNION { ${s} ${p} ${this._node('Q475050')}. }`;
         if (property === 'P31' && value in DOMAIN_MAP)
             value = DOMAIN_MAP[value];
-        const v = this._node(value);
         return `${s} ${p} ${v}.`;
     }
 

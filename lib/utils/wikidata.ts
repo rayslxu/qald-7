@@ -679,7 +679,8 @@ export default class WikidataUtils {
             // manually add the following domains
             // Q16521: taxon
             // Q95074: fictional character
-            for (const domain of ['Q16521', 'Q95074']) {
+            // Q7275: state
+            for (const domain of ['Q16521', 'Q95074', 'Q7275']) {
                 const equivalentType = schemaTypes.find((t) => t.name === 'Thing')!;
                 this._domains[domain] = equivalentType;
                 this._subdomains[domain] = [];

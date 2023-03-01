@@ -25,7 +25,9 @@ export function isNamedNode(node : any) : node is IriTerm {
     return 'termType' in node && node.termType === 'NamedNode';
 }
 
-export function isWikidataEntityNode(node : any) : node is IriTerm {
+export function isWikidataEntityNode(node : any, qid ?: string) : node is IriTerm {
+    if (qid) 
+        return 'termType' in node && node.termType === 'NamedNode' && node.value === ENTITY_PREFIX + qid;
     return 'termType' in node && node.termType === 'NamedNode' && node.value.startsWith(ENTITY_PREFIX);
 }
 

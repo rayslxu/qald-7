@@ -1,3 +1,13 @@
+Utterance: what state is the george washington university in ?
+TT:
+[ located_in_the_administrative_territorial_entity : Entity ( wd:state ) ] of @wd . higher_education_institution ( ) filter id == " Q432637 " ^^wd:higher_education_institution ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q432637> <http://www.wikidata.org/prop/direct/P131>+ ?x. 
+    { ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q7275>. } UNION { ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q475050>. }    
+}
+====
+
 Utterance: what professional baseball team did michael jordan play for ?
 TT:
 [ member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( sport , " Q5369 " ^^wd:p_sport ) ) ] of @wd . human ( ) filter id == " Q41421 " ^^wd:human ;

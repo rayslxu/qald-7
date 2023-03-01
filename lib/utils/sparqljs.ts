@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
-import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataPredicateNode, isWikidataPropertyNode } from './sparqljs-typeguard';
+import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPredicateNode, isWikidataPropertyNode } from './sparqljs-typeguard';
 import { PROPERTY_PREFIX } from './wikidata';
 
 /**
@@ -87,14 +87,34 @@ export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|Variabl
     return predicate;
 }
 
+function isInstanceOf(triple : Triple) : boolean {
+    const predicate = triple.predicate;
+    if (isWikidataPropertyNode(predicate, 'P31'))
+        return true;
+    
+    if (isSequencePropertyPath(predicate)) {
+        if (predicate.items.length !== 2)
+            return false;
+        if (!isWikidataPropertyNode(predicate.items[0], 'P31'))
+            return false;
+        if (isUnaryPropertyPath(predicate.items[1], '*') && isWikidataPropertyNode(predicate.items[1].items[0], 'P279'))
+            return true;
+        return false;
+    }
+
+    return false;
+}
+
 /**
  * Handle a few special cases for union clause
- * case 1: { ?s ?p ?o } union { ?s ?p/P17 ?o } ==> { ?s ?p ?o }
- * case 2: { ?s P31 ?o } union { ?s P31/P279* ?o } ==> { ?s P31 ?o }
  * @param predicate A predicate
  * @returns a parsed triple for the special cases, and false if not matched 
  */
 export function parseSpecialUnion(union : UnionPattern) : Triple|false {
+    const result = _parseUSStateSpecialUnion(union);
+    if (result)
+        return result;
+
     if (union.patterns.length !== 2)
         return false;
     if (!isBasicGraphPattern(union.patterns[0]) || !isBasicGraphPattern(union.patterns[1]))
@@ -124,6 +144,31 @@ export function parseSpecialUnion(union : UnionPattern) : Triple|false {
         second.predicate.items[0].value === first.predicate.value &&
         isWikidataPropertyNode(second.predicate.items[1].items[0], 'P279'))
         return first;
-    
     return false;
+}
+
+
+// { ?s P31/P279* Q475050. } union { ?s P31/P279* Q7275 } => { ?s P31 Q7275 } 
+// this includes DC when talking about states in united states
+function _parseUSStateSpecialUnion(union : UnionPattern) : Triple|false {
+    if (union.patterns.length !== 2)
+        return false;
+    
+    let stateTriple, federalDistrictTriple;
+    for (const pattern of union.patterns) {
+        if (!isBasicGraphPattern(pattern))
+            return false;
+        if (pattern.triples.length !== 1)
+            return false;
+        const triple = pattern.triples[0];
+        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q7275')) 
+            stateTriple = triple;
+        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q475050'))
+            federalDistrictTriple = triple;
+    }
+    if (!stateTriple || !federalDistrictTriple)
+        return false;
+    if (stateTriple.subject.value !== federalDistrictTriple.subject.value)
+        return false;
+    return stateTriple;
 }
