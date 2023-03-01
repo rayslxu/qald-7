@@ -1,3 +1,15 @@
+Utterance: when did mcgee join the ncis team ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q838560 wdt:P4584 ?x.
+}
+TT:
+[ first_appearance ] of @wd . fictional_character ( ) filter id == " Q838560 " ^^wd:fictional_character ;
+
+====
+
 Utterance: who was president when the us navy department was established ?
 SPARQL: 
 PREFIX wd: <http://www.wikidata.org/entity/> 
