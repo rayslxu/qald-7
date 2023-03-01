@@ -577,6 +577,12 @@ class ManifestGenerator {
                     continue;
                 const type = await this._getPropertyType(id, pname);
                 console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
+                // add entity 
+                this._addEntity(
+                    `p_${pname}`, 
+                    label!, 
+                    [`${TP_DEVICE_NAME}:entity`]
+                );
                 // add the entity domain
                 this._properties[id] = fakeProperty(id, pname, type ?? undefined);
                 // add to the dedicated domain as well for domain that is not "entity" (Q35120)
