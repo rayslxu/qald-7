@@ -34,6 +34,11 @@ const DOMAIN_MAP : Record<string, string> = {
     'Q571': 'Q7725634'
 };
 
+interface TripleOptions {
+    type : 'direct'|'predicate'|'qualifier'|'statement',
+    availableProperties ?: string[],
+}
+
 class TableInfoVisitor extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     subject ?: string;
@@ -119,8 +124,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         return node;
     }
 
-    private _edge(property : string, value : string) : string {
-        let prefix = PROPERTY_PREFIX;
+    private _edge(property : string, value : string, options : TripleOptions = { type: 'direct' }) : string {
+        let prefix;
         if (this._inPredicate) {
             if (property === 'value') {
                 property = this._inPredicate.property;
@@ -128,8 +133,20 @@ class TripleGenerator extends Ast.NodeVisitor {
             } else {
                 prefix = PROPERTY_QUALIFIER_PREFIX;
             }
-        } else if (PREDICATE_VARIABLES.includes(value)) {
-            prefix = PROPERTY_PREDICATE_PREFIX;
+        } else {
+            switch (options.type) {
+            case 'predicate':
+                prefix = PROPERTY_PREDICATE_PREFIX;
+                break;
+            case 'qualifier':
+                prefix = PROPERTY_QUALIFIER_PREFIX;
+                break;
+            case 'statement':
+                prefix = PROPERTY_STATEMENT_PREFIX;
+                break;
+            default:
+                prefix = PROPERTY_PREFIX;
+            }
         }
 
         const predicate = `<${prefix}${property}>`;
@@ -150,9 +167,9 @@ class TripleGenerator extends Ast.NodeVisitor {
         return predicate;
     }
 
-    private _triple(subject : string, property : string, value : string) {
+    private _triple(subject : string, property : string, value : string, options ?: TripleOptions) {
         const s = this._node(subject);
-        const p = this._edge(property, value);
+        const p = this._edge(property, value, options);
         const v = this._node(value);
 
         if (property === 'P31' && value === 'Q7275')
@@ -162,8 +179,16 @@ class TripleGenerator extends Ast.NodeVisitor {
         return `${s} ${p} ${v}.`;
     }
 
-    private _toStatements(subject : string, property : string, operator : string, value : Ast.Value, subjectProperties ?: string[]) : string[] {
-        subjectProperties = subjectProperties ?? this._subjectProperties;
+    private _toStatements(
+        subject : string, 
+        property : string, 
+        operator : string, 
+        value : Ast.Value, 
+        options ?: TripleOptions
+    ) : string[] {
+        const type = options?.type ?? 'direct';
+        const availableProperties = options?.availableProperties ?? this._subjectProperties;
+        options = { type, availableProperties };
         const statements : string[] = [];
         // id string filter
         if (property === 'id' && operator === '=~') {
@@ -197,15 +222,15 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const endValue = `"${date.toISOString()}"^^<${DATETIME}>`;
                 // if (this._subject.startsWith('?')) 
                 //    throw Error('TODO: generic filter on time for search questions');
-                if (subjectProperties.includes('P580')) {
+                if (availableProperties.includes('P580')) {
                     const variable1 = this._converter.getEntityVariable('P580');
-                    statements.push(this._triple(subject, 'P580', variable1));
+                    statements.push(this._triple(subject, 'P580', variable1, options));
                     const variable2 = this._converter.getEntityVariable('P582');
-                    statements.push(this._triple(subject, 'P582', variable2));
+                    statements.push(this._triple(subject, 'P582', variable2, options));
                     statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
                 } else {
                     const variable = this._converter.getEntityVariable('P585');
-                    statements.push(this._triple(subject, 'P585', variable));
+                    statements.push(this._triple(subject, 'P585', variable, options));
                     statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
                 }
                 return statements;
@@ -215,26 +240,26 @@ class TripleGenerator extends Ast.NodeVisitor {
         // generic atom filters 
         const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
         if (value instanceof Ast.EntityValue) {
-            statements.push(this._triple(subject, p, value.value!));
+            statements.push(this._triple(subject, p, value.value!, options));
         } else if (value instanceof Ast.NumberValue) {
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(subject, p, variable));
+            statements.push(this._triple(subject, p, variable, options));
             statements.push(`FILTER(?${variable} ${convertOp(operator)} ${value.value}).`);
         } else if (value instanceof Ast.DateValue) {
             const date = (value.toJS() as Date).toISOString();
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(subject, p, variable));
+            statements.push(this._triple(subject, p, variable, options));
             statements.push(`FILTER(?${variable} ${convertOp(operator)} "${date}"^^<${DATETIME}>).`);
         } else if (value instanceof Ast.StringValue) {
             const str = value.value;
             const variable = this._converter.getEntityVariable(p);
-            statements.push(this._triple(subject, p, variable));
+            statements.push(this._triple(subject, p, variable, options));
             statements.push(`?${variable} <${LABEL}> "${str}"@en.`);
         } else if (value instanceof Ast.EnumValue) {
             if (value.value === 'male')
-                this._statements.push(this._triple(subject, p, 'Q6581097'));
+                this._statements.push(this._triple(subject, p, 'Q6581097', options));
             else if (value.value === 'female')
-                this._statements.push(this._triple(subject, p, 'Q6581072'));
+                this._statements.push(this._triple(subject, p, 'Q6581072', options));
             else
                 throw new Error('Unsupported enum value: ' + value);
         } else {
@@ -376,16 +401,16 @@ class TripleGenerator extends Ast.NodeVisitor {
             }
         } else if (node.lhs instanceof Ast.Value.Filter) {
             const property = (node.lhs.value as Ast.VarRefValue).name;
-            const predicate = this._createQualifier(property);
+            const predicate = this._createQualifiedPredicate(property);
             assert(node.operator === 'contains' || node.operator === '==');
             // update subject properties to qualifiers of the predicate
-            const subjectProperties = this._subjectProperties.filter((p) => {
+            const availableProperties = this._subjectProperties.filter((p) => {
                 return p.startsWith(predicate.property + '.');
             }).map((p) => {
                 return p.slice(predicate.property.length + 1);
             });
-            this._statements.push(...this._toStatements(predicate.predicateVariable, property, node.operator, node.rhs, subjectProperties));
-            const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
+            this._statements.push(...this._toStatements(predicate.predicateVariable, property, node.operator, node.rhs, { availableProperties, type: 'statement' }));
+            const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, availableProperties, null, null, predicate);
             node.lhs.filter.visit(tripleGenerator);
             this._statements.push(...tripleGenerator.statements);  
             return true; 
@@ -439,7 +464,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     // qualifier
     visitFilterValue(node : ThingTalk.Ast.FilterValue) : boolean {
         assert(node.value instanceof Ast.VarRefValue);
-        const predicate = this._createQualifier(node.value.name);
+        const predicate = this._createQualifiedPredicate(node.value.name);
         const entityVariable = this._converter.getEntityVariable();
         this._statements.push(`?${predicate.predicateVariable} <${PROPERTY_STATEMENT_PREFIX}${predicate.property}> ?${entityVariable}.`);
         // update subject properties to qualifiers of the predicate
@@ -459,7 +484,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     visitArrayFieldValue(node : ThingTalk.Ast.ArrayFieldValue) : boolean {
         assert(node.value instanceof Ast.FilterValue && node.value.value instanceof Ast.VarRefValue);
-        const predicate = this._createQualifier(node.value.value.name);
+        const predicate = this._createQualifiedPredicate(node.value.value.name);
         let fieldVariable;
         if (typeof node.field === 'string') {
             const field = this._converter.getWikidataProperty(node.field);
@@ -493,10 +518,10 @@ class TripleGenerator extends Ast.NodeVisitor {
         return false;
     }
 
-    private _createQualifier(property : string) : QualifiedPredicate {
+    private _createQualifiedPredicate(property : string) : QualifiedPredicate {
         const p = this._converter.getWikidataProperty(property);
         const predicateVariable = this._converter.getPredicateVariable();
-        this._statements.push(this._triple(this._subject, p, predicateVariable));
+        this._statements.push(this._triple(this._subject, p, predicateVariable, { type: 'predicate' }));
         return {
             property : p,
             predicateVariable
