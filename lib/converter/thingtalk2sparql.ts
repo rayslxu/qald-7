@@ -16,8 +16,12 @@ import {
 import { PatternConverter } from './helpers/pattern-convertor';
 import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 
-const ENTITY_VARIABLES = ['x', 'y', 'z'];
+const ENTITY_VARIABLES = ['x', 'y', 'z', 'w'];
 const PREDICATE_VARIABLES = ['p', 'q', 'r'];
+
+function isVariable(node : string) {
+    return [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node);
+}
 
 function convertOp(op : string) {
     // HACK
@@ -98,7 +102,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         this._target_projection = projection;
         this._inPredicate = qualifiedPredicate;
         this._statements = [];
-        if (subject.startsWith('?') && domain)
+        if (isVariable(subject) && domain)
             this._statements.push(this._triple('P31', domain));
     }
 
@@ -107,11 +111,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _node(node : string) : string {
-        if (typeof node !== 'string')
-            console.log('HHH');
-        if (node.startsWith('?'))
-            node = node.slice('?'.length);
-        if ([...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node))
+        if (isVariable(node))
             return '?' + node;
         if (this._converter.kb.isEntity(node))
             return `<${ENTITY_PREFIX}${node}>`;
@@ -154,7 +154,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         assert(property && value);
         // this._subject: either a variable with ? prefix, or a full path QID
         // subject: either a variable WITHOUT ? prefix, or a simple QID
-        const s = subject ? this._node(subject) : this._subject;
+        const s = this._node(subject ?? this._subject);
         const p = this._edge(property, value);
         const v = this._node(value);
 
@@ -173,7 +173,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (property === 'id' && operator === '=~') {
             assert(value instanceof Ast.StringValue);
             const variable = this._converter.getEntityVariable();
-            statements.push(`${subject} <${LABEL}> ?${variable}.`);
+            statements.push(`${this._node(subject)} <${LABEL}> ?${variable}.`);
             statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
             return statements;
         }
@@ -261,14 +261,14 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const predicateVariable = this._converter.getPredicateVariable();
                 const valueVariable = this._converter.getEntityVariable();
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(`?${valueVariable}`);
-                this._statements.push(`${this._subject} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
+                    this._converter.setResultVariable(valueVariable);
+                this._statements.push(`${this._node(this._subject)} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
                 this._statements.push(`?${predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${q}> ?${valueVariable}.`);
             } else {
                 const p = this._converter.getWikidataProperty(arg);
                 const v = this._converter.getEntityVariable(p);
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(`?${v}`);
+                    this._converter.setResultVariable(v);
                 this._statements.push(this._triple(p, v));
             }
         } else {
@@ -282,12 +282,12 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const p = this._converter.getWikidataProperty(computation.value.name);
                 const v = this._converter.getEntityVariable(p);
                 this._statements.push(this._triple(p, v));
-                const tripleGenerator = new TripleGenerator(this._converter, `?${v}`, this._subjectProperties, null, null, null);
+                const tripleGenerator = new TripleGenerator(this._converter, v, this._subjectProperties, null, null, null);
                 computation.filter.visit(tripleGenerator);
                 this._statements.push(...tripleGenerator.statements);
 
                 if (computation.prettyprint() === this._target_projection)
-                    this._converter.setResultVariable(`?${v}`);
+                    this._converter.setResultVariable(v);
                 return false;
             }
         }
@@ -302,7 +302,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         
         const v = this._converter.getEntityVariable(proj.prettyprint());
         if (proj.prettyprint() === this._target_projection)
-            this._converter.setResultVariable(`?${v}`);
+            this._converter.setResultVariable(v);
         
         if (Array.isArray(proj.value)) {
             const path : string[] = [];
@@ -310,7 +310,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const p = this._converter.getWikidataProperty(elem.property);
                 path.push(elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v));
             }
-            this._statements.push(`${this._subject} ${path.join('/')} ?${v}.`);
+            this._statements.push(`${this._node(this._subject)} ${path.join('/')} ?${v}.`);
         } else {
             const p = this._converter.getWikidataProperty(proj.value);
             this._statements.push(this._triple(p, v, undefined));
@@ -389,7 +389,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 return p.slice(predicate.property.length + 1);
             });
             this._statements.push(...this._toStatements(property, node.operator, node.rhs, predicate.predicateVariable, subjectProperties));
-            const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+            const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
             node.lhs.filter.visit(tripleGenerator);
             this._statements.push(...tripleGenerator.statements);  
             return true; 
@@ -420,7 +420,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     visitAggregationExpression(node : ThingTalk.Ast.AggregationExpression) : boolean {
         if (node.operator === 'count' && node.field === '*') {
-            this._converter.setAggregation(node.operator, this._subject.slice('?'.length));
+            this._converter.setAggregation(node.operator, this._subject);
         } else {
             const property = this._converter.getWikidataProperty(node.field);
             const v = this._converter.getEntityVariable(node.field);
@@ -436,7 +436,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             const p = this._converter.getWikidataProperty(elem.property);
             return elem.quantifier ? `<${PROPERTY_PREFIX}${p}>${elem.quantifier}` : this._edge(p, v);
         }).join('/'); 
-        this._statements.push(`${this._subject} ${predicate} ${this._node(v)}.`);
+        this._statements.push(`${this._node(this._subject)} ${predicate} ${this._node(v)}.`);
         return true;
     }
 
@@ -452,12 +452,12 @@ class TripleGenerator extends Ast.NodeVisitor {
         }).map((p) => {
             return p.slice(predicate.property.length + 1);
         });
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+        const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
         node.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
         if (node.prettyprint() === this._target_projection)
-            this._converter.setResultVariable(`?${entityVariable}`);
+            this._converter.setResultVariable(entityVariable);
         return false;
     }
 
@@ -488,12 +488,12 @@ class TripleGenerator extends Ast.NodeVisitor {
             return p.slice(predicate.property.length + 1);
         });
         
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+        const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
         node.value.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
         if (node.prettyprint() === this._target_projection)
-            this._converter.setResultVariable(`?${fieldVariable}`);
+            this._converter.setResultVariable(fieldVariable);
         return false;
     }
 
@@ -512,7 +512,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
         let filterVariable;
         if (node.lhs.name === 'id' || node.lhs.name === 'value') {
-            filterVariable = this._subject.slice('?'.length);
+            filterVariable = this._subject;
         } else {
             const filterProperty = this._converter.getWikidataProperty(node.lhs.name);
             filterVariable = this._converter.getEntityVariable(filterProperty);
@@ -753,11 +753,11 @@ export default class ThingTalkToSPARQLConverter {
             subject = tableInfoVisitor.subject;
         } else {
             if (this._variableMap['id'])
-                subject = '?' + this._variableMap['id'];
+                subject = this._variableMap['id'];
             else 
-                subject = '?' + this.getEntityVariable();
+                subject = this.getEntityVariable();
         }
-        if (isMainExpression && subject.startsWith('?'))
+        if (isMainExpression && isVariable(subject))
             this.setResultVariable(subject);
         const domain = tableInfoVisitor.domainName ? this.getWikidataDomain(tableInfoVisitor.domainName) : null;
         this._variableMap = variableMapping;
@@ -812,14 +812,14 @@ export default class ThingTalkToSPARQLConverter {
         else if (this._aggregation) 
             sparql += `SELECT ${aggregationToString(this._aggregation)} `;
         else  
-            sparql += `SELECT DISTINCT ${this._resultVariable} `;
+            sparql += `SELECT DISTINCT ?${this._resultVariable} `;
 
         // where clauses
         sparql += `WHERE { ${this._statements.join((' '))} }`;
 
         // having clauses
         if (this._having.length > 0)
-            sparql += ` GROUP BY ${this._resultVariable} HAVING(${this._having.join(' && ')})`;
+            sparql += ` GROUP BY ?${this._resultVariable} HAVING(${this._having.join(' && ')})`;
         
         // order claueses
         if (this._order)
