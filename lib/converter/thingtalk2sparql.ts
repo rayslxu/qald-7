@@ -20,8 +20,7 @@ const ENTITY_VARIABLES = ['x', 'y', 'z', 'w'];
 const PREDICATE_VARIABLES = ['p', 'q', 'r'];
 
 function isVariable(node : string) {
-    const regex = new RegExp(`^(${[...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].join('|')})[0-9]*$`);
-    return regex.test(node);
+    return [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node);
 }
 
 function convertOp(op : string) {
@@ -109,7 +108,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         this._inPredicate = qualifiedPredicate;
         this._statements = [];
         if (isVariable(subject) && domain)
-            this._statements.push(this._triple(subject, 'P31', domain));
+            this._statements.push(this._triple('P31', domain));
     }
 
     get statements() : string[] {
@@ -117,11 +116,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _node(node : string) : string {
-        if (typeof node !== 'string')
-            console.log('HHH');
-        if (node.startsWith('?'))
-            node = node.slice('?'.length);
-        if ([...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node))
+        if (isVariable(node))
             return '?' + node;
         if (this._converter.kb.isEntity(node))
             return `<${ENTITY_PREFIX}${node}>`;
@@ -178,7 +173,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         assert(property && value);
         // this._subject: either a variable with ? prefix, or a full path QID
         // subject: either a variable WITHOUT ? prefix, or a simple QID
-        const s = subject ? this._node(subject) : this._subject;
+        const s = this._node(subject ?? this._subject);
         const p = this._edge(property, value);
         const v = this._node(value);
 
@@ -197,7 +192,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (property === 'id' && operator === '=~') {
             assert(value instanceof Ast.StringValue);
             const variable = this._converter.getEntityVariable();
-            statements.push(`${subject} <${LABEL}> ?${variable}.`);
+            statements.push(`${this._node(subject)} <${LABEL}> ?${variable}.`);
             statements.push(`FILTER(LCASE(STR(?${variable})) = "${value.value}").`);
             return statements;
         }
@@ -285,14 +280,14 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const predicateVariable = this._converter.getPredicateVariable();
                 const valueVariable = this._converter.getEntityVariable();
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(`?${valueVariable}`);
-                this._statements.push(`${this._subject} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
+                    this._converter.setResultVariable(valueVariable);
+                this._statements.push(`${this._node(this._subject)} <${PROPERTY_PREDICATE_PREFIX}${p}> ?${predicateVariable}.`);
                 this._statements.push(`?${predicateVariable} <${PROPERTY_QUALIFIER_PREFIX}${q}> ?${valueVariable}.`);
             } else {
                 const p = this._converter.getWikidataProperty(arg);
                 const v = this._converter.getEntityVariable(p);
                 if (arg === this._target_projection) 
-                    this._converter.setResultVariable(`?${v}`);
+                    this._converter.setResultVariable(v);
                 this._statements.push(this._triple(p, v));
             }
         } else {
@@ -306,12 +301,12 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const p = this._converter.getWikidataProperty(computation.value.name);
                 const v = this._converter.getEntityVariable(p);
                 this._statements.push(this._triple(p, v));
-                const tripleGenerator = new TripleGenerator(this._converter, `?${v}`, this._subjectProperties, null, null, null);
+                const tripleGenerator = new TripleGenerator(this._converter, v, this._subjectProperties, null, null, null);
                 computation.filter.visit(tripleGenerator);
                 this._statements.push(...tripleGenerator.statements);
 
                 if (computation.prettyprint() === this._target_projection)
-                    this._converter.setResultVariable(`?${v}`);
+                    this._converter.setResultVariable(v);
                 return false;
             }
         }
@@ -413,7 +408,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 return p.slice(predicate.property.length + 1);
             });
             this._statements.push(...this._toStatements(property, node.operator, node.rhs, predicate.predicateVariable, subjectProperties));
-            const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+            const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
             node.lhs.filter.visit(tripleGenerator);
             this._statements.push(...tripleGenerator.statements);  
             return true; 
@@ -476,7 +471,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         }).map((p) => {
             return p.slice(predicate.property.length + 1);
         });
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+        const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
         node.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
@@ -512,7 +507,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             return p.slice(predicate.property.length + 1);
         });
         
-        const tripleGenerator = new TripleGenerator(this._converter, `?${predicate.predicateVariable}`, subjectProperties, null, null, predicate);
+        const tripleGenerator = new TripleGenerator(this._converter, predicate.predicateVariable, subjectProperties, null, null, predicate);
         node.value.filter.visit(tripleGenerator);
         this._statements.push(...tripleGenerator.statements);
 
@@ -536,7 +531,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
         let filterVariable;
         if (node.lhs.name === 'id' || node.lhs.name === 'value') {
-            filterVariable = this._subject.slice('?'.length);
+            filterVariable = this._subject;
         } else {
             const filterProperty = this._converter.getWikidataProperty(node.lhs.name);
             filterVariable = this._converter.getEntityVariable(filterProperty);
