@@ -55,35 +55,35 @@ export function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm)
  */
 export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|VariableTerm) : IriTerm|PropertyPath|VariableTerm {
     // property path
-    if (isPropertyPath(predicate)) {
-        if (predicate.pathType === '/') {
-            // P31/P279* -> P31
-            if (predicate.items.length === 2) {
-                const [first, second] = predicate.items;
-                if (isWikidataPropertyNode(first, 'P31') && 
-                    isUnaryPropertyPath(second, '*') && 
-                    isWikidataPropertyNode(second.items[0], 'P279'))
-                    return first;
-            }
-            predicate.items = predicate.items.map((item) => preprocessPropertyPath(item) as IriTerm|PropertyPath);
-        } else if (predicate.pathType === '+') {
-            assert(predicate.items.length === 1);
-            const item = predicate.items[0];
+    if (!isPropertyPath(predicate))
+        return predicate;
+    if (predicate.pathType === '/') {
+        // P31/P279* -> P31
+        if (predicate.items.length === 2) {
+            const [first, second] = predicate.items;
+            if (isWikidataPropertyNode(first, 'P31') && 
+                isUnaryPropertyPath(second, '*') && 
+                isWikidataPropertyNode(second.items[0], 'P279'))
+                return first;
+        }
+        predicate.items = predicate.items.map((item) => preprocessPropertyPath(item) as IriTerm|PropertyPath);
+    } else if (predicate.pathType === '+') {
+        assert(predicate.items.length === 1);
+        const item = predicate.items[0];
 
-            // P131+ -> P131
-            if ('termType' in item) {
-                if (isWikidataPropertyNode(item, 'P131')) 
-                    return item;
-            }
-        } else if (predicate.pathType === '|') {
-            if (predicate.items.length === 2) {
-                const castMember = predicate.items.find((p) => isWikidataPropertyNode(p, 'P161') || isWikidataPredicateNode(p, 'P161'));
-                const voiceActor = predicate.items.find((p) => isWikidataPropertyNode(p, 'P725') || isWikidataPredicateNode(p, 'P725'));
-                if (castMember !== undefined && voiceActor !== undefined)
-                    return castMember;
-            }
-        }    
-    }
+        // P131+ -> P131
+        if ('termType' in item) {
+            if (isWikidataPropertyNode(item, 'P131')) 
+                return item;
+        }
+    } else if (predicate.pathType === '|') {
+        if (predicate.items.length === 2) {
+            const castMember = predicate.items.find((p) => isWikidataPropertyNode(p, 'P161') || isWikidataPredicateNode(p, 'P161'));
+            const voiceActor = predicate.items.find((p) => isWikidataPropertyNode(p, 'P725') || isWikidataPredicateNode(p, 'P725'));
+            if (castMember !== undefined && voiceActor !== undefined)
+                return castMember;
+        }
+    }    
     return predicate;
 }
 
