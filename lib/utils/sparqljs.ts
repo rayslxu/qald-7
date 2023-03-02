@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
-import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPredicateNode, isWikidataPropertyNode } from './sparqljs-typeguard';
-import { PROPERTY_PREFIX } from './wikidata';
+import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPropertyNode } from './sparqljs-typeguard';
+import { ABSTRACT_PROPERTIES, PROPERTY_PREDICATE_PREFIX, PROPERTY_PREFIX, PROPERTY_QUALIFIER_PREFIX, PROPERTY_STATEMENT_PREFIX } from './wikidata';
 
 /**
  * Given a parsed object returned by sparqljs, extract rdf triples out of it
@@ -77,11 +77,15 @@ export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|Variable
                 return item;
         }
     } else if (predicate.pathType === '|') {
-        if (predicate.items.length === 2) {
-            const castMember = predicate.items.find((p) => isWikidataPropertyNode(p, 'P161') || isWikidataPredicateNode(p, 'P161'));
-            const voiceActor = predicate.items.find((p) => isWikidataPropertyNode(p, 'P725') || isWikidataPredicateNode(p, 'P725'));
-            if (castMember !== undefined && voiceActor !== undefined)
-                return castMember;
+        // handle all abstract properties
+        for (const [abstract_property, properties] of Object.entries(ABSTRACT_PROPERTIES)) {
+            for (const prefix of [PROPERTY_PREFIX, PROPERTY_PREDICATE_PREFIX, PROPERTY_STATEMENT_PREFIX, PROPERTY_QUALIFIER_PREFIX]) {
+                if (predicate.items.every((p) => 'value' in p && properties.includes(p.value.slice(prefix.length)))) {
+                    const simplified = predicate.items[0] as IriTerm;
+                    simplified.value = prefix + abstract_property;
+                    return simplified;
+                }
+            }
         }
     }    
     return predicate;

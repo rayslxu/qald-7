@@ -1,3 +1,18 @@
+Utterance: what did charles babbage create in the 1800 s ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+SELECT DISTINCT ?x WHERE { 
+    ?x wdt:P61 wd:Q46633; 
+       wdt:P575|wdt:P571 ?y. 
+    FILTER((?y < "1900-01-01T00:00:00Z"^^xsd:dateTime) && (?y >= "1800-01-01T00:00:00Z"^^xsd:dateTime)) 
+}
+TT:
+@wd . entity ( ) filter contains ( discoverer_or_inventor , " Q46633 " ^^wd:p_discoverer_or_inventor ) && point_in_time <= new Date ( 1900 ) && point_in_time >= new Date ( 1800 ) ;
+
+====
+
 Utterance: when did mcgee join the ncis team ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 
