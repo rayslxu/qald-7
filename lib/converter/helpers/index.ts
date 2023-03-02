@@ -39,7 +39,7 @@ import {
     ArrayCollection,
     cleanName
 } from '../../utils/misc';
-import { parseSpecialUnion } from '../../utils/sparqljs';
+import { preprocessSpecialUnion } from '../../utils/sparqljs';
 import TripleParser from './triple';
 import FilterParser from './filter';
 import PredicateParser from './predicate';
@@ -107,7 +107,7 @@ export default class ConverterHelper {
     }
 
     async parseUnion(clause : UnionPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
-        const triple = parseSpecialUnion(clause);
+        const triple = preprocessSpecialUnion(clause);
         if (triple) 
             return this.parseTriples({ type: 'bgp', triples: [triple] });
         

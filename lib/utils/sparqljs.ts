@@ -53,7 +53,7 @@ export function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm)
  * Some heuristics to simplify the property path
  * The simplified version should not have any difference in semantics in natural language
  */
-export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|VariableTerm) : IriTerm|PropertyPath|VariableTerm {
+export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|VariableTerm) : IriTerm|PropertyPath|VariableTerm {
     // property path
     if (isPropertyPath(predicate)) {
         if (predicate.pathType === '/') {
@@ -65,7 +65,7 @@ export function postprocessPropertyPath(predicate : IriTerm|PropertyPath|Variabl
                     isWikidataPropertyNode(second.items[0], 'P279'))
                     return first;
             }
-            predicate.items = predicate.items.map((item) => postprocessPropertyPath(item) as IriTerm|PropertyPath);
+            predicate.items = predicate.items.map((item) => preprocessPropertyPath(item) as IriTerm|PropertyPath);
         } else if (predicate.pathType === '+') {
             assert(predicate.items.length === 1);
             const item = predicate.items[0];
@@ -110,8 +110,8 @@ function isInstanceOf(triple : Triple) : boolean {
  * @param predicate A predicate
  * @returns a parsed triple for the special cases, and false if not matched 
  */
-export function parseSpecialUnion(union : UnionPattern) : Triple|false {
-    const result = _parseUSStateSpecialUnion(union);
+export function preprocessSpecialUnion(union : UnionPattern) : Triple|false {
+    const result = _preprocessUSStateSpecialUnion(union);
     if (result)
         return result;
 
@@ -150,7 +150,7 @@ export function parseSpecialUnion(union : UnionPattern) : Triple|false {
 
 // { ?s P31/P279* Q475050. } union { ?s P31/P279* Q7275 } => { ?s P31 Q7275 } 
 // this includes DC when talking about states in united states
-function _parseUSStateSpecialUnion(union : UnionPattern) : Triple|false {
+function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
     if (union.patterns.length !== 2)
         return false;
     
