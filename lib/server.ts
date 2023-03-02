@@ -1,6 +1,7 @@
 import * as argparse from 'argparse';
 import fs from 'fs';
 import express from 'express';
+import cors from 'cors';
 import fetch from 'node-fetch';
 import * as Tp from 'thingpedia';
 import * as ThingTalk from 'thingtalk';
@@ -79,6 +80,7 @@ async function main() {
     }
 
     const app = express();
+    app.use(cors());
     app.get('/query', async (req, res) => {
         console.log('Query received: ' + req.query.q);
         const utterance = req.query.q as string;
