@@ -129,12 +129,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         return node;
     }
 
-    private _edge(property : string, value : string, options : TripleOptions = { type: 'direct' }) : string {
-        for (const sep of ['|', '/']) {
-            if (property.includes(sep))
-                return property.split(sep).map((p) => this._edge(p, value, options)).join(sep);
-        }
-        let prefix;
+    private _edge(property : string, value : string) : string {
+        let prefix = PROPERTY_PREFIX;
         if (this._inPredicate) {
             if (property === 'value') {
                 property = this._inPredicate.property;
@@ -169,15 +165,21 @@ class TripleGenerator extends Ast.NodeVisitor {
         // P31, instance of, always add optional subclass of
         if (property === 'P31')
             return `<${prefix}P31>/<${prefix}P279>*`;
+        // P276, location -> location | coordinate location (only if the value is a variable)
+        if (property === 'P276' && !this._converter.kb.isEntity(value)) 
+            return `(<${prefix}P276>|<${prefix}P625>)`;
+        // P161, cast member -> cast member | voice actor
+        if (property === 'P161')
+            return `(<${prefix}P161>|<${prefix}P725>)`; 
         return predicate;
     }
 
-    private _triple(property : string, value : string, subject ?: string, entityValue ?: boolean) {
+    private _triple(property : string, value : string, subject ?: string) {
         assert(property && value);
         // this._subject: either a variable with ? prefix, or a full path QID
         // subject: either a variable WITHOUT ? prefix, or a simple QID
         const s = subject ? this._node(subject) : this._subject;
-        const p = this._edge(property, value, entityValue);
+        const p = this._edge(property, value);
         const v = this._node(value);
 
         if (property === 'P31' && value === 'Q7275')
@@ -334,7 +336,8 @@ class TripleGenerator extends Ast.NodeVisitor {
             }
             this._statements.push(`${this._node(this._subject)} ${path.join('/')} ?${v}.`);
         } else {
-            this._add(this._subject, proj.value, '==', v);
+            const p = this._converter.getWikidataProperty(proj.value);
+            this._statements.push(this._triple(p, v, undefined));
         }     
 
         if (proj.types.length > 0) {
