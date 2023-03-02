@@ -55,20 +55,21 @@ export function extractProperties(predicate : IriTerm|PropertyPath|VariableTerm)
  */
 export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|VariableTerm) : IriTerm|PropertyPath|VariableTerm {
     // property path
-    if (isPropertyPath(predicate)) {
-        if (predicate.pathType === '/') {
-            // P31/P279* -> P31
-            if (predicate.items.length === 2) {
-                const [first, second] = predicate.items;
-                if (isWikidataPropertyNode(first, 'P31') && 
-                    isUnaryPropertyPath(second, '*') && 
-                    isWikidataPropertyNode(second.items[0], 'P279'))
-                    return first;
-            }
-            predicate.items = predicate.items.map((item) => preprocessPropertyPath(item) as IriTerm|PropertyPath);
-        } else if (predicate.pathType === '+') {
-            assert(predicate.items.length === 1);
-            const item = predicate.items[0];
+    if (!isPropertyPath(predicate))
+        return predicate;
+    if (predicate.pathType === '/') {
+        // P31/P279* -> P31
+        if (predicate.items.length === 2) {
+            const [first, second] = predicate.items;
+            if (isWikidataPropertyNode(first, 'P31') && 
+                isUnaryPropertyPath(second, '*') && 
+                isWikidataPropertyNode(second.items[0], 'P279'))
+                return first;
+        }
+        predicate.items = predicate.items.map((item) => preprocessPropertyPath(item) as IriTerm|PropertyPath);
+    } else if (predicate.pathType === '+') {
+        assert(predicate.items.length === 1);
+        const item = predicate.items[0];
 
         // P131+ -> P131
         if ('termType' in item) {
@@ -76,15 +77,11 @@ export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|Variable
                 return item;
         }
     } else if (predicate.pathType === '|') {
-        // handle all abstract properties
-        for (const [abstract_property, { properties }] of Object.entries(ABSTRACT_PROPERTIES)) {
-            for (const prefix of [PROPERTY_PREFIX, PROPERTY_PREDICATE_PREFIX, PROPERTY_STATEMENT_PREFIX, PROPERTY_QUALIFIER_PREFIX]) {
-                if (predicate.items.every((p) => 'value' in p && properties.includes(p.value.slice(prefix.length)))) {
-                    const simplified = predicate.items[0] as IriTerm;
-                    simplified.value = prefix + abstract_property;
-                    return simplified;
-                }
-            }
+        if (predicate.items.length === 2) {
+            const castMember = predicate.items.find((p) => isWikidataPropertyNode(p, 'P161') || isWikidataPredicateNode(p, 'P161'));
+            const voiceActor = predicate.items.find((p) => isWikidataPropertyNode(p, 'P725') || isWikidataPredicateNode(p, 'P725'));
+            if (castMember !== undefined && voiceActor !== undefined)
+                return castMember;
         }
     }    
     return predicate;
