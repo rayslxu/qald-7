@@ -160,12 +160,6 @@ class TripleGenerator extends Ast.NodeVisitor {
         // P31, instance of, always add optional subclass of
         if (property === 'P31')
             return `<${prefix}P31>/<${prefix}P279>*`;
-        // P276, location -> location | coordinate location (only if the value is a variable)
-        if (property === 'P276' && !this._converter.kb.isEntity(value)) 
-            return `(<${prefix}P276>|<${prefix}P625>)`;
-        // P161, cast member -> cast member | voice actor
-        if (property === 'P161')
-            return `(<${prefix}P161>|<${prefix}P725>)`; 
         return predicate;
     }
 
