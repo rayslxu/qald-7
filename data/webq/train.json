@@ -1206,7 +1206,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q16518263 p:P161 ?p. ?p ps:P161 ?x; pq:P453 wd:Q1575844. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q16518263 p:P725 ?p. ?p ps:P725 ?x; pq:P453 wd:Q1575844. }"
       }
     },
     {
@@ -16715,7 +16715,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q187278 p:P161 ?p. ?p ps:P161 ?x; pq:P453 wd:Q1808466. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q187278 p:P725 ?p. ?p ps:P725 ?x; pq:P453 wd:Q1808466. }"
       }
     },
     {
@@ -19757,7 +19757,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q174811 p:P161 ?p. ?p ps:P161 ?x; pq:P453 wd:Q3658760. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q174811 p:P725 ?p. ?p ps:P725 ?x; pq:P453 wd:Q3658760. }"
       }
     },
     {
@@ -21174,7 +21174,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q245366 p:P161 ?p. ?p ps:P161 wd:Q30449; pq:P453 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q245366 p:P725 ?p. ?p ps:P725 wd:Q30449; pq:P453 ?x. }"
       }
     },
     {
@@ -27063,7 +27063,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q4447 p:P161 ?p. ?p ps:P161 wd:Q439315; pq:P453 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q4447 p:P275 ?p. ?p ps:P275 wd:Q439315; pq:P453 ?x. }"
       }
     },
     {
@@ -27753,32 +27753,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q816 wdt:P421 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTrn-2754",
-      "question": [
-        {
-          "language": "en",
-          "string": "who played as barney?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p p:P161 ?y. ?y ps:P161 ?x; pq:P453 wd:Q213588. }"
-      }
-    },
-    {
-      "id": "WebQTrn-2755",
-      "question": [
-        {
-          "language": "en",
-          "string": "who played elaine's boyfriend on seinfeld?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q23733 p:P161 ?y. ?y ps:P161 ?x; pq:P453 ?z. FILTER(?z = ?x) }"
       }
     },
     {
@@ -32631,19 +32605,6 @@
       }
     },
     {
-      "id": "WebQTrn-3232",
-      "question": [
-        {
-          "language": "en",
-          "string": "who was the first actor to play edward quartermaine?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p p:P161 ?y; wdt:P580 ?z. ?y ps:P161 ?x; pq:P453 wd:Q5344929. } ORDER BY ?z LIMIT 1"
-      }
-    },
-    {
       "id": "WebQTrn-3233",
       "question": [
         {
@@ -36397,7 +36358,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q550558 p:P161 ?p. ?p ps:P161 ?x; pq:P453 wd:Q1107971. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q550558 p:P275 ?p. ?p ps:P275 ?x; pq:P453 wd:Q1107971. }"
       }
     },
     {
