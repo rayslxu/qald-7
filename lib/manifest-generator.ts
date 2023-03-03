@@ -219,8 +219,8 @@ class ManifestGenerator {
             }
             return Type.Number;
         }
-        // if (wikibaseType === 'GlobeCoordinate')
-        //    return Type.Location;
+        if (wikibaseType === 'GlobeCoordinate')
+            return Type.Location;
         if (wikibaseType === 'WikibaseItem')
             return new Type.Array(new Type.Entity(`${TP_DEVICE_NAME}:p_${propertyName}`));
         
@@ -440,9 +440,16 @@ class ManifestGenerator {
                 continue;
             const pname = cleanName(label);
             const ptype = await this._getPropertyType(property, pname);
+            // skip property with unsupported type
             if (!ptype) 
                 continue;
+            // skip property with location type that is not "coordinate location"
+            if (property !== 'P625' && ptype === Type.Location)
+                continue;
             const annotations : Record<string, any> = { impl: { wikidata_id: new Ast.Value.String(property) } };
+            // Do not filter on coordinate location, this is not useful in Wikidata setting
+            if (property === 'P625')
+                annotations.impl.filterable = new Ast.Value.Boolean(false);
             if (this._canonicalAnnotations)
                 annotations.nl = { canonical: await this._generatePropertyCanonicals(property, label, ptype) };
             const argumentDef = new Ast.ArgumentDef(

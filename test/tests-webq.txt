@@ -330,7 +330,7 @@ SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
 SELECT DISTINCT ?x WHERE { wd:Q55 wdt:P625 ?x. }
 TT:
-[ location ] of @wd . entity ( ) filter id == " Q55 " ^^wd:entity ;
+[ coordinate_location ] of @wd . country ( ) filter id == " Q55 " ^^wd:country ;
 
 ====
 Utterance: what character did brian austin green play on 90210 ?

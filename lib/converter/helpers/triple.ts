@@ -49,14 +49,11 @@ export default class TripleParser {
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
         const filters : Ast.BooleanExpression[] = [];
         const subject : string = triple.subject.value;
-        let predicate : string = triple.predicate.value;
+        const predicate : string = triple.predicate.value;
         const object : string = triple.object.value;
 
         if (!subject || !predicate || !object)
             throw new Error(`Unsupported triple: ${JSON.stringify(triple)}`);
-
-        if (isWikidataPropertyNode(triple.predicate, 'P625'))
-            predicate = PROPERTY_PREFIX + 'P276';
 
         // Case 0: if subject is an entity, create an id filter first
         // if the subject is already in the tables, it means we already have the id filter, so no need to run this again
