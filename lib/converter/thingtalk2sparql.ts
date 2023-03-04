@@ -152,8 +152,10 @@ class TripleGenerator extends Ast.NodeVisitor {
         const predicate = `<${prefix}${property}>`;
 
         // SPECIAL CASES: 
-        // P131, located in admin entity, always do property path "+"
-        if (property === 'P131')
+        // P131, located in admin entity
+        // P361. part of  
+        // always do property path "+"
+        if (property === 'P131' || property === 'P361')
             return predicate + '+';
         // P31, instance of, always add optional subclass of
         if (property === 'P31')
