@@ -127,10 +127,20 @@ export const ABSTRACT_PROPERTIES : Record<string, { type : 'any'|'all', properti
     'P451': {
         type: 'all', 
         properties: [
-            'P451',
-            'P26'
+            'P451', // unmarried partner
+            'P26'   // spouse
         ]
     },
+
+    // influenced by 
+    'P737': {
+        type: 'all',
+        properties: [
+            'P737',   // influenced by
+            'P1066',  // student of 
+            'P184'    // doctor advisor
+        ]
+    }
 };
 
 // these domains are too big, querying its entities without more filters
