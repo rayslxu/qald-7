@@ -109,6 +109,12 @@ export const ABSTRACT_PROPERTIES : Record<string, string[]> = {
     'P161': [
         'P161', // cast member
         'P725'  // voice actor
+    ], 
+
+    // partner
+    'P451': [
+        'P451',
+        'P26'
     ]
 };
 

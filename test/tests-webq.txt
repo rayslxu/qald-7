@@ -1,3 +1,16 @@
+Utterance: who all has kim kardashian dated?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q186304 wdt:P451|wdt:P26 ?x. 
+}
+
+TT:
+[ unmarried_partner ] of @wd . human ( ) filter id == " Q186304 " ^^wd:human ;
+
+====
+
 Utterance: what did charles babbage create in the 1800 s ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 
