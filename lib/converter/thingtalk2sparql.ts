@@ -20,7 +20,8 @@ const ENTITY_VARIABLES = ['x', 'y', 'z', 'w'];
 const PREDICATE_VARIABLES = ['p', 'q', 'r'];
 
 function isVariable(node : string) {
-    return [...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].includes(node);
+    const regex = new RegExp(`^(${[...ENTITY_VARIABLES, ...PREDICATE_VARIABLES].join('|')})[0-9]*$`);
+    return regex.test(node);
 }
 
 function convertOp(op : string) {
@@ -177,7 +178,7 @@ class TripleGenerator extends Ast.NodeVisitor {
 
     private _add(subject : string, property : string, operator : string, value : Ast.Value|string, options ?: TripleOptions) {
         const type = options?.type ?? 'direct';
-        const availableProperties = options?.availableProperties ?? this._subjectProperties;
+        const availableProperties = options?.availableProperties ?? (subject === this._subject ? this._subjectProperties : []);
         options = { type, availableProperties };
 
         // if value is an variable
@@ -186,15 +187,23 @@ class TripleGenerator extends Ast.NodeVisitor {
             const p = this._converter.getWikidataProperty(property);
             if (p in ABSTRACT_PROPERTIES) {
                 const variables = [];
-                for (const [i, realProperty] of Object.entries(ABSTRACT_PROPERTIES[p])) {
-                    const variable = value + i;
-                    variables.push(variable);
-                    this._statements.push(`OPTIONAL { ${this._triple(subject, realProperty, variable, options)} }`);
+                const availableRealProperties = ABSTRACT_PROPERTIES[p].filter((rp) => availableProperties.includes(rp));
+                // if there is no properties available, return the abstract property, it probably won't return anything anyway 
+                if (availableRealProperties.length === 0) {
+                    this._statements.push(this._triple(subject, p, value, options));
+                } else if (availableRealProperties.length === 1) {
+                    this._statements.push(this._triple(subject, availableRealProperties[0], value, options));
+                } else {
+                    for (const [i, realProperty] of Object.entries(ABSTRACT_PROPERTIES[p])) {
+                        const variable = value + i;
+                        variables.push(variable);
+                        this._statements.push(`OPTIONAL { ${this._triple(subject, realProperty, variable, options)} }`);
+                    }
+                    this._statements.push(`BIND(COALESCE(${variables.map((v) => `?${v}`).join(', ')}) AS ?${value}).`);
                 }
-                this._statements.push(`BIND(COALESCE(${variables.map((v) => `?${v}`).join(', ')}) AS ?${value}.`);
                 
             } else {
-                this._statements.push(this._triple(subject, property, value, options));
+                this._statements.push(this._triple(subject, p, value, options));
             }
             return;
         }
@@ -297,20 +306,24 @@ class TripleGenerator extends Ast.NodeVisitor {
                 return true;
             if (arg.includes('.')) {
                 const [property, qualifier] = arg.split('.');
-                const p = this._converter.getWikidataProperty(property);
-                const q = this._converter.getWikidataProperty(qualifier);
+                const predicate = this._converter.getWikidataProperty(property);
+                const availableProperties = this._subjectProperties.filter((p) => {
+                    return p.startsWith(predicate + '.');
+                }).map((p) => {
+                    return p.slice(predicate.length + 1);
+                });
                 const predicateVariable = this._converter.getPredicateVariable();
                 const valueVariable = this._converter.getEntityVariable();
                 if (arg === this._target_projection) 
                     this._converter.setResultVariable(valueVariable);
-                this._add(this._subject, p, '==', predicateVariable, { type: 'predicate' });
-                this._add(predicateVariable, q, '==', valueVariable, { type: 'qualifier' });
+                this._add(this._subject, property, '==', predicateVariable, { type: 'predicate' });
+                this._add(predicateVariable, qualifier, '==', valueVariable, { type: 'qualifier', availableProperties });
             } else {
                 const p = this._converter.getWikidataProperty(arg);
                 const v = this._converter.getEntityVariable(p);
                 if (arg === this._target_projection) 
                     this._converter.setResultVariable(v);
-                this._add(this._subject, p, '==', v);
+                this._add(this._subject, arg, '==', v);
             }
         } else {
             const computation = node.computations[0];
@@ -322,7 +335,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 assert(computation.value instanceof Ast.VarRefValue);
                 const p = this._converter.getWikidataProperty(computation.value.name);
                 const v = this._converter.getEntityVariable(p);
-                this._add(this._subject, p, '==', v);
+                this._add(this._subject, computation.value.name, '==', v);
                 const tripleGenerator = new TripleGenerator(this._converter, v, this._subjectProperties, null, null, null);
                 computation.filter.visit(tripleGenerator);
                 this._statements.push(...tripleGenerator.statements);
@@ -353,8 +366,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             }
             this._statements.push(`${this._node(this._subject)} ${path.join('/')} ?${v}.`);
         } else {
-            const p = this._converter.getWikidataProperty(proj.value);
-            this._add(this._subject, p, '==', v);
+            this._add(this._subject, proj.value, '==', v);
         }     
 
         if (proj.types.length > 0) {
@@ -382,7 +394,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const property = node.expr.name;
                 const p = this._converter.getWikidataProperty(property);
                 const v = this._converter.getEntityVariable(p);
-                this._add(this._subject, p, '==', v);
+                this._add(this._subject, property, '==', v);
                 return false; 
             } 
         }
@@ -413,7 +425,7 @@ class TripleGenerator extends Ast.NodeVisitor {
                 const op = convertOp(node.operator); 
                 const value = (node.rhs as Ast.NumberValue).value;
                 const variable = this._converter.getEntityVariable(p);
-                this._add(this._subject, p, '==', variable);
+                this._add(this._subject, property, '==', variable);
                 if (!(node.operator === '>=' && value === 1)) // this means it is just checking if anything exists, no need to use having clause
                     this._converter.addHaving(`COUNT(?${variable}) ${op} ${value}`);
                 return true;
@@ -453,7 +465,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         const property = (node.value as Ast.VarRefValue).name;
         const p = this._converter.getWikidataProperty(property);
         const variable = this._converter.getEntityVariable(p);
-        this._add(this._subject, p, '==', variable);
+        this._add(this._subject, property, '==', variable);
         this._converter.setOrder({ variable : '?' + variable, direction: node.direction });
         return true;
     }
@@ -465,7 +477,7 @@ class TripleGenerator extends Ast.NodeVisitor {
             const property = this._converter.getWikidataProperty(node.field);
             const v = this._converter.getEntityVariable(property);
             this._converter.setAggregation(node.operator, v);
-            this._add(this._subject, property, '==', v);
+            this._add(this._subject, node.field, '==', v);
         }
         return true;
     }
@@ -485,7 +497,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         assert(node.value instanceof Ast.VarRefValue);
         const predicate = this._createQualifiedPredicate(node.value.name);
         const entityVariable = this._converter.getEntityVariable();
-        this._add(predicate.predicateVariable, predicate.property, '==', entityVariable, { type: 'statement' });
+        this._add(predicate.predicateVariable, node.value.name, '==', entityVariable, { type: 'statement' });
         // update subject properties to qualifiers of the predicate
         const subjectProperties = this._subjectProperties.filter((p) => {
             return p.startsWith(predicate.property + '.');
@@ -508,7 +520,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (typeof node.field === 'string') {
             const field = this._converter.getWikidataProperty(node.field);
             fieldVariable = this._converter.getEntityVariable(field);
-            this._add(predicate.predicateVariable, field, '==', fieldVariable, { type: 'qualifier' });
+            this._add(predicate.predicateVariable, node.field, '==', fieldVariable, { type: 'qualifier' });
         } else {
             fieldVariable = this._converter.getEntityVariable();
             const path = [];
@@ -540,7 +552,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     private _createQualifiedPredicate(property : string) : QualifiedPredicate {
         const p = this._converter.getWikidataProperty(property);
         const predicateVariable = this._converter.getPredicateVariable();
-        this._add(this._subject, p, '==', predicateVariable, { type: 'predicate' });
+        this._add(this._subject, property, '==', predicateVariable, { type: 'predicate' });
         return {
             property : p,
             predicateVariable
@@ -556,7 +568,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         } else {
             const filterProperty = this._converter.getWikidataProperty(node.lhs.name);
             filterVariable = this._converter.getEntityVariable(filterProperty);
-            this._add(this._subject, filterProperty, '==', filterVariable);
+            this._add(this._subject, node.lhs.name, '==', filterVariable);
         }
 
         // set variable map for the subquery (do not use existing mapping)
