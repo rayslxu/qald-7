@@ -126,6 +126,10 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     private _edge(property : string, value : string, options : TripleOptions = { type: 'direct' }) : string {
+        for (const sep of ['|', '/']) {
+            if (property.includes(sep))
+                return property.split(sep).map((p) => this._edge(p, value, options)).join(sep);
+        }
         let prefix;
         if (this._inPredicate) {
             if (property === 'value') {
@@ -186,22 +190,26 @@ class TripleGenerator extends Ast.NodeVisitor {
             assert(isVariable(value) && ['==', 'contains', 'in_array'].includes(operator));
             const p = this._converter.getWikidataProperty(property);
             if (p in ABSTRACT_PROPERTIES) {
-                const variables = [];
-                const availableRealProperties = ABSTRACT_PROPERTIES[p].filter((rp) => availableProperties.includes(rp));
-                // if there is no properties available, return the abstract property, it probably won't return anything anyway 
-                if (availableRealProperties.length === 0) {
-                    this._statements.push(this._triple(subject, p, value, options));
-                } else if (availableRealProperties.length === 1) {
-                    this._statements.push(this._triple(subject, availableRealProperties[0], value, options));
+                if (ABSTRACT_PROPERTIES[p].type === 'all') {
+                    const realProperties = ABSTRACT_PROPERTIES[p].properties;
+                    this._statements.push(this._triple(subject, realProperties.join('|'), value, options));
                 } else {
-                    for (const [i, realProperty] of Object.entries(ABSTRACT_PROPERTIES[p])) {
-                        const variable = value + i;
-                        variables.push(variable);
-                        this._statements.push(`OPTIONAL { ${this._triple(subject, realProperty, variable, options)} }`);
+                    const variables = [];
+                    const availableRealProperties = ABSTRACT_PROPERTIES[p].properties.filter((rp) => availableProperties.includes(rp));
+                    // if there is no properties available, return the abstract property, it probably won't return anything anyway 
+                    if (availableRealProperties.length === 0) {
+                        this._statements.push(this._triple(subject, p, value, options));
+                    } else if (availableRealProperties.length === 1) {
+                        this._statements.push(this._triple(subject, availableRealProperties[0], value, options));
+                    } else {
+                        for (const [i, realProperty] of Object.entries(ABSTRACT_PROPERTIES[p].properties)) {
+                            const variable = value + i;
+                            variables.push(variable);
+                            this._statements.push(`OPTIONAL { ${this._triple(subject, realProperty, variable, options)} }`);
+                        }
+                        this._statements.push(`BIND(COALESCE(${variables.map((v) => `?${v}`).join(', ')}) AS ?${value}).`);
                     }
-                    this._statements.push(`BIND(COALESCE(${variables.map((v) => `?${v}`).join(', ')}) AS ?${value}).`);
                 }
-                
             } else {
                 this._statements.push(this._triple(subject, p, value, options));
             }
@@ -258,11 +266,24 @@ class TripleGenerator extends Ast.NodeVisitor {
             }
         } else if (p in ABSTRACT_PROPERTIES) {
             assert(value instanceof Ast.EntityValue && ['==', 'contains', 'in_array'].includes(operator));
-            for (const realProperty of ABSTRACT_PROPERTIES[p]) {
-                if (availableProperties.includes(realProperty)) {
-                    this._statements.push(this._triple(subject, property, value.value!));
-                    return;
+            const type = ABSTRACT_PROPERTIES[p].type;
+            if (type === 'any') {
+                for (const realProperty of ABSTRACT_PROPERTIES[p].properties) {
+                    if (availableProperties.includes(realProperty)) {
+                        this._statements.push(this._triple(subject, property, value.value!));
+                        return;
+                    }
                 }
+            } else {
+                const or = [];
+                for (const realProperty of ABSTRACT_PROPERTIES[p].properties) {
+                    if (availableProperties.includes(realProperty)) 
+                        or.push(realProperty);
+                }
+                if (or.length === 1)
+                    this._statements.push(this._triple(subject, or[0], value.value!));
+                else 
+                    this._statements.push(this._triple(subject, or.join('|'), value.value!));
             }
             // no real properties found, return the abstract property
             this._statements.push(this._triple(subject, p, value.value!));

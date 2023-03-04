@@ -1,3 +1,13 @@
+Utterance: who all has kim kardashian dated?
+TT:
+[ unmarried_partner ] of @wd . human ( ) filter id == " Q186304 " ^^wd:human ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q186304> <http://www.wikidata.org/prop/direct/P451>|<http://www.wikidata.org/prop/direct/P26> ?x. 
+}
+
+====
+
 Utterance: who was president when the us navy department was established ?
 TT:
 @wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;
