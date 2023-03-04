@@ -84,48 +84,63 @@ const PROPERTY_BLACKLIST = [
     'P5282', // ground level 360 degree view
 ];
 
-export const ABSTRACT_PROPERTIES : Record<string, string[]> = {
+export const ABSTRACT_PROPERTIES : Record<string, { type : 'any'|'all', properties : string[] }> = {
     // time
-    'P585': [
-        'P585', // point in time
-        'P580', // start time
-        'P571', // inception
-        'P575', // time of discovery or invention
-        'P582', // end time
-    ],
+    'P585': {
+        type: 'any', 
+        properties: [
+            'P585', // point in time
+            'P580', // start time
+            'P571', // inception
+            'P575', // time of discovery or invention
+            'P582', // end time
+        ]
+    },
 
     // location
-    'P276': [
-        'P131', // located in the administrative territorial entity
-        'P3842', // located in the present-day administrative territorial entity
-        'P159', // headquarter location
-        'P276', // location
-        'P551', // residence
-        'P17', // country
-        'P27', // country of citizenship
-        'P495', // country of origin
-        'P19', // place of birth
-        'P30', // continent
-        'P625', // coordinate location
-    ],
+    'P276': {
+        type: 'any',
+        properties: [
+            'P131', // located in the administrative territorial entity
+            'P3842', // located in the present-day administrative territorial entity
+            'P159', // headquarter location
+            'P276', // location
+            'P551', // residence
+            'P17', // country
+            'P27', // country of citizenship
+            'P495', // country of origin
+            'P19', // place of birth
+            'P30', // continent
+            'P625', // coordinate location
+        ]
+    },
 
     // religion
-    'P140': [
-        'P140', // religion or worldview
-        'P3075' // official religion
-    ],
+    'P140': {
+        type: 'any', 
+        properties: [
+            'P140', // religion or worldview
+            'P3075' // official religion
+        ]
+    },
 
     // actor
-    'P161': [
-        'P161', // cast member
-        'P725'  // voice actor
-    ], 
+    'P161': {
+        type: 'any', 
+        properties: [
+            'P161', // cast member
+            'P725'  // voice actor
+        ]
+    }, 
 
     // partner
-    'P451': [
-        'P451',
-        'P26'
-    ]
+    'P451': {
+        type: 'all', 
+        properties: [
+            'P451',
+            'P26'
+        ]
+    },
 };
 
 // these domains are too big, querying its entities without more filters

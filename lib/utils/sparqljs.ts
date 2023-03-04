@@ -78,7 +78,7 @@ export function preprocessPropertyPath(predicate : IriTerm|PropertyPath|Variable
         }
     } else if (predicate.pathType === '|') {
         // handle all abstract properties
-        for (const [abstract_property, properties] of Object.entries(ABSTRACT_PROPERTIES)) {
+        for (const [abstract_property, { properties }] of Object.entries(ABSTRACT_PROPERTIES)) {
             for (const prefix of [PROPERTY_PREFIX, PROPERTY_PREDICATE_PREFIX, PROPERTY_STATEMENT_PREFIX, PROPERTY_QUALIFIER_PREFIX]) {
                 if (predicate.items.every((p) => 'value' in p && properties.includes(p.value.slice(prefix.length)))) {
                     const simplified = predicate.items[0] as IriTerm;
