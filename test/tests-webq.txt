@@ -1,3 +1,16 @@
+Utterance: what state obama was born? 
+SPARQL: 
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+SELECT DISTINCT ?x WHERE { 
+    wd:Q76 wdt:P19/wdt:P131+ ?x. 
+    ?x wdt:P31/wdt:P279* wd:Q107390 
+}
+TT:
+[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . human ( ) filter id == " Q76 " ^^wd:human ;
+
+====
+
 Utterance: who all has kim kardashian dated?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 
