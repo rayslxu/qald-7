@@ -1,3 +1,15 @@
+Utterance: what did julia roberts won an oscar for?
+TT:
+[ for_work of ( winner filter value == " Q40523 " ^^wd:p_winner ) ] of @wd . entity ( ) filter instance_of == " Q19020 " ^^wd:entity_subdomain ;
+SPARQL:
+SELECT DISTINCT ?y WHERE { 
+    ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q19020>. 
+    ?x <http://www.wikidata.org/prop/P1346> ?p. ?p <http://www.wikidata.org/prop/qualifier/P1686> ?y. 
+    ?p <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/Q40523>. 
+}
+
+====
+
 Utterance: what state obama was born? 
 TT:
 [ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . human ( ) filter id == " Q76 " ^^wd:human ;
