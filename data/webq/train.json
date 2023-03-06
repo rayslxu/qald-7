@@ -31864,19 +31864,6 @@
       }
     },
     {
-      "id": "WebQTrn-3153",
-      "question": [
-        {
-          "language": "en",
-          "string": "what time is it in japan 24 hour clock?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q17 wdt:P421 ?x. }"
-      }
-    },
-    {
       "id": "WebQTrn-3155",
       "question": [
         {
@@ -33681,19 +33668,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q1130705 wdt:P840 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTrn-3334",
-      "question": [
-        {
-          "language": "en",
-          "string": "who voices ray in archer?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p p:P725 ?y. ?y ps:P725 ?x; pq:P453 wd:Q632670. }"
       }
     },
     {
@@ -37164,7 +37138,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q9696 wdt:P20 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q9696 wdt:P20/wdt:P131 ?x. ?x wdt:P31/wdt:P279* wd:Q515. }"
       }
     },
     {
@@ -37710,7 +37684,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q4496 wdt:P40 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q4496 wdt:P40 ?x. ?x wdt:P21 wd:Q6581097. }"
       }
     },
     {
@@ -37957,7 +37931,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q329816 wdt:P115 ?x. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q329816 wdt:P115/wdt:P131 ?x. }"
       }
     },
     {
