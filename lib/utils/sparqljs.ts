@@ -152,7 +152,7 @@ export function preprocessSpecialUnion(union : UnionPattern) : Triple|false {
 }
 
 
-// { ?s P31/P279* Q475050. } union { ?s P31/P279* Q7275 } => { ?s P31 Q7275 } 
+// { ?s P31/P279* Q475050. } union { ?s P31/P279* Q107390 } => { ?s P31 Q107390 } 
 // this includes DC when talking about states in united states
 function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
     if (union.patterns.length !== 2)
@@ -165,7 +165,7 @@ function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
         if (pattern.triples.length !== 1)
             return false;
         const triple = pattern.triples[0];
-        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q7275')) 
+        if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q107390')) 
             stateTriple = triple;
         if (isInstanceOf(triple) && isWikidataEntityNode(triple.object, 'Q475050'))
             federalDistrictTriple = triple;
