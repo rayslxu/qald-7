@@ -33671,19 +33671,6 @@
       }
     },
     {
-      "id": "WebQTrn-3334",
-      "question": [
-        {
-          "language": "en",
-          "string": "who voices ray in archer?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p p:P725 ?y. ?y ps:P725 ?x; pq:P453 wd:Q632670. }"
-      }
-    },
-    {
       "id": "WebQTrn-3335",
       "question": [
         {
