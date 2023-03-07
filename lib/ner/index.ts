@@ -31,7 +31,8 @@ async function main() {
     });
     parser.add_argument('-of', '--output-failure', {
         help: "the file to write the failure cases of processed data",
-        type: fs.createWriteStream
+        type: fs.createWriteStream,
+        required: false
     });
     parser.add_argument('--module', {
         required: false,
@@ -118,14 +119,16 @@ async function main() {
                 continue;
             countFail += 1;
             process.stdout.write("Failure count: " + countFail + "\r");
-            args.output_failure.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
+            if (args.output_failure)
+                args.output_failure.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
             break;
         }
     }
     console.log('Failed: ', countFail);
     console.log('Total: ', countTotal);
     StreamUtils.waitFinish(args.output);
-    StreamUtils.waitFinish(args.output_failure);
+    if (args.output_failure)
+        StreamUtils.waitFinish(args.output_failure);
 }
 
 if (require.main === module)
