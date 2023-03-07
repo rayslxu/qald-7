@@ -44,6 +44,16 @@ const PROPERTY_BLACKLIST = [
     'P1991', // lpsn url
     'P6363', // word lift url,
     'P953', // full work available at url
+    // statement qualifier 
+    'P642', // of 
+    'P805', // statement is subject of
+    'P248', // stated in
+    'P1269', // facet of
+    'P1264', // valid in period
+    'P3005', // valid in place
+    'P1001', // applies to jurisdiction
+    'P518', // applies to part
+    'P1013', // criterion used
     // kb/wikimedia metadata: 
     'P1709', // equivalent class
     'P5008' , // on focus list of wikimedia projects
