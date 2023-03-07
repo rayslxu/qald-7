@@ -139,6 +139,9 @@ class ManifestGenerator {
         // HACK: force point in time for notable work
         if (propertyId === 'P800')
             qualifiers.push('P585');
+        // HACK: force point in time and "for work" for winner
+        if (propertyId === 'P1346')
+            qualifiers.push('P585', 'P1686');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
