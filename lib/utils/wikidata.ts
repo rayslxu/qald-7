@@ -551,7 +551,7 @@ export default class WikidataUtils {
         res.forEach((r : any) => {
             const q = r.qualifier?.value.slice(PROPERTY_QUALIFIER_PREFIX.length);
             if (q) {
-                if (PROPERTY_BLACKLIST.includes(q.slice(PROPERTY_QUALIFIER_PREFIX.length)))
+                if (PROPERTY_BLACKLIST.includes(q))
                     return;
                 if (!(q in qualifierCount))
                     qualifierCount[q] = 0;
