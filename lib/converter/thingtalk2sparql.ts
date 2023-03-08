@@ -173,7 +173,7 @@ class TripleGenerator extends Ast.NodeVisitor {
         const p = this._edge(property, value, options);
         const v = this._node(value);
 
-        if (property === 'P31' && value === 'Q7275')
+        if (property === 'P31' && value === 'Q107390')
             return `{ ${s} ${p} ${v}. } UNION { ${s} ${p} ${this._node('Q475050')}. }`;
         if (property === 'P31' && value in DOMAIN_MAP)
             value = DOMAIN_MAP[value];
