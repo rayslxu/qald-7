@@ -62,7 +62,7 @@ const PROPERTY_BLACKLIST = [
     'P910', // topic's main categories
     'P1424', // topic's main templates
     'P1151', // topic's main wikimedia portals 
-    'P3831', // object has role,
+     // 'P3831', // object has role,
     'P1480', // sourcing circumstances,
     'P217', // inventory number,
     'P485', // archives at
