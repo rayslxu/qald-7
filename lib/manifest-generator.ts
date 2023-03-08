@@ -428,17 +428,17 @@ class ManifestGenerator {
     private async _processDomainProperties(domain : string, entityType : string) {
         const args = [idArgument(cleanName(entityType)), instanceOfArgument(entityType)];
         const propertyValues = await this._wikidata.getDomainPropertiesAndValues(domain, this._includeNonEntityProperties);
-        const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
-        const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
-        const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
-
         // hack: 
         // - start time and end time always come in pairs
         // - if there are start time & end time, also add point in time (but not vice versa)
         if ('P580' in propertyValues || 'P582' in propertyValues) {
-            for (const p of ['P580', 'P582', 'P585'])
+            for (const p of ['P580', 'P582', 'P585']) 
                 propertyValues[p] = [];
         }
+
+        const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
+        const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
+        const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
 
         for (const [property, values] of Object.entries(propertyValues)) {
             const label = propertyLabels[property] ?? property;
