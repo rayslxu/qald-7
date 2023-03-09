@@ -10,6 +10,15 @@ import { GPT3Rephraser } from '../gpt3/rephraser';
 import { GPT3Linker } from './gpt3';
 import WikidataUtils from '../utils/wikidata';
 
+// in-place shuffle an array
+function shuffle(array : any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+
 export {
     Linker,
     Falcon,
@@ -28,11 +37,6 @@ async function main() {
     parser.add_argument('-o', '--output', {
         help: "the file to write the processed data",
         type: fs.createWriteStream
-    });
-    parser.add_argument('-of', '--output-failure', {
-        help: "the file to write the failure cases of processed data",
-        type: fs.createWriteStream,
-        required: false
     });
     parser.add_argument('--module', {
         required: false,
@@ -100,7 +104,18 @@ async function main() {
         countTotal += 1;
         const nedInfo = ['<e>'];
         const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
-        const oracle = ex.thingtalk.match(/Q[0-9]+/g);
+        const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+        for (const entity of oracle.entities) {
+            if (result.entities.some((e) => e.id === entity.id))
+                continue;
+            countFail += 1;
+            // if we are working on the synthetic set, add the correct entities into the list
+            if (args.is_synthetic)
+                result.entities.push(entity);
+            break;
+        }
+        
+        shuffle(result.entities);
 
         for (const entity of result.entities) {
             nedInfo.push(entity.label);
@@ -113,22 +128,10 @@ async function main() {
         nedInfo.push('</e>');
         const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
         args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
-
-        for (const qid of oracle ?? []) {
-            if (result.entities.some((e) => e.id === qid))
-                continue;
-            countFail += 1;
-            process.stdout.write("Failure count: " + countFail + "\r");
-            if (args.output_failure)
-                args.output_failure.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
-            break;
-        }
     }
     console.log('Failed: ', countFail);
     console.log('Total: ', countTotal);
     StreamUtils.waitFinish(args.output);
-    if (args.output_failure)
-        StreamUtils.waitFinish(args.output_failure);
 }
 
 if (require.main === module)
