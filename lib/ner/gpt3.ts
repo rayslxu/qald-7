@@ -18,7 +18,6 @@ export class GPT3Linker extends Linker {
     private _url : string;
     private _cache : Cache;
     private _rawData : Record<string, string>;
-    // private _timeOfInceptionProperties : string[];
 
     constructor(wikidata : WikidataUtils, options : GPT3EntityLinkerOptions) {
         super();
@@ -26,7 +25,6 @@ export class GPT3Linker extends Linker {
         this._url = 'https://wikidata.openai.azure.com/openai/deployments/text/completions?api-version=2022-12-01';
         this._cache = new Cache(options.ner_cache);
         this._rawData = {};
-        // this._timeOfInceptionProperties = ["P569", "P580", "P577", "P571", "P585", "P575"];
         if (options.raw_data) {
             for (const ex of JSON.parse(fs.readFileSync(options.raw_data, 'utf-8')).questions)
                 this._rawData[ex.id] = ex.question[0].string;
@@ -66,7 +64,6 @@ export class GPT3Linker extends Linker {
                 const propertiesReturned = propertiesReturnedUncleaned.trim().replace('#', '');
                 let potentialEntities = await this._wikidata.getAllEntitiesByName(name);
                 if (!potentialEntities || potentialEntities.length === 0) {
-                    // throw new Error('Cannot find Wikidata entity for: ' + name);
                     console.error('Cannot find Wikidata entity for "' + name + '" from "' + utterance + '"');
                     continue;
                 }
@@ -136,26 +133,6 @@ export class GPT3Linker extends Linker {
                 const entitiesSortedByMatching = potentialEntities.sort((entity1 : any, entity2 : any) => matchCounts[entity1.id] > matchCounts[entity2.id]);
 
                 let foundMatch = false;
-                // const chunkSize = 5;
-                // for (let chunkStart = 0; chunkStart < entitiesSortedByMatching.length; chunkStart += chunkSize) {
-                //     const chunk = entitiesSortedByMatching.slice(chunkStart, chunkStart + chunkSize);
-                //     const propertyMatch = await this._bulkPropertiesMatchDescription(propertiesReturned + ', ' + toi, chunk.map((matchingEntity : any) => matchingEntity.description));
-                //     if (propertyMatch !== -1) {
-                //         const matchingEntity = chunk[propertyMatch];
-                //         const domainId = await this._wikidata.getDomain(matchingEntity.id);
-                //         entities.push({
-                //             id: matchingEntity.id,
-                //             label: matchingEntity.label,
-                //             domain: domainId ? (domainId in this._wikidata.subdomains ? await this._wikidata.getLabel(domainId) : domainId) : null,
-                //             type: 'entity'
-                //         });
-                //         foundMatch = true;
-                //         break;
-                //     }
-
-                // }
-
-                
                 for (const matchingEntity of entitiesSortedByMatching.slice(0, 4)) { // From experimentation, it seems like only looking at the first 4 doesn't hurt performance and leads to fewer GPT calls
                     const propertyMatch = await this._propertiesMatchDescription(propertiesReturned + ', ' + toi, matchingEntity.description);
                     if (propertyMatch && !foundMatch) {
@@ -190,29 +167,6 @@ export class GPT3Linker extends Linker {
         return result;
     }
 
-    // private async _checkHopDistance(matchId : string, priorMatch : string, maxHopDistance : number) {
-    //     if (maxHopDistance === 0)
-    //         return false;
-    //     if (!this._wikidata.isEntity(matchId))
-    //         return false;
-    //     const propertyIds = await this._wikidata.getConnectedProperty(matchId, false);
-    //     const chunkSize = 10;
-
-    //     const propertyValueQIDs = [];
-    //     for (let chunkStart = 0; chunkStart < propertyIds.length; chunkStart += chunkSize) {
-    //         const propertyValueQIDsChunk = await Promise.all(propertyIds.slice(chunkStart, chunkStart + chunkSize).map((id) => this._wikidata.getPropertyValue(matchId, id)));
-    //         propertyValueQIDs.push(...propertyValueQIDsChunk);
-    //     }
-
-    //     for (const qid of propertyValueQIDs.flat()) {
-    //         if (qid === priorMatch)
-    //             return true;
-    //         if (await this._checkHopDistance(qid, priorMatch, maxHopDistance - 1))
-    //             return true;
-    //     }
-    //     return false;
-    // }
-
 
     private async _checkPropertyMatchs(match : any, propertiesToCheck : string) {
         const propertyIds = await this._wikidata.getConnectedProperty(match.id, false);
@@ -239,83 +193,6 @@ export class GPT3Linker extends Linker {
         }
         return matches;
     }
-
-    // private async _bulkPropertiesMatchDescription(properties : string, descriptionOfEntity : string[]) {
-    //     const description = 'Determine if the properties match the description\n\n';
-
-    //     const examples = 
-    //                     'Properties: German, Scientist, Physicist, special Relativity, general relativity, Jewish, quantum mechanics, walrus moustache\n' +
-    //                     'Description: German-born theoretical physicist; developer of the theory of relativity\n' +
-    //                     '\n' +
-    //                     'Properties: Film, Fantasy, Fantasy Film, J. R. R. Tolkien, The Two Towers, Peter Jackson, John Noble\n' +
-    //                     'Description: 2001-2003 three films directed by Peter Jackson\n' +
-    //                     '\n' +
-    //                     'Properties: Mountain, Nepal, Himalayas, Annapurna Conservation Area Project, Annapurna Sanctuary, Annapurna I\n' +
-    //                     'Description: mountain range in the Himalayas\n' +
-    //                     '\n' +
-    //                     'Properties: Mountain, Nepal, Himalayas, Annapurna Conservation Area Project, Annapurna Sanctuary, Annapurna I\n' +
-    //                     'Description: mountain in the Himalayas\n' +
-    //                     '\n' +
-    //                     'Properties: President, Arkansas, Democrat, Georgetown University, Oxford University, Hot Springs High School\n' +
-    //                     'Description: president of the United States from 1961 to 1963\n' +
-    //                     '\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: no\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: yes\n' +
-    //                     '\n' +
-    //                     'Properties: City, Minnesota, United States, Saint Louis County, Type: City , 6 August, 1858\n' +
-    //                     'Description: city in Minnesota, United States; county seat of St. Louis County\n' +
-    //                     '\n' +
-    //                     'Properties: Administrative Division, Local Government, Duluth, Saint Louis County, Type: Administrative Division , 919\n' +
-    //                     'Description: association football club in Derby, England\n' +
-    //                     '\n' +
-    //                     'Properties: Title, Knighthood, John A Macdonald, Type: Title of Nobility , 1348\n' +
-    //                     'Description: honorific prefix\n' +
-    //                     '\n' +
-    //                     'Properties: English, Scientist, Micrographia, Type: Human , 18 July, 1635\n' +
-    //                     'Description: English natural philosopher, architect and polymath\n' +
-    //                     '\n' +
-    //                     'Properties: Methodology, Study, Empirical, Systematic, Natural Philosophy, Robert Hooke, Type: Field of Study , 1665\n' +
-    //                     'Description: academic journal of the American Association for the Advancement of Science\n' +
-    //                     '\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: no\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: yes\n' +
-    //                     'Answer: no\n' +
-    //                     '\n';
-
-    //     let question = '';
-    //     for (let i = 0; i < descriptionOfEntity.length; i++) {
-    //         question += `Properties: ${properties}\n` +
-    //                     `Description: ${descriptionOfEntity[i]}\n\n`;
-    //     }
-    //     question += '\nAnswer:';
-
-    //     const prompt = description + examples + question;
-
-    //     await sleep(600);
-    //     try {
-    //         const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
-    //              dataContentType: 'application/json',
-    //              extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
-    //         });
-    //         const res = JSON.parse(raw);
-    //         if (res.choices.length > 0 && res.choices[0].text.length > 0) {
-    //             const answers = res.choices[0].text.trim().split('\n');
-    //             for (let i = 0; i < answers.length; i++) {
-    //                 if (answers[i].includes('yes'))
-    //                     return i;
-    //             }
-    //             return -1;
-    //         }
-    //     } catch(HTTPError) {
-    //         return -1;
-    //     }
-    //     return -1;
-    // }
 
     private async _propertiesMatchDescription(properties : string, descriptionOfEntity : string) {
         const description = 'Determine if the properties match the description\n\n';
@@ -391,30 +268,6 @@ export class GPT3Linker extends Linker {
         }
         return false;
     }
-
-    // Kept just in case we ever want to bring TOI matching back, but commented out because its dropped for now
-    /*
-    private async _checkMatchTOI(matchingEntity : any, toiString : string|null) : Promise<boolean> {
-        const id = matchingEntity.id;
-        if (toiString && !toiString.includes('N/A')) {
-            const inceptionDate = new Date(toiString);
-            for (const toiProp of this._timeOfInceptionProperties) {
-                const propValue = await this._wikidata.getPropertyRawValue(id, toiProp);
-                if (propValue.length === 0)
-                    continue;
-                for (const potentialTOI of propValue) {
-                    const foundInceptionDate = new Date(potentialTOI);
-                    // Round to nearest day
-                    if (Math.floor(foundInceptionDate.getTime() / 86400000) !== Math.floor(inceptionDate.getTime() / 86400000))
-                        continue;
-                    return true;
-                }
-            }
-            return false;
-        }
-        return false;
-    }
-    */
 
     private _prompt(utterance : string) : string {
         const description = 'Return named entities, the date of their inception, and distinct properties and types about them. The names of entities should be singular, and acronyms should be avoided. Do not answer the question.\n\n';
