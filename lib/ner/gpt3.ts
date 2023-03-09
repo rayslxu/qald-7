@@ -43,12 +43,23 @@ export class GPT3Linker extends Linker {
             throw new Error('Missing environment variable OPENAI_API_KEY');
 
         const prompt = this._prompt(utterance);
-
-        await sleep(600);
-        const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
-             dataContentType: 'application/json',
-             extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
-        });
+        let retry = true;
+        let raw = '';
+        while (retry) {
+            retry = false;
+            try {
+                raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
+                     dataContentType: 'application/json',
+                     extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
+                });
+            } catch(error) {
+                if (error instanceof Tp.Helpers.Http.HTTPError && error.code === 429) {
+                    console.log("Retrying")
+                    await sleep(550);
+                    retry = true;
+                }
+            }
+        }
 
         const res = JSON.parse(raw);
         if (res.choices.length > 0 && res.choices[0].text.length > 0) {
@@ -233,23 +244,31 @@ export class GPT3Linker extends Linker {
 
         const prompt = description + examples + question;
 
-        await sleep(600);
-
-        try {
-            const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
-                 dataContentType: 'application/json',
-                 extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
-            });
-            const res = JSON.parse(raw);
-            if (res.choices.length > 0 && res.choices[0].text.length > 0) {
-                const match = res.choices[0].text.trim();
-                if (match === 'yes')
-                    return true;
-                else
+        let retry = true;
+        while (retry) {
+            try {
+                retry = false;
+                const raw = await Tp.Helpers.Http.post(this._url, JSON.stringify({ prompt, max_tokens: 500, temperature: 0 }), {
+                     dataContentType: 'application/json',
+                     extraHeaders: { 'api-key': process.env.OPENAI_API_KEY as string }
+                });
+                const res = JSON.parse(raw);
+                if (res.choices.length > 0 && res.choices[0].text.length > 0) {
+                    const match = res.choices[0].text.trim();
+                    if (match === 'yes')
+                        return true;
+                    else
+                        return false;
+                }
+            } catch(error) {
+                if (error instanceof Tp.Helpers.Http.HTTPError && error.code === 429) {
+                    console.log("Retrying")
+                    await sleep(550);
+                    retry = true;
+                } else {
                     return false;
+                }
             }
-        } catch(HTTPError) {
-            return false;
         }
         return false;
     }
