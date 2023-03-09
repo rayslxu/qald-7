@@ -74,6 +74,9 @@ async function main() {
     const args = parser.parse_args();
     if (!args.ner_cache)
         args.ner_cache = args.module + '.sqlite';
+
+    if ((args.is_synthetic || args.input.includes('synthetic') || args.input.includes('everything')) && args.module === 'gpt3')
+        throw new Error('Trying to run GPT-3 NED over the synthetic dataset. For cost reason, this is forbidden.');
     
     const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
