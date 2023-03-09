@@ -1,1 +1,0 @@
-51	what was the first queen album ?	sort ( publication_date asc of @wd . entity ( ) filter contains ( performer , " Q15862 " ^^wd:entity ) && instance_of == " Q482994 " ^^wd:domain ) [ 1 ] ;
