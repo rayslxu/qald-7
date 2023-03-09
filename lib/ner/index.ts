@@ -10,6 +10,15 @@ import { GPT3Rephraser } from '../gpt3/rephraser';
 import { GPT3Linker } from './gpt3';
 import WikidataUtils from '../utils/wikidata';
 
+// in-place shuffle an array
+function shuffle(array : any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+
 export {
     Linker,
     Falcon,
@@ -56,6 +65,11 @@ async function main() {
         action: 'store_true',
         help: 'Enable GPT3 rephrase of the original utterance'
     });
+    parser.add_argument(`--is-synthetic`, {
+        default: false,
+        action: 'store_true',
+        help: 'If we are handling a synthetic dataset, if so, we want to make sure gold entities are always presented'
+    });
 
     const args = parser.parse_args();
     if (!args.ner_cache)
@@ -63,11 +77,12 @@ async function main() {
     
     const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
+    const oracleLinker = new OracleLinker(wikidata);
     let linker : Linker;
     if (args.module === 'falcon') 
         linker = new Falcon(wikidata, args);
     else if (args.module === 'oracle')
-        linker = new OracleLinker(wikidata);
+        linker = oracleLinker;
     else if (args.module === 'azure')
         linker = new AzureEntityLinker(wikidata, args);
     else if (args.module === 'gpt3')
@@ -86,13 +101,18 @@ async function main() {
         countTotal += 1;
         const nedInfo = ['<e>'];
         const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
-        const oracle = ex.thingtalk.match(/Q[0-9]+/g);
-        for (const qid of oracle ?? []) {
-            if (result.entities.some((e) => e.id === qid))
+        const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+        for (const entity of oracle.entities) {
+            if (result.entities.some((e) => e.id === entity.id))
                 continue;
             countFail += 1;
+            // if we are working on the synthetic set, add the correct entities into the list
+            if (args.is_synthetic)
+                result.entities.push(entity);
             break;
         }
+        
+        shuffle(result.entities);
 
         for (const entity of result.entities) {
             nedInfo.push(entity.label);
