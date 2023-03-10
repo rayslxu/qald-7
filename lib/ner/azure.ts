@@ -48,8 +48,10 @@ export class AzureEntityLinker extends Linker {
         const parsed = JSON.parse(raw);
         for (const entity of parsed.documents[0].entities) {
             const id = await this._wikidata.getQIDbyWikipediaUrl(entity.url);
-            if (!id)
-                throw new Error('Cannot find Wikidata entity for: ' + entity.url);
+            if (!id) {
+                console.warn('Failed to find Wikidata entity for: ' + entity.url);
+                continue;
+            }
             const domainId = await this._wikidata.getDomain(id);
             entities.push({
                 id,

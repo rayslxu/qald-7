@@ -914,7 +914,7 @@ export default class WikidataUtils {
         try {
             return result.search[0].id;
         } catch(e) {
-            console.log(`Failed to find domain for ${name}`);
+            console.log(`Failed to find entity for ${name}`);
             return null;
         }
     }
@@ -983,7 +983,9 @@ export default class WikidataUtils {
         const params = `action=query&prop=pageprops&titles=${encodeURIComponent(title)}&format=json`;
         const result = await this._request(`${url}?${params}`);
         const pageprops = (Object.values(result.query.pages)[0] as any).pageprops;
-        return pageprops ? pageprops.wikibase_item : null;
+        if (pageprops)
+            return pageprops.wikibase_item;
+        return this.getEntityByName(title);
     }
 
     async isDomainEntity(entity : string) : Promise<boolean> {
