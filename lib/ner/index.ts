@@ -10,6 +10,15 @@ import { GPT3Rephraser } from '../gpt3/rephraser';
 import { GPT3Linker } from './gpt3';
 import WikidataUtils from '../utils/wikidata';
 
+// number of times to try the ned process in case of failure
+const MAX_TRY = 2;
+const RETRY_WAIT = 500;
+
+function sleep(ms : number) {
+    // eslint-disable-next-line no-promise-executor-return
+    return new Promise((res) => setTimeout(res, ms));
+}
+
 // in-place shuffle an array
 function shuffle(array : any[]) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -17,7 +26,6 @@ function shuffle(array : any[]) {
         [array[i], array[j]] = [array[j], array[i]];
     }
 }
-
 
 export {
     Linker,
@@ -103,31 +111,42 @@ async function main() {
     for (const ex of data.values()) {
         countTotal += 1;
         const nedInfo = ['<e>'];
-        const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
-        const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
-        for (const entity of oracle.entities) {
-            if (result.entities.some((e) => e.id === entity.id))
-                continue;
-            countFail += 1;
-            // if we are working on the synthetic set, add the correct entities into the list
-            if (args.is_synthetic)
-                result.entities.push(entity);
-            break;
-        }
-        
-        shuffle(result.entities);
+        let tryCount = 0;
+        while (tryCount < MAX_TRY) {
+            try {
+                const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
+                const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+                for (const entity of oracle.entities) {
+                    if (result.entities.some((e) => e.id === entity.id))
+                        continue;
+                    countFail += 1;
+                    // if we are working on the synthetic set, add the correct entities into the list
+                    if (args.is_synthetic)
+                        result.entities.push(entity);
+                    break;
+                }
+                
+                shuffle(result.entities);
 
-        for (const entity of result.entities) {
-            nedInfo.push(entity.label);
-            if (entity.domain)
-                nedInfo.push('(', entity.domain, ')');
-            nedInfo.push('[', entity.id, ']', ';');
+                for (const entity of result.entities) {
+                    nedInfo.push(entity.label);
+                    if (entity.domain)
+                        nedInfo.push('(', entity.domain, ')');
+                    nedInfo.push('[', entity.id, ']', ';');
+                }
+                for (const property of result.relations)
+                    nedInfo.push(property.label, '[', property.id, ']', ';');
+                nedInfo.push('</e>');
+                const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
+                args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
+                break;
+            } catch(e) {
+                console.log(`NED for example ${ex.id} failed. Attempt No. ${tryCount+1}`);
+                tryCount ++;
+                await sleep(RETRY_WAIT);
+            }
+            console.warn(`NED for Example ${ex.id} failed after ${MAX_TRY} attempts.`);
         }
-        for (const property of result.relations)
-            nedInfo.push(property.label, '[', property.id, ']', ';');
-        nedInfo.push('</e>');
-        const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
-        args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
     }
     console.log('Failed: ', countFail);
     console.log('Total: ', countTotal);
