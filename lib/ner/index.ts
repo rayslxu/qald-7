@@ -137,7 +137,8 @@ async function main() {
                 for (const property of result.relations)
                     nedInfo.push(property.label, '[', property.id, ']', ';');
                 nedInfo.push('</e>');
-                const utterance = args.gpt3_rephrase ? await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
+                const utterance = args.gpt3_rephrase && !args.is_synthetic ? 
+                    await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
                 args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
                 break;
             } catch(e) {
