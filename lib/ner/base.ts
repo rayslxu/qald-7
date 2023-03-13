@@ -1,3 +1,11 @@
+export interface Example {
+    id : string,
+    sentence : string,
+    thingtalk : string,
+    entities ?: Entity[],
+    relation ?: Relation[]
+}
+
 export interface LinkerResult {
     entities : Entity[];
     relations : Relation[];

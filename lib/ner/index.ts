@@ -9,6 +9,8 @@ import { AzureEntityLinker } from './azure';
 import { GPT3Rephraser } from '../gpt3/rephraser';
 import { GPT3Linker } from './gpt3';
 import WikidataUtils from '../utils/wikidata';
+import { ReFinEDLinker } from './refined';
+import { Entity, Example } from './base';
 
 // number of times to try the ned process in case of failure
 const MAX_TRY = 2;
@@ -33,6 +35,78 @@ export {
     AzureEntityLinker
 };
 
+// run the linker in a streaming fashion, one example at a time
+async function streamLink(linker : Linker, 
+                          oracleLinker : OracleLinker, 
+                          examples : Example[], 
+                          options : { is_synthetic : boolean }) {
+    let countFail = 0;
+    let countTotal = 0;
+    for (const ex of examples) {
+        countTotal += 1;
+        let tryCount = 0;
+        while (tryCount < MAX_TRY) {
+            try {
+                const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
+                const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+                let hasMissingEntity = false;
+                for (const entity of oracle.entities) {
+                    if (result.entities.some((e) => e.id === entity.id))
+                        continue;
+                    hasMissingEntity = true;
+                    // if we are working on the synthetic set, add the correct entities into the list
+                    if (options.is_synthetic)
+                        result.entities.push(entity);
+                }
+                if (hasMissingEntity)
+                    countFail += 1;
+                ex.entities = [...new Set(result.entities)];
+                ex.relation = [...new Set(result.relations)];
+                break;
+            } catch(e) {
+                console.log(`NED for example ${ex.id} failed. Attempt No. ${tryCount+1}`);
+                tryCount ++;
+                if (tryCount === MAX_TRY)
+                    console.warn(`NED for Example ${ex.id} failed after ${MAX_TRY} attempts.`);
+                else 
+                    await sleep(RETRY_WAIT);
+            }
+        }
+    }
+    console.log('Failed: ', countFail);
+    console.log('Total: ', countTotal);
+}
+
+// run the linker in one batch
+async function batchLink(linker : ReFinEDLinker, 
+                         oracleLinker : OracleLinker, 
+                         examples : Example[], 
+                         options : { is_synthetic : boolean }) {
+    await linker.runAll(examples);
+    if (options.is_synthetic) {
+        let countFail = 0;
+        let countTotal = 0; 
+        for (const ex of examples) {
+            countTotal += 1;
+            const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+            let hasMissingEntity = false;
+            for (const entity of oracle.entities) {
+                if (ex.entities!.some((e) => e.id === entity.id))
+                    continue;
+                hasMissingEntity = true;
+                // if we are working on the synthetic set, add the correct entities into the list
+                if (options.is_synthetic)
+                    ex.entities!.push(entity);
+            }
+            if (hasMissingEntity)
+                countFail += 1;
+            break;
+        }
+        console.log('Failed: ', countFail);
+        console.log('Total: ', countTotal);
+    }
+}
+
 async function main() {
     const parser = new argparse.ArgumentParser({
         add_help : true,
@@ -50,7 +124,7 @@ async function main() {
         required: false,
         default: 'falcon',
         help: "the NER module to load",
-        choices: ['falcon', 'oracle', 'azure', 'gpt3'],
+        choices: ['falcon', 'oracle', 'azure', 'gpt3', 'refined'],
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -98,6 +172,8 @@ async function main() {
         linker = new AzureEntityLinker(wikidata, args);
     else if (args.module === 'gpt3')
         linker = new GPT3Linker(wikidata, args);
+    else if (args.module === 'refined')
+        linker = new ReFinEDLinker(wikidata);
     else
         throw new Error('Unknown NER module');
 
@@ -106,51 +182,32 @@ async function main() {
     const dataset = args.input.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
-    let countFail = 0;
-    let countTotal = 0;
-    for (const ex of data.values()) {
-        countTotal += 1;
-        const nedInfo = ['<e>'];
-        let tryCount = 0;
-        while (tryCount < MAX_TRY) {
-            try {
-                const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
-                const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
-                for (const entity of oracle.entities) {
-                    if (result.entities.some((e) => e.id === entity.id))
-                        continue;
-                    countFail += 1;
-                    // if we are working on the synthetic set, add the correct entities into the list
-                    if (args.is_synthetic)
-                        result.entities.push(entity);
-                    break;
-                }
-                
-                shuffle(result.entities);
+    const examples = data.values();
 
-                for (const entity of result.entities) {
-                    nedInfo.push(entity.label);
-                    if (entity.domain)
-                        nedInfo.push('(', entity.domain, ')');
-                    nedInfo.push('[', entity.id, ']', ';');
-                }
-                for (const property of result.relations)
-                    nedInfo.push(property.label, '[', property.id, ']', ';');
-                nedInfo.push('</e>');
-                const utterance = args.gpt3_rephrase && !args.is_synthetic ? 
-                    await rephraser.rephrase(ex.sentence, result.entities.map((e) => e.id)) : ex.sentence;
-                args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);
-                break;
-            } catch(e) {
-                console.log(`NED for example ${ex.id} failed. Attempt No. ${tryCount+1}`);
-                tryCount ++;
-                await sleep(RETRY_WAIT);
-            }
-            console.warn(`NED for Example ${ex.id} failed after ${MAX_TRY} attempts.`);
+
+    // run entity linking 
+    if (linker instanceof ReFinEDLinker) 
+        await batchLink(linker, oracleLinker, examples, args);
+    else 
+        await streamLink(linker, oracleLinker, examples, args);
+
+    // output linker result
+    for (const ex of examples) {
+        const nedInfo = ['<e>'];
+        shuffle(ex.entities);
+        for (const entity of ex.entities) {
+            nedInfo.push(entity.label);
+            if (entity.domain)
+                nedInfo.push('(', entity.domain, ')');
+            nedInfo.push('[', entity.id, ']', ';');
         }
+        for (const property of ex.relations)
+            nedInfo.push(property.label, '[', property.id, ']', ';');
+        nedInfo.push('</e>');
+        const utterance = args.gpt3_rephrase && !args.is_synthetic ? 
+            await rephraser.rephrase(ex.sentence, ex.entities.map((e : Entity) => e.id)) : ex.sentence;
+        args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);   
     }
-    console.log('Failed: ', countFail);
-    console.log('Total: ', countTotal);
     StreamUtils.waitFinish(args.output);
 }
 
