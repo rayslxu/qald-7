@@ -10,6 +10,7 @@ interface GPT3EntityLinkerOptions {
 }
 
 function sleep(ms : number) {
+    // eslint-disable-next-line no-promise-executor-return
     return new Promise((res) => setTimeout(res, ms));
 }
 
@@ -54,7 +55,7 @@ export class GPT3Linker extends Linker {
                 });
             } catch(error) {
                 if (error instanceof Tp.Helpers.Http.HTTPError && error.code === 429) {
-                    console.log("Retrying")
+                    console.log("Retrying");
                     await sleep(550);
                     retry = true;
                 }
@@ -262,7 +263,7 @@ export class GPT3Linker extends Linker {
                 }
             } catch(error) {
                 if (error instanceof Tp.Helpers.Http.HTTPError && error.code === 429) {
-                    console.log("Retrying")
+                    console.log("Retrying");
                     await sleep(550);
                     retry = true;
                 } else {
