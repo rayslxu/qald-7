@@ -12,15 +12,6 @@ import WikidataUtils from '../utils/wikidata';
 import { ReFinEDLinker } from './refined';
 import { Entity, Example } from './base';
 
-// number of times to try the ned process in case of failure
-const MAX_TRY = 2;
-const RETRY_WAIT = 500;
-
-function sleep(ms : number) {
-    // eslint-disable-next-line no-promise-executor-return
-    return new Promise((res) => setTimeout(res, ms));
-}
-
 // in-place shuffle an array
 function shuffle(array : any[]) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -35,54 +26,12 @@ export {
     AzureEntityLinker
 };
 
-// run the linker in a streaming fashion, one example at a time
-async function streamLink(linker : Linker, 
-                          oracleLinker : OracleLinker, 
-                          examples : Example[], 
-                          options : { is_synthetic : boolean }) {
-    let countFail = 0;
-    let countTotal = 0;
-    for (const ex of examples) {
-        countTotal += 1;
-        let tryCount = 0;
-        while (tryCount < MAX_TRY) {
-            try {
-                const result = await linker.run(ex.id, ex.sentence, ex.thingtalk);
-                const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
-                let hasMissingEntity = false;
-                for (const entity of oracle.entities) {
-                    if (result.entities.some((e) => e.id === entity.id))
-                        continue;
-                    hasMissingEntity = true;
-                    // if we are working on the synthetic set, add the correct entities into the list
-                    if (options.is_synthetic)
-                        result.entities.push(entity);
-                }
-                if (hasMissingEntity)
-                    countFail += 1;
-                ex.entities = [...new Set(result.entities)];
-                ex.relation = [...new Set(result.relations)];
-                break;
-            } catch(e) {
-                console.log(`NED for example ${ex.id} failed. Attempt No. ${tryCount+1}`);
-                tryCount ++;
-                if (tryCount === MAX_TRY)
-                    console.warn(`NED for Example ${ex.id} failed after ${MAX_TRY} attempts.`);
-                else 
-                    await sleep(RETRY_WAIT);
-            }
-        }
-    }
-    console.log('Failed: ', countFail);
-    console.log('Total: ', countTotal);
-}
-
 // run the linker in one batch
-async function batchLink(linker : ReFinEDLinker, 
-                         oracleLinker : OracleLinker, 
-                         examples : Example[], 
-                         options : { is_synthetic : boolean }) {
-    await linker.runAll(examples);
+async function link(linker : Linker, 
+                    oracleLinker : OracleLinker, 
+                    examples : Example[], 
+                    options : { is_synthetic : boolean }) {
+    await linker.saferunAll(examples);
     if (options.is_synthetic) {
         let countFail = 0;
         let countTotal = 0; 
@@ -186,10 +135,7 @@ async function main() {
 
 
     // run entity linking 
-    if (linker instanceof ReFinEDLinker) 
-        await batchLink(linker, oracleLinker, examples, args);
-    else 
-        await streamLink(linker, oracleLinker, examples, args);
+    await link(linker, oracleLinker, examples, args);
 
     // output linker result
     for (const ex of examples) {
