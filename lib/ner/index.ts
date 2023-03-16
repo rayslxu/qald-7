@@ -27,11 +27,13 @@ export {
 };
 
 // run the linker in one batch
-async function link(linker : Linker, 
+async function link(linkers : Linker[], 
                     oracleLinker : OracleLinker, 
                     examples : Example[], 
                     options : { is_synthetic : boolean }) {
-    await linker.saferunAll(examples);
+    for (const linker of linkers)
+        await linker.saferunAll(examples);
+
     if (options.is_synthetic) {
         let countFail = 0;
         let countTotal = 0; 
@@ -73,7 +75,7 @@ async function main() {
         required: false,
         default: 'falcon',
         help: "the NER module to load",
-        choices: ['falcon', 'oracle', 'azure', 'gpt3', 'refined'],
+        choices: ['falcon', 'oracle', 'azure', 'gpt3', 'refined', 'ensemble'],
     });
     parser.add_argument('--ner-cache', {
         required: false,
@@ -112,18 +114,19 @@ async function main() {
     const wikidata = new WikidataUtils(args.wikidata_cache, args.bootleg);
 
     const oracleLinker = new OracleLinker(wikidata);
-    let linker : Linker;
-    if (args.module === 'falcon') 
-        linker = new Falcon(wikidata, args);
-    else if (args.module === 'oracle')
-        linker = oracleLinker;
-    else if (args.module === 'azure')
-        linker = new AzureEntityLinker(wikidata, args);
-    else if (args.module === 'gpt3')
-        linker = new GPT3Linker(wikidata, args);
-    else if (args.module === 'refined')
-        linker = new ReFinEDLinker(wikidata);
-    else
+    const linkers : Linker[] = [];
+    if (args.module === 'oracle')
+        linkers.push(oracleLinker);
+    if (args.module === 'falcon' || args.module === 'ensemble') 
+        linkers.push(new Falcon(wikidata, args));
+    if (args.module === 'azure' || args.module === 'ensemble')
+        linkers.push(new AzureEntityLinker(wikidata, args));
+    if (args.module === 'gpt3' || args.module === 'ensemble')
+        linkers.push(new GPT3Linker(wikidata, args));
+    if (args.module === 'refined' || args.module === 'ensemble')
+        linkers.push(new ReFinEDLinker());
+    
+    if (linkers.length === 0)
         throw new Error('Unknown NER module');
 
     const rephraser = new GPT3Rephraser('https://wikidata.openai.azure.com', wikidata);
@@ -131,27 +134,27 @@ async function main() {
     const dataset = args.input.pipe(csvparse({ columns, delimiter: '\t', relax: true }))
         .pipe(new StreamUtils.MapAccumulator());
     const data = await dataset.read(); 
-    const examples = data.values();
+    const examples = Array.from(data.values()) as Example[];
 
 
     // run entity linking 
-    await link(linker, oracleLinker, examples, args);
+    await link(linkers, oracleLinker, examples, args);
 
     // output linker result
     for (const ex of examples) {
         const nedInfo = ['<e>'];
-        shuffle(ex.entities);
-        for (const entity of ex.entities) {
+        shuffle(ex.entities!);
+        for (const entity of ex.entities!) {
             nedInfo.push(entity.label);
             if (entity.domain)
                 nedInfo.push('(', entity.domain, ')');
             nedInfo.push('[', entity.id, ']', ';');
         }
-        for (const property of ex.relations)
+        for (const property of ex.relation!)
             nedInfo.push(property.label, '[', property.id, ']', ';');
         nedInfo.push('</e>');
         const utterance = args.gpt3_rephrase && !args.is_synthetic ? 
-            await rephraser.rephrase(ex.sentence, ex.entities.map((e : Entity) => e.id)) : ex.sentence;
+            await rephraser.rephrase(ex.sentence, ex.entities!.map((e : Entity) => e.id)) : ex.sentence;
         args.output.write(`${ex.id}\t${utterance + ' ' + nedInfo.join(' ')}\t${ex.thingtalk}\n`);   
     }
     StreamUtils.waitFinish(args.output);

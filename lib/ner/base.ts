@@ -52,13 +52,23 @@ export abstract class Linker {
         return null;
     }
 
-    async saferunAll(examples : Example[]) : Promise<LinkerResult[]> {
-        const result = [];
+    async saferunAll(examples : Example[]) {
         for (const example of examples) {
+            if (!example.entities)
+                example.entities = [];
+            if (!example.relation)
+                example.relation = [];
             const res = await this.saferun(example.id, example.sentence, example.thingtalk);
-            if (res !== null)
-                result.push(res);
+            if (res === null)
+                continue;
+            for (const entity of res.entities) {
+                if (!example.entities.some((v) => v.id === entity.id))
+                    example.entities.push(entity);
+            }
+            for (const relation of res.relations) {
+                if (!example.relation.some((r) => r.id === relation.id))
+                    example.relation.push(relation);
+            }
         }
-        return result;
     }
 }
