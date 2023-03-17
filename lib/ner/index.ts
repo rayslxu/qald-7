@@ -121,7 +121,7 @@ async function main() {
     if (args.module === 'gpt3' || args.module === 'ensemble')
         linkers.push(new GPT3Linker(wikidata, args));
     if (args.module === 'refined' || args.module === 'ensemble')
-        linkers.push(new ReFinEDLinker());
+        linkers.push(new ReFinEDLinker(wikidata, args.input.path));
     
     if (linkers.length === 0)
         throw new Error('Unknown NER module');
