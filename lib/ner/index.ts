@@ -34,28 +34,25 @@ async function link(linkers : Linker[],
     for (const linker of linkers)
         await linker.saferunAll(examples);
 
-    if (options.is_synthetic) {
-        let countFail = 0;
-        let countTotal = 0; 
-        for (const ex of examples) {
-            countTotal += 1;
-            const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
-            let hasMissingEntity = false;
-            for (const entity of oracle.entities) {
-                if (ex.entities!.some((e) => e.id === entity.id))
-                    continue;
-                hasMissingEntity = true;
-                // if we are working on the synthetic set, add the correct entities into the list
-                if (options.is_synthetic)
-                    ex.entities!.push(entity);
-            }
-            if (hasMissingEntity)
-                countFail += 1;
-            break;
+    let countFail = 0;
+    let countTotal = 0; 
+    for (const ex of examples) {
+        countTotal += 1;
+        const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
+        let hasMissingEntity = false;
+        for (const entity of oracle.entities) {
+            if (ex.entities!.some((e) => e.id === entity.id))
+                continue;
+            hasMissingEntity = true;
+            // if we are working on the synthetic set, add the correct entities into the list
+            if (options.is_synthetic)
+                ex.entities!.push(entity);
         }
-        console.log('Failed: ', countFail);
-        console.log('Total: ', countTotal);
+        if (hasMissingEntity)
+            countFail += 1;
     }
+    console.log('Failed: ', countFail);
+    console.log('Total: ', countTotal);
 }
 
 async function main() {
