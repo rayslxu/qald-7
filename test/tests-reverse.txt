@@ -151,7 +151,7 @@ SELECT DISTINCT ?x WHERE {
     ?p <http://www.wikidata.org/prop/statement/P54> ?x. 
     ?p <http://www.wikidata.org/prop/qualifier/P580> ?y. 
     ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. 
-    FILTER((y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (z >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+    FILTER((?y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
 }
 
 ====
@@ -163,7 +163,7 @@ SPARQL:
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q182832>. 
     ?x <http://www.wikidata.org/prop/direct/P585> ?y. 
-    FILTER((y >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+    FILTER((?y >= "2012-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?y <= "2013-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
 }
 
 ====
