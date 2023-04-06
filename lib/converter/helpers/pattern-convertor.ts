@@ -92,8 +92,8 @@ const patterns = {
     // who plays X in Y
     '[ cast_member filter character_role == " $0 " ^^wd:entity ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        ?y <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/P725>|<http://www.wikidata.org/prop/P161> ?x. 
-        ?x <http://www.wikidata.org/prop/statement/P725>|<http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
+        ?y <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/P161> ?x. 
+        ?x <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
     }`,
 
     // what team did X play for in college
