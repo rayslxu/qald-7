@@ -132,7 +132,7 @@ const patterns = {
     // where do X people come from
     '@wd . country ( ) filter contains ( ethnic_group , " $0 " ^^wd:entity ) ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P495>|<http://www.wikidata.org/prop/direct/P66> ?x. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P66> ?x. 
     }`,
 
     // what degree did X get
@@ -147,6 +147,12 @@ const patterns = {
     '[ place_of_birth ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P19> ?x. 
+    }`,
+
+    // where was X (team/band) from
+    '[ location_of_formation ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P740> ?x. 
     }`,
 
     // where did X live
@@ -204,11 +210,11 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY DESC (?y) LIMIT 1`,
 
-    // when did kaley cuoco join charmed
-    '[ first_appearance ] of @wd . entity ( ) filter id == " Q16759 " ^^wd:entity ;':
+    // when did X join charmed
+    '[ first_appearance ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/Q162371>; <http://www.wikidata.org/prop/direct/P577> ?x; <http://www.wikidata.org/prop/P161> ?y. 
-        ?y <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/Q16759>. 
+        ?y <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY ?x LIMIT 1`,
 
     // when did X last win the Y champion
@@ -246,17 +252,16 @@ const patterns = {
     } ORDER BY DESC (?z) LIMIT 1`,
 
     // what country did X live in
-    '[ country ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
+    '[ residence : Entity ( wd:country ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P551> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P551> ?y. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P551> ?y. 
         ?y <http://www.wikidata.org/prop/direct/P17> ?x. 
     }`,
 
     // who originally voiced X on Y
     '[ voice_actor filter character_role == " $0 " ^^wd:entity ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$1>; wdt:P580 ?y. 
+        ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/direct/P580> ?y. 
         ?p <http://www.wikidata.org/prop/direct/P527> ?z. 
         ?z <http://www.wikidata.org/prop/P725> ?w. 
         ?w <http://www.wikidata.org/prop/statement/P725> ?x; <http://www.wikidata.org/prop/qualifier/P453> <http://www.wikidata.org/entity/$0>. 
@@ -284,7 +289,7 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P279> ?x. 
     }`,
 
-    // when was the last time the X went to the Y cup
+    // when was the last time the X went to the Y (Championship)
     '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " $1 " ^^wd:domain ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/direct/P585> ?x. 
