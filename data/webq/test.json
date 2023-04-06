@@ -7407,7 +7407,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { { wd:Q13909 wdt:P22 ?x. } UNION { wd:Q13909 wdt:P25 ?x. } }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q13909 wdt:P22|wdt:P25 ?x. }"
       }
     },
     {
