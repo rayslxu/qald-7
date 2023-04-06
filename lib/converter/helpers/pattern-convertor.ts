@@ -111,8 +111,7 @@ const patterns = {
 
     // what is the most populated state in united states
     'sort ( population desc of @wd . administrative_territorial_entity ( ) filter instance_of == " Q35657 " ^^wd:administrative_territorial_entity_subdomain ) [ 1 ] ;':
-    `PREFIX wd:  PREFIX wdt:  
-    SELECT DISTINCT ?x WHERE { 
+    `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390>; <http://www.wikidata.org/prop/direct/P1082> ?y. 
     } ORDER BY DESC (?y) LIMIT 1`,
 
@@ -132,8 +131,7 @@ const patterns = {
 
     // where do X people come from
     '@wd . country ( ) filter contains ( ethnic_group , " $0 " ^^wd:entity ) ;':
-    `PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
-    SELECT DISTINCT ?x WHERE { 
+    `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P495>|<http://www.wikidata.org/prop/direct/P66> ?x. 
     }`,
 
@@ -160,8 +158,7 @@ const patterns = {
 
     // what state did X live
     '[ residence : Entity ( wd:federated_state ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
-    `PREFIX wd:  PREFIX wdt:  
-    SELECT DISTINCT ?x WHERE { 
+    `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P551> ?x. 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q35657>. 
     }`,
@@ -217,21 +214,21 @@ const patterns = {
     // when did X last win the Y champion
     '[ point_in_time ] of sort ( point_in_time desc of @wd . entity ( ) filter contains ( winner , " $0 " ^^wd:entity ) && instance_of == " $1 " ^^wd:domain ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/Q11152> <http://www.wikidata.org/prop/P1346> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/Q1130849>; <http://www.wikidata.org/prop/qualifier/P585> ?x. 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P1346> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P585> ?x. 
     } ORDER BY DESC (?x) LIMIT 1`,
 
     // what was X's first team
     '[ drafted_by ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/Q36159> <http://www.wikidata.org/prop/P54> ?p. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P54> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P54> ?x; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
     } ORDER BY ?y LIMIT 1`,
 
     // what was X's first album
     'sort ( publication_date asc of @wd . entity ( ) filter contains ( performer , " $0 " ^^wd:entity ) && instance_of == " Q482994 " ^^wd:domain ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q482994>; <http://www.wikidata.org/prop/direct/P175> <http://www.wikidata.org/entity/Q2306>; <http://www.wikidata.org/prop/direct/P577> ?y. 
+        ?x <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q482994>; <http://www.wikidata.org/prop/direct/P175> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P577> ?y. 
     } ORDER BY ?y LIMIT 1`,
 
     // what district does X represent
@@ -245,13 +242,13 @@ const patterns = {
     '@wd . entity ( ) filter contains ( member_of_sports_team , " $0 " ^^wd:entity ) && contains ( position_played_on_team__speciality , " Q622747 " ^^wd:entity ) ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P413> <http://www.wikidata.org/entity/Q622747>; <http://www.wikidata.org/prop/P54> ?y. 
-        ?y <http://www.wikidata.org/prop/statement/P54> <http://www.wikidata.org/entity/Q223243>; <http://www.wikidata.org/prop/qualifier/P580> ?z. 
+        ?y <http://www.wikidata.org/prop/statement/P54> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P580> ?z. 
     } ORDER BY DESC (?z) LIMIT 1`,
 
     // what country did X live in
     '[ country ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/Q37970> <http://www.wikidata.org/prop/P551> ?p. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P551> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P551> ?y. 
         ?y <http://www.wikidata.org/prop/direct/P17> ?x. 
     }`,
@@ -267,9 +264,8 @@ const patterns = {
 
     // what state was X from
     '[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . human ( ) filter id == " $0 " ^^wd:human ;':
-    `PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p:  PREFIX ps:  PREFIX pq:  
-    SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/Q76> <http://www.wikidata.org/prop/P19> ?p. 
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
     }`,
 
@@ -282,7 +278,7 @@ const patterns = {
     }`,
 
     // where has the X language evolved from
-    '[ subclass_of ] of @wd . entity ( ) filter id == " Q809 " ^^wd:entity ;':
+    '[ subclass_of ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P279> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P279> ?x. 
@@ -290,8 +286,7 @@ const patterns = {
 
     // when was the last time the X went to the Y cup
     '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " $1 " ^^wd:domain ;':
-    `PREFIX wd:  PREFIX wdt:  PREFIX p:  PREFIX ps:  
-    SELECT DISTINCT ?x WHERE { 
+    `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/direct/P585> ?x. 
         ?p <http://www.wikidata.org/prop/P1923> ?y. 
         ?y <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$0>. 
