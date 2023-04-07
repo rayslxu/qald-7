@@ -319,8 +319,12 @@ export default class WikidataUtils {
         } catch(e) {
             if (attempts < 2)
                 return this._request(url, caching, attempts + 1);
-            console.log(`Failed to retrieve result for: ${url}`);
-            console.log(e);
+
+            // only warn failure for NON sparql request, sparql queries will only be warned if optimized version still fails
+            if (!url.includes('sparql?query=')) {
+                console.warn(`Failed to retrieve result for: ${url}`);
+                console.warn(e);
+            }
             return null;
         }
     }
