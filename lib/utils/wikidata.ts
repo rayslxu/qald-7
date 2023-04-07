@@ -325,10 +325,15 @@ export default class WikidataUtils {
         }
     }
 
-    async query(sparql : string) : Promise<string[]> {
+    async query(sparql : string, optimized = false) : Promise<string[]> {
         const raw = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
-        if (raw === null)
+        if (raw === null) {
+            if (optimized) {
+                console.warn(`Failed to retrieve answer for SPARQL after optimization: `, sparql);
+                return [];
+            }
             return this._optimizedQuery(sparql);
+        }
         return WikidataUtils.processRawResult(raw);
     }
 
@@ -345,14 +350,14 @@ export default class WikidataUtils {
             return [];
         const instanceOfStatement = match[0];
         const sparqlWithoutInstanceOf = sparql.replace(instanceOfStatement, '');
-        const candidates = await this.query(sparqlWithoutInstanceOf);
+        const candidates = await this.query(sparqlWithoutInstanceOf, true);
         const results = [];
         for (let i = 0; i < candidates.length; i += 50) {
             const batch = candidates.slice(i, i + 50);
             results.push(...(await this.query(`SELECT DISTINCT ?x WHERE {
                 VALUES ?x { ${batch.map((e) => `wd:${e}`).join(' ')} }
                 ${instanceOfStatement}
-            }`)));
+            }`, true)));
         }
         return results;
     }
