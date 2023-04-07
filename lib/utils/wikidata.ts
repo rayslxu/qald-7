@@ -307,8 +307,12 @@ export default class WikidataUtils {
     private async _request(url : string, caching = true, attempts = 1) : Promise<any> {
         if (caching) {
             const cached = await this._getCache('http_requests', 'result', { key: 'url', value : url });
-            if (cached) 
-                return JSON.parse(cached.result);
+            if (cached) {
+                if (cached.result === 'TIMEOUT')
+                    return null;
+                else
+                    return JSON.parse(cached.result); 
+            }
         }
         try {
             const result = await Tp.Helpers.Http.get(url, { accept: 'application/json' });
@@ -325,6 +329,7 @@ export default class WikidataUtils {
                 console.warn(`Failed to retrieve result for: ${url}`);
                 console.warn(e);
             }
+            await this._setCache('http_requests', url, 'TIMEOUT');
             return null;
         }
     }
