@@ -344,15 +344,15 @@ export default class WikidataUtils {
         if (!match)
             return [];
         const instanceOfStatement = match[0];
-        const domain = match[1].slice(`<${ENTITY_PREFIX}`.length, -1);
         const sparqlWithoutInstanceOf = sparql.replace(instanceOfStatement, '');
         const candidates = await this.query(sparqlWithoutInstanceOf);
-        
         const results = [];
-        for (const entity of candidates) {
-            const domains = await this.query(`SELECT DISTINCT ?x WHERE { wd:${entity} wdt:P31/wdt:P279* ?x. }`);
-            if (domains.includes(domain))
-                results.push(entity);
+        for (let i = 0; i < candidates.length; i += 50) {
+            const batch = candidates.slice(i, i + 50);
+            results.push(...(await this.query(`SELECT DISTINCT ?x WHERE {
+                VALUES ?x { ${batch.map((e) => `wd:${e}`).join(' ')} }
+                ${instanceOfStatement}
+            }`)));
         }
         return results;
     }

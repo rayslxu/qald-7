@@ -22,6 +22,20 @@ const TESTS : Array<[string, string[]]>= [
             'Q56160394', 'Q56288566',  'Q61661293',
             'Q71933415', 'Q84467715'
         ]
+    ], 
+    [
+        `SELECT DISTINCT ?x WHERE { 
+            ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q570116>. 
+            ?x <http://www.wikidata.org/prop/direct/P131>+ <http://www.wikidata.org/entity/Q2256>. 
+        }`,
+        [
+            'Q248555',   'Q4916760',
+            'Q5330951',  'Q5945554',
+            'Q6941014',  'Q6978303',
+            'Q6488462',  'Q7784619',
+            'Q7861738',  'Q19191139',
+            'Q15945108'
+        ]
     ]
 ];
 
@@ -30,7 +44,6 @@ async function main() {
     const wikidata = new WikidataUtils('wikidata_cache.sqlite', 'bootleg.sqlite');
     for (const [sparql, expectedAnswer] of TESTS) {
         const results = await wikidata.query(sparql);
-        console.log(results);
         assert(results.length === expectedAnswer.length && results.every((entity) => expectedAnswer.includes(entity)));
     } 
 }
