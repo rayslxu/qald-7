@@ -63,14 +63,13 @@ const patterns = {
     }`,
 
     // who was the leader of X during wwii
-    '':
-    `PREFIX wd:  PREFIX wdt:  PREFIX p:  PREFIX ps:  PREFIX pq: 
-    SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/P39> ?y. 
-        ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; <http://www.wikidata.org/prop/qualifier/P580> ?z; <http://www.wikidata.org/prop/qualifier/P582> ?p. 
-        <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
-        FILTER(((?z >= ?w) && (?z <= ?v)) || ((?p >= ?w) && (?p <= ?v))) 
-    }`,
+    // '':
+    // `SELECT DISTINCT ?x WHERE { 
+    //     ?x <http://www.wikidata.org/prop/P39> ?y. 
+    //     ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; <http://www.wikidata.org/prop/qualifier/P580> ?z; <http://www.wikidata.org/prop/qualifier/P582> ?p. 
+    //     <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
+    //     FILTER(((?z >= ?w) && (?z <= ?v)) || ((?p >= ?w) && (?p <= ?v))) 
+    // }`,
 
     // WebQTrn-3551
     '@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;':
@@ -289,7 +288,7 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P279> ?x. 
     }`,
 
-    // when was the last time the X went to the Y (Championship)
+    // when was the last time the X went to the Y (Championshops)
     '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " $1 " ^^wd:domain ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/direct/P585> ?x. 
