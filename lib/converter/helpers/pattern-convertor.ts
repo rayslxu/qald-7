@@ -1,10 +1,4 @@
-import { 
-    ENTITY_PREFIX,
-    PROPERTY_PREFIX,
-    PROPERTY_PREDICATE_PREFIX,
-    PROPERTY_QUALIFIER_PREFIX,
-    PROPERTY_STATEMENT_PREFIX
-} from '../../utils/wikidata';
+import { normalize } from '../../utils/sparqljs';
 
 const patterns = {
     // what is XXX ? 
@@ -73,14 +67,6 @@ const patterns = {
     `,
 };
 
-const prefixes : Record<string, string> = {
-    'wd': ENTITY_PREFIX,
-    'wdt': PROPERTY_PREFIX,
-    'p': PROPERTY_PREDICATE_PREFIX,
-    'pq': PROPERTY_QUALIFIER_PREFIX,
-    'ps': PROPERTY_STATEMENT_PREFIX
-};
-
 // convert examples based on manual patterns 
 export class PatternConverter {
     private _patterns : Array<{ thingtalk : string, sparql : string }>;
@@ -90,23 +76,9 @@ export class PatternConverter {
         this._loadPatterns();
     }
 
-    private _normalize(sparql : string) : string {
-        const regex = new RegExp('(wd|wdt|p|pq|ps):([P|Q][0-9]+)', 'g');
-        for (const [abbr, prefix] of Object.entries(prefixes)) {
-            sparql = sparql.replace(`PREFIX ${abbr}: <${prefix}>`, '');
-            let match;
-            while ((match = regex.exec(sparql)) !== null) {
-                const abbr = match[1];
-                const id = match[2];
-                sparql = sparql.replace(`${abbr}:${id}`, `<${prefixes[abbr]}${id}>`);
-            }
-        }
-        return sparql.replace(/\s+/g, ' ').trim();
-    }
-
     private _loadPatterns() {
         for (const [thingtalk, sparql] of Object.entries(patterns)) {
-            const normalized = this._normalize(sparql);
+            const normalized = normalize(sparql);
             this._patterns.push({ thingtalk, sparql: normalized });
         }
     }
@@ -139,7 +111,7 @@ export class PatternConverter {
 
     fromSPARQL(sparql : string) {
         for (const pattern of this._patterns) {
-            const match = this.match(this._normalize(sparql), pattern.sparql);
+            const match = this.match(normalize(sparql), pattern.sparql);
             let thingtalk = pattern.thingtalk;
             if (match) {
                 for (let i = 0; i < match.length; i++) 
