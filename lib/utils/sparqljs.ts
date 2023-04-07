@@ -177,15 +177,14 @@ function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
     return stateTriple;
 }
 
-const prefixes : Record<string, string> = {
-    'wd': ENTITY_PREFIX,
-    'wdt': PROPERTY_PREFIX,
-    'p': PROPERTY_PREDICATE_PREFIX,
-    'pq': PROPERTY_QUALIFIER_PREFIX,
-    'ps': PROPERTY_STATEMENT_PREFIX
-};
-
 export function normalize(sparql : string) : string {
+    const prefixes : Record<string, string> = {
+        'wd': ENTITY_PREFIX,
+        'wdt': PROPERTY_PREFIX,
+        'p': PROPERTY_PREDICATE_PREFIX,
+        'pq': PROPERTY_QUALIFIER_PREFIX,
+        'ps': PROPERTY_STATEMENT_PREFIX
+    };
     const regex = new RegExp('(wd|wdt|p|pq|ps):([P|Q][0-9]+)', 'g');
     for (const [abbr, prefix] of Object.entries(prefixes)) {
         sparql = sparql.replace(`PREFIX ${abbr}: <${prefix}>`, '');

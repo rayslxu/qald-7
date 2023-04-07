@@ -1,39 +1,11 @@
 import WikidataUtils from '../../utils/wikidata';
-import { 
-    ENTITY_PREFIX,
-    PROPERTY_PREFIX,
-    PROPERTY_PREDICATE_PREFIX,
-    PROPERTY_QUALIFIER_PREFIX,
-    PROPERTY_STATEMENT_PREFIX
-} from '../../utils/wikidata';
-
-const prefixes : Record<string, string> = {
-    'wd': ENTITY_PREFIX,
-    'wdt': PROPERTY_PREFIX,
-    'p': PROPERTY_PREDICATE_PREFIX,
-    'pq': PROPERTY_QUALIFIER_PREFIX,
-    'ps': PROPERTY_STATEMENT_PREFIX
-};
+import { normalize } from '../../utils/sparqljs';
 
 export class RuleBasedPreprocessor {
     private _wikidata : WikidataUtils;
 
     constructor(wikidata : WikidataUtils) {
         this._wikidata = wikidata;
-    }
-
-    private _normalize(sparql : string) : string {
-        const regex = new RegExp('(wd|wdt|p|pq|ps):([P|Q][0-9]+)', 'g');
-        for (const [abbr, prefix] of Object.entries(prefixes)) {
-            sparql = sparql.replace(`PREFIX ${abbr}: <${prefix}>`, '');
-            let match;
-            while ((match = regex.exec(sparql)) !== null) {
-                const abbr = match[1];
-                const id = match[2];
-                sparql = sparql.replace(`${abbr}:${id}`, `<${prefixes[abbr]}${id}>`);
-            }
-        }
-        return sparql.replace(/\s+/g, ' ').trim();
     }
 
     async _leader(code : string, type : 'thingtalk'|'sparql') : Promise<string|null> {
@@ -55,7 +27,7 @@ export class RuleBasedPreprocessor {
             const position = result[0];
             return `@wd . entity ( ) filter contains ( position_held filter ( point_in_time == new Date ( ${year} ) ) , " ${position} " ^^wd:p_position_held ) ;`;
         } else {
-            const normalized = this._normalize(code);
+            const normalized = normalize(code);
             const pRegex = new RegExp(`\\?([x|y|z]) <http://www\\.wikidata\\.org/prop/P39> \\?([p|q])`);
             const pMatch = pRegex.exec(normalized);
             if (!pMatch)
@@ -63,7 +35,7 @@ export class RuleBasedPreprocessor {
             const xVariable = pMatch[1];
             const pVariable = pMatch[2];
 
-            const psRegex = new RegExp(this._normalize(`\\?${pVariable} <http://www\\.wikidata\\.org/prop/statement/P39> <http://www\\.wikidata\\.org/entity/(Q[0-9]+)>`));
+            const psRegex = new RegExp(normalize(`\\?${pVariable} <http://www\\.wikidata\\.org/prop/statement/P39> <http://www\\.wikidata\\.org/entity/(Q[0-9]+)>`));
             const psMatch = psRegex.exec(normalized);
             if (!psMatch)
                 return null;
