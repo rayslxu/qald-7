@@ -5,6 +5,7 @@ import { wikibaseSdk } from 'wikibase-sdk';
 import wikibase from 'wikibase-sdk';
 import BootlegUtils from './bootleg';
 import SchemaorgUtils, { SCHEMAORG_PREFIX, SchemaorgType, LEVEL1_DOMAINS } from './schemaorg';
+import { normalize } from './sparqljs';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -326,7 +327,34 @@ export default class WikidataUtils {
 
     async query(sparql : string) : Promise<string[]> {
         const raw = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
+        if (raw === null)
+            return this._optimizedQuery(sparql);
         return WikidataUtils.processRawResult(raw);
+    }
+
+    private async _optimizedQuery(sparql : string) : Promise<string[]> {
+        sparql = normalize(sparql);
+        let match;
+        const pattern = new RegExp('\\?x <http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P31>\\/<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P279\\>\\* ([^\\s]*)[\\s]*[\\.\\;]');
+        match = sparql.match(pattern);
+        if (!match) {
+            const pattern = new RegExp('\\;[\\s]+<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P31>\\/<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P279\\>\\* ([^\\s]*)[\\s]*[\\.\\;]');
+            match = sparql.match(pattern);
+        }
+        if (!match)
+            return [];
+        const instanceOfStatement = match[0];
+        const domain = match[1].slice(`<${ENTITY_PREFIX}`.length, -1);
+        const sparqlWithoutInstanceOf = sparql.replace(instanceOfStatement, '');
+        const candidates = await this.query(sparqlWithoutInstanceOf);
+        
+        const results = [];
+        for (const entity of candidates) {
+            const domains = await this.query(`SELECT DISTINCT ?x WHERE { wd:${entity} wdt:P31/wdt:P279* ?x. }`);
+            if (domains.includes(domain))
+                results.push(entity);
+        }
+        return results;
     }
 
     static processRawResult(raw : any) : string[] {
