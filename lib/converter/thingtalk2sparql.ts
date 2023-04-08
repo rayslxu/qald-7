@@ -256,11 +256,11 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._statements.push(this._triple(subject, 'P580', variable1, options));
                     const variable2 = this._converter.getEntityVariable('P582');
                     this._statements.push(this._triple(subject, 'P582', variable2, options));
-                    this._statements.push(`FILTER((${variable1} <= ${endValue}) && (${variable2} >= ${beginValue}))`);
+                    this._statements.push(`FILTER((?${variable1} <= ${endValue}) && (?${variable2} >= ${beginValue}))`);
                 } else {
                     const variable = this._converter.getEntityVariable('P585');
                     this._statements.push(this._triple(subject, 'P585', variable, options));
-                    this._statements.push(`FILTER((${variable} >= ${beginValue}) && (${variable} <= ${endValue}))`);
+                    this._statements.push(`FILTER((?${variable} >= ${beginValue}) && (?${variable} <= ${endValue}))`);
                 }
                 return;
             }

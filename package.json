@@ -14,7 +14,7 @@
     "cors": "^2.8.5",
     "en-stemmer": "^1.0.3",
     "express": "^4.18.2",
-    "genie-toolkit": "git+https://github.com/stanford-oval/genie-tosolkit.git#wip/qald",
+    "genie-toolkit": "git+https://github.com/stanford-oval/genie-toolkit.git#wip/qald",
     "node-fetch": "^2.6.1",
     "sparqljs": "^3.5.1",
     "sqlite3": "^5.0.2",
