@@ -32,10 +32,6 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/direct/P131> ?x. 
     }`,
 
-    // who was the first dictator of the soviet union
-    '[ head of government ] of sort ( start_time asc of @wd . entity ( ) filter id == " Q15180 " ^^wd:entity ) [ 1 ] ;':
-    ``,
-
     // when did X join league Y
     'min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
     `SELECT DISTINCT ?x WHERE { 
