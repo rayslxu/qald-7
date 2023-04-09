@@ -23,6 +23,15 @@ const patterns = {
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
     }`,
 
+    // who are the senators of X in 2012
+    '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) && point_in_time == new Date ( 2012 )  , " Q4416090 " ^^wd:entity ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; <http://www.wikidata.org/prop/qualifier/P768> ?w; <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+        ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
+        FILTER((?y < "2013-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2012-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+    }`,
+
     // what state is barack obama senator for ?
     '[ < electoral_district / located_in_the_administrative_territorial_entity > of position_held filter value == " Q4416090 " ^^wd:p_position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
@@ -62,7 +71,7 @@ const patterns = {
         FILTER(?y = ?z) 
     }`,
 
-    // what offices did X hold
+    // what offices has X been in
     '[ position_held filter value == any ( @wd . entity ( ) filter contains ( < instance_of * / subclass_of * > , " Q294414 " ^^wd:entity ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P39> ?x. 
@@ -100,13 +109,13 @@ const patterns = {
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q18558301>. 
     }`,
 
-    // what is the second biggest state in US
+    // what is the second
     'sort ( area desc of @wd . administrative_territorial_entity ( ) filter instance_of == " Q35657 " ^^wd:administrative_territorial_entity_subdomain ) [ 2 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390>; <http://www.wikidata.org/prop/direct/P2046> ?y. 
     } ORDER BY DESC (?y) OFFSET 1 LIMIT 1`, 
 
-    // what is the most populated state in united states
+    // what is the most
     'sort ( population desc of @wd . administrative_territorial_entity ( ) filter instance_of == " Q35657 " ^^wd:administrative_territorial_entity_subdomain ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390>; <http://www.wikidata.org/prop/direct/P1082> ?y. 
@@ -120,7 +129,7 @@ const patterns = {
         FILTER((?y < "2003-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?y >= "2002-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
     }`,
 
-    // what is X parents name, who are X's mom and dad
+    // what is X parents name
     '[ father , mother ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P22>|<http://www.wikidata.org/prop/direct/P25> ?x. 
@@ -166,14 +175,14 @@ const patterns = {
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q35657>. 
     }`,
 
-    // what year did X go to world series
+    // what year did X go to the world series
     '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ;':
     `SELECT DISTINCT ?x WHERE { 
         ?y <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/Q265538>; <http://www.wikidata.org/prop/P1923> ?z; <http://www.wikidata.org/prop/direct/P585> ?x. 
         ?z <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$0>. 
     }`,
 
-    // when did X win world series, what year was X mvp
+    // when did X win the world series
     '[ point_in_time ] @wd . entity ( ) filter contains ( winner , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/Q265538>; <http://www.wikidata.org/prop/P1346> ?y; <http://www.wikidata.org/prop/direct/P585> ?x. 
@@ -187,34 +196,34 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY DESC (?x) LIMIT 1`,
 
-    // what offices did X hold
+    // what offices has X been in
     '[ position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> ?x. ?x ((<http://www.wikidata.org/prop/direct/P31>*)/(<http://www.wikidata.org/prop/direct/P279>*)) <http://www.wikidata.org/entity/Q294414>. 
     }`,
 
-    // who did X have affairs with, who has X dated
+    // who has X dated
     '[ unmarried_partner ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P451> ?x. 
     }`,
 
-    // what are the names of X movies in order ? 
+    // what are the names of X in order ? 
     'sort ( publication_date asc of @wd . entity ( ) filter contains ( part_of_the_series , " $0 " ^^wd:entity ) ) ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P527> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P527> ?x; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
     } ORDER BY ?y`,
 
-    // what was the last movie X was in
+    // what is the last movie X was in
     'sort ( publication_date asc of @wd . entity ( ) filter contains ( cast_member , " $0 " ^^wd:entity ) ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q11424>; <http://www.wikidata.org/prop/direct/P577> ?y; <http://www.wikidata.org/prop/P161> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY DESC (?y) LIMIT 1`,
 
-    // when did X join charmed
+    // when did X join Y
     '[ first_appearance ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/Q162371>; <http://www.wikidata.org/prop/direct/P577> ?x; <http://www.wikidata.org/prop/P161> ?y. 
@@ -303,8 +312,7 @@ const patterns = {
 
     // what role did X play in Y
     '[ object_has_role of ( has_parts filter value == " $0 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
-    `PREFIX wd:  PREFIX p:  PREFIX ps:  PREFIX pq:  
-    SELECT DISTINCT ?x WHERE { 
+    `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
     }`,
