@@ -305,6 +305,13 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY DESC (?x) LIMIT 1`,
 
+    // what role did X play in Y
+    '[ object_has_role of ( has_parts filter value == " $0 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
+    `PREFIX wd:  PREFIX p:  PREFIX ps:  PREFIX pq:  
+    SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
+    }`,
 };
 
 const prefixes : Record<string, string> = {
