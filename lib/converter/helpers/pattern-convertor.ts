@@ -21,7 +21,7 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
-    }`, 
+    }`,
 
     // what state is barack obama senator for ?
     '[ < electoral_district / located_in_the_administrative_territorial_entity > of position_held filter value == " Q4416090 " ^^wd:p_position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
@@ -31,6 +31,10 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
         ?y <http://www.wikidata.org/prop/direct/P131> ?x. 
     }`,
+
+    // who was the first dictator of the soviet union
+    '[ head of government ] of sort ( start_time asc of @wd . entity ( ) filter id == " Q15180 " ^^wd:entity ) [ 1 ] ;':
+    ``,
 
     // when did X join league Y
     'min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " $1 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ;':
@@ -62,14 +66,12 @@ const patterns = {
         FILTER(?y = ?z) 
     }`,
 
-    // who was the leader of X during wwii
-    // '':
-    // `SELECT DISTINCT ?x WHERE { 
-    //     ?x <http://www.wikidata.org/prop/P39> ?y. 
-    //     ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696>; <http://www.wikidata.org/prop/qualifier/P580> ?z; <http://www.wikidata.org/prop/qualifier/P582> ?p. 
-    //     <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
-    //     FILTER(((?z >= ?w) && (?z <= ?v)) || ((?p >= ?w) && (?p <= ?v))) 
-    // }`,
+    // what offices did X hold
+    '[ position_held filter value == any ( @wd . entity ( ) filter contains ( < instance_of * / subclass_of * > , " Q294414 " ^^wd:entity ) ) ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P39> ?x. 
+        ?x ((<http://www.wikidata.org/prop/direct/P31>*)/(<http://www.wikidata.org/prop/direct/P279>*)) <http://www.wikidata.org/entity/Q294414>. 
+    }`,
 
     // WebQTrn-3551
     '@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;':
@@ -114,7 +116,7 @@ const patterns = {
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390>; <http://www.wikidata.org/prop/direct/P1082> ?y. 
     } ORDER BY DESC (?y) LIMIT 1`,
 
-    // who won the X in 2002
+    // who won the X (Championship) in 2002
     '[ winner ] of @wd . entity ( ) filter instance_of == " $0 " ^^wd:domain && point_in_time < new Date ( 2003 ) && point_in_time >= new Date ( 2002 ) ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P1346> ?p. 
@@ -175,6 +177,13 @@ const patterns = {
         ?z <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$0>. 
     }`,
 
+    // when did X win world series, what year was X mvp
+    '[ point_in_time ] @wd . entity ( ) filter contains ( winner , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?p <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/Q265538>; <http://www.wikidata.org/prop/P1346> ?y; <http://www.wikidata.org/prop/direct/P585> ?x. 
+        ?y <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/$0>. 
+    }`,
+
     // when was the last time X won the world series
     '[ point_in_time ] of sort ( point_in_time desc of @wd . entity ( ) filter contains ( winner , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
@@ -192,7 +201,7 @@ const patterns = {
     // who did X have affairs with, who has X dated
     '[ unmarried_partner ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
     `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P451>/<http://www.wikidata.org/prop/statement/P451> ?x. 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P451> ?x. 
     }`,
 
     // what are the names of X movies in order ? 
@@ -203,7 +212,7 @@ const patterns = {
     } ORDER BY ?y`,
 
     // what was the last movie X was in
-    'sort ( publication_date asc of @wd . entity ( ) filter contains ( cast_member , " $0 " ^^wd:entity ) ) ;':
+    'sort ( publication_date asc of @wd . entity ( ) filter contains ( cast_member , " $0 " ^^wd:entity ) ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q11424>; <http://www.wikidata.org/prop/direct/P577> ?y; <http://www.wikidata.org/prop/P161> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$0>. 
@@ -288,7 +297,7 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P279> ?x. 
     }`,
 
-    // when was the last time the X went to the Y (Championshops)
+    // when was the last time the X went to the Y (Championships)
     '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " $1 " ^^wd:domain ;':
     `SELECT DISTINCT ?x WHERE { 
         ?p <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/$1>; <http://www.wikidata.org/prop/direct/P585> ?x. 
