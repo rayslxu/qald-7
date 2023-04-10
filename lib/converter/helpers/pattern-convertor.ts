@@ -11,11 +11,24 @@ const patterns = {
     '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;': 
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
-        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>.
+        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
     }`, 
+    
+    // WebQTrn-598
+    // who are the senator from XXX (state) in 2010 ?
+    '@wd . entity ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:p_position_held ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; 
+           <http://www.wikidata.org/prop/qualifier/P768> ?w; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y; 
+           <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+        ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
+        FILTER((?y < "2011-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2010-01-01T00:00:00Z"^^xsd:dateTime)) 
+    }`,
 
     // what state is barack obama senator for ?
     '[ < electoral_district / located_in_the_administrative_territorial_entity > of position_held filter value == " Q4416090 " ^^wd:p_position_held ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
@@ -65,6 +78,33 @@ const patterns = {
         <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
         FILTER((?y < ?w) && (?z >= ?w)) }
     `,
+
+    // WebQTrn-411
+    /// who is the first president of XXX -> this is normalized to use head of government / head of state depending on the country
+    // TODO: add support to sort values of a property
+    '[ head_of_state ] of ( sort ( head_of_state . start_time asc of @wd . country ( ) filter id == " $0 " ^^wd:country ) ) [ 1 ] ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P35> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P35> ?x; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y.  
+    } ORDER BY ?y LIMIT 1`,
+
+    // WebQTrn-866
+    // TODO: add support to sort values of a property 
+    '[ spouse ] of ( sort ( spouse . start_time asc of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ) [ 1 ] ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P26> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P26> ?x; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y. 
+    } ORDER BY ?y LIMIT 1`,
+
+    // WebQTrn-1731
+    '[ object_has_role of has_parts filter value == " $0 " ^^wd:p_has_parts ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; 
+           <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
+    }`
 };
 
 // convert examples based on manual patterns 
