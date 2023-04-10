@@ -45,14 +45,19 @@ export class RuleBasedPreprocessor {
                 'P1906': 'P35'
             };
             let country, held_by;
-            for (const office in office_held_by) {
-                const result = await this._wikidata.query(`SELECT DISTINCT ?x WHERE {
-                    ?x wdt:${office} wd:${position_held}.
-                }`);
-                if (result.length > 0) {
-                    country = result[0];
-                    held_by = office_held_by[office];
-                    break;
+            if (position_held === 'Q218295') {
+                country = 'Q159';
+                held_by = 'P35';
+            } else {
+                for (const office in office_held_by) {
+                    const result = await this._wikidata.query(`SELECT DISTINCT ?x WHERE {
+                        ?x wdt:${office} wd:${position_held}.
+                    }`);
+                    if (result.length > 0) {
+                        country = result[0];
+                        held_by = office_held_by[office];
+                        break;
+                    }
                 }
             }
             if (!country)
