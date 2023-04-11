@@ -198,7 +198,7 @@ async function main() {
                             ex.prediction = manualConversion[ex.target_code];
                         else 
                             ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
-                        if (ex.prediction.includes(' null ')) {
+                        if (ex.prediction.includes(' null ') || ex.prediction.includes('NULL')) {
                             ex.target_code = '';
                         } else {
                             const result = await wikidata.query(ex.prediction);
