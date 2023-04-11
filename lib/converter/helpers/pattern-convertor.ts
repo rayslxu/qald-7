@@ -15,7 +15,6 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
-<<<<<<< HEAD
     }`,
 
     // who are the senators of X in 2012
@@ -25,21 +24,6 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; <http://www.wikidata.org/prop/qualifier/P768> ?w; <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
         ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER((?y < "2013-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2012-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
-=======
-    }`, 
-    
-    // WebQTrn-598
-    // who are the senator from XXX (state) in 2010 ?
-    '@wd . entity ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:p_position_held ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; 
-           <http://www.wikidata.org/prop/qualifier/P768> ?w; 
-           <http://www.wikidata.org/prop/qualifier/P580> ?y; 
-           <http://www.wikidata.org/prop/qualifier/P582> ?z. 
-        ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
-        FILTER((?y < "2011-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2010-01-01T00:00:00Z"^^xsd:dateTime)) 
->>>>>>> main
     }`,
 
     // what state is barack obama senator for ?
@@ -97,7 +81,6 @@ const patterns = {
         <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
         FILTER((?y < ?w) && (?z >= ?w)) }
     `,
-<<<<<<< HEAD
 
     // who did X sign with, who does X play for
     '[ member_of_sports_team ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
@@ -327,9 +310,6 @@ const patterns = {
         <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
     }`,
-};
-=======
->>>>>>> main
 
     // WebQTrn-411
     /// who is the first president of XXX -> this is normalized to use head of government / head of state depending on the country
