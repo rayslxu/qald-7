@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
 import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPropertyNode } from './sparqljs-typeguard';
-import { ABSTRACT_PROPERTIES, PROPERTY_PREDICATE_PREFIX, PROPERTY_PREFIX, PROPERTY_QUALIFIER_PREFIX, PROPERTY_STATEMENT_PREFIX } from './wikidata';
+import { ABSTRACT_PROPERTIES, PROPERTY_PREDICATE_PREFIX, ENTITY_PREFIX, PROPERTY_PREFIX, PROPERTY_QUALIFIER_PREFIX, PROPERTY_STATEMENT_PREFIX } from './wikidata';
 
 /**
  * Given a parsed object returned by sparqljs, extract rdf triples out of it
@@ -175,4 +175,25 @@ function _preprocessUSStateSpecialUnion(union : UnionPattern) : Triple|false {
     if (stateTriple.subject.value !== federalDistrictTriple.subject.value)
         return false;
     return stateTriple;
+}
+
+export function normalize(sparql : string) : string {
+    const prefixes : Record<string, string> = {
+        'wd': ENTITY_PREFIX,
+        'wdt': PROPERTY_PREFIX,
+        'p': PROPERTY_PREDICATE_PREFIX,
+        'pq': PROPERTY_QUALIFIER_PREFIX,
+        'ps': PROPERTY_STATEMENT_PREFIX
+    };
+    const regex = new RegExp('(wd|wdt|p|pq|ps):([P|Q][0-9]+)', 'g');
+    for (const [abbr, prefix] of Object.entries(prefixes)) {
+        sparql = sparql.replace(`PREFIX ${abbr}: <${prefix}>`, '');
+        let match;
+        while ((match = regex.exec(sparql)) !== null) {
+            const abbr = match[1];
+            const id = match[2];
+            sparql = sparql.replace(`${abbr}:${id}`, `<${prefixes[abbr]}${id}>`);
+        }
+    }
+    return sparql.replace(/\s+/g, ' ').trim();
 }

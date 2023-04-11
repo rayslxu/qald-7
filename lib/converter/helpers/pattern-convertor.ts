@@ -1,10 +1,4 @@
-import { 
-    ENTITY_PREFIX,
-    PROPERTY_PREFIX,
-    PROPERTY_PREDICATE_PREFIX,
-    PROPERTY_QUALIFIER_PREFIX,
-    PROPERTY_STATEMENT_PREFIX
-} from '../../utils/wikidata';
+import { normalize } from '../../utils/sparqljs';
 
 const patterns = {
     // what is XXX ? 
@@ -17,10 +11,11 @@ const patterns = {
     '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;': 
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>. 
-        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.  
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>.
+        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y.
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
+<<<<<<< HEAD
     }`,
 
     // who are the senators of X in 2012
@@ -30,6 +25,21 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; <http://www.wikidata.org/prop/qualifier/P768> ?w; <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
         ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER((?y < "2013-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2012-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+=======
+    }`, 
+    
+    // WebQTrn-598
+    // who are the senator from XXX (state) in 2010 ?
+    '@wd . entity ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:p_located_in_the_administrative_territorial_entity ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:p_position_held ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; 
+           <http://www.wikidata.org/prop/qualifier/P768> ?w; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y; 
+           <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+        ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
+        FILTER((?y < "2011-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2010-01-01T00:00:00Z"^^xsd:dateTime)) 
+>>>>>>> main
     }`,
 
     // what state is barack obama senator for ?
@@ -87,6 +97,7 @@ const patterns = {
         <http://www.wikidata.org/entity/Q742787> <http://www.wikidata.org/prop/direct/P571> ?w. 
         FILTER((?y < ?w) && (?z >= ?w)) }
     `,
+<<<<<<< HEAD
 
     // who did X sign with, who does X play for
     '[ member_of_sports_team ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ;':
@@ -317,13 +328,35 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
     }`,
 };
+=======
+>>>>>>> main
 
-const prefixes : Record<string, string> = {
-    'wd': ENTITY_PREFIX,
-    'wdt': PROPERTY_PREFIX,
-    'p': PROPERTY_PREDICATE_PREFIX,
-    'pq': PROPERTY_QUALIFIER_PREFIX,
-    'ps': PROPERTY_STATEMENT_PREFIX
+    // WebQTrn-411
+    /// who is the first president of XXX -> this is normalized to use head of government / head of state depending on the country
+    // TODO: add support to sort values of a property
+    '[ head_of_state ] of ( sort ( head_of_state . start_time asc of @wd . country ( ) filter id == " $0 " ^^wd:country ) ) [ 1 ] ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P35> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P35> ?x; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y.  
+    } ORDER BY ?y LIMIT 1`,
+
+    // WebQTrn-866
+    // TODO: add support to sort values of a property 
+    '[ spouse ] of ( sort ( spouse . start_time asc of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ) [ 1 ] ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P26> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P26> ?x; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?y. 
+    } ORDER BY ?y LIMIT 1`,
+
+    // WebQTrn-1731
+    '[ object_has_role of has_parts filter value == " $0 " ^^wd:p_has_parts ] of @wd . entity ( ) filter id == " $1 " ^^wd:entity ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; 
+           <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
+    }`
 };
 
 // convert examples based on manual patterns 
@@ -335,23 +368,9 @@ export class PatternConverter {
         this._loadPatterns();
     }
 
-    private _normalize(sparql : string) : string {
-        const regex = new RegExp('(wd|wdt|p|pq|ps):([P|Q][0-9]+)', 'g');
-        for (const [abbr, prefix] of Object.entries(prefixes)) {
-            sparql = sparql.replace(`PREFIX ${abbr}: <${prefix}>`, '');
-            let match;
-            while ((match = regex.exec(sparql)) !== null) {
-                const abbr = match[1];
-                const id = match[2];
-                sparql = sparql.replace(`${abbr}:${id}`, `<${prefixes[abbr]}${id}>`);
-            }
-        }
-        return sparql.replace(/\s+/g, ' ').trim();
-    }
-
     private _loadPatterns() {
         for (const [thingtalk, sparql] of Object.entries(patterns)) {
-            const normalized = this._normalize(sparql);
+            const normalized = normalize(sparql);
             this._patterns.push({ thingtalk, sparql: normalized });
         }
     }
@@ -384,7 +403,7 @@ export class PatternConverter {
 
     fromSPARQL(sparql : string) {
         for (const pattern of this._patterns) {
-            const match = this.match(this._normalize(sparql), pattern.sparql);
+            const match = this.match(normalize(sparql), pattern.sparql);
             let thingtalk = pattern.thingtalk;
             if (match) {
                 for (let i = 0; i < match.length; i++) 

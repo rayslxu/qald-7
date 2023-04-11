@@ -5,6 +5,7 @@ import { wikibaseSdk } from 'wikibase-sdk';
 import wikibase from 'wikibase-sdk';
 import BootlegUtils from './bootleg';
 import SchemaorgUtils, { SCHEMAORG_PREFIX, SchemaorgType, LEVEL1_DOMAINS } from './schemaorg';
+import { normalize } from './sparqljs';
 
 const URL = 'https://query.wikidata.org/sparql';
 export const ENTITY_PREFIX = 'http://www.wikidata.org/entity/';
@@ -306,8 +307,12 @@ export default class WikidataUtils {
     private async _request(url : string, caching = true, attempts = 1) : Promise<any> {
         if (caching) {
             const cached = await this._getCache('http_requests', 'result', { key: 'url', value : url });
-            if (cached) 
-                return JSON.parse(cached.result);
+            if (cached) {
+                if (cached.result === 'TIMEOUT')
+                    return null;
+                else
+                    return JSON.parse(cached.result); 
+            }
         }
         try {
             const result = await Tp.Helpers.Http.get(url, { accept: 'application/json' });
@@ -318,15 +323,52 @@ export default class WikidataUtils {
         } catch(e) {
             if (attempts < 2)
                 return this._request(url, caching, attempts + 1);
-            console.log(`Failed to retrieve result for: ${url}`);
-            console.log(e);
+
+            // only warn failure for NON sparql request, sparql queries will only be warned if optimized version still fails
+            if (!url.includes('sparql?query=')) {
+                console.warn(`Failed to retrieve result for: ${url}`);
+                console.warn(e);
+            }
+            await this._setCache('http_requests', url, 'TIMEOUT');
             return null;
         }
     }
 
-    async query(sparql : string) : Promise<string[]> {
+    async query(sparql : string, optimized = false) : Promise<string[]> {
         const raw = await this._request(`${URL}?query=${encodeURIComponent(normalizeURL(sparql))}`);
+        if (raw === null) {
+            if (optimized) {
+                console.warn(`Failed to retrieve answer for SPARQL after optimization: `, sparql);
+                return [];
+            }
+            return this._optimizedQuery(sparql);
+        }
         return WikidataUtils.processRawResult(raw);
+    }
+
+    private async _optimizedQuery(sparql : string) : Promise<string[]> {
+        sparql = normalize(sparql);
+        let match;
+        const pattern = new RegExp('\\?x <http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P31>\\/<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P279\\>\\* ([^\\s]*)[\\s]*[\\.\\;]');
+        match = sparql.match(pattern);
+        if (!match) {
+            const pattern = new RegExp('\\;[\\s]+<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P31>\\/<http:\\/\\/www\\.wikidata\\.org\\/prop\\/direct\\/P279\\>\\* ([^\\s]*)[\\s]*[\\.\\;]');
+            match = sparql.match(pattern);
+        }
+        if (!match)
+            return [];
+        const instanceOfStatement = match[0];
+        const sparqlWithoutInstanceOf = sparql.replace(instanceOfStatement, '');
+        const candidates = await this.query(sparqlWithoutInstanceOf, true);
+        const results = [];
+        for (let i = 0; i < candidates.length; i += 50) {
+            const batch = candidates.slice(i, i + 50);
+            results.push(...(await this.query(`SELECT DISTINCT ?x WHERE {
+                VALUES ?x { ${batch.map((e) => `wd:${e}`).join(' ')} }
+                ${instanceOfStatement}
+            }`, true)));
+        }
+        return results;
     }
 
     static processRawResult(raw : any) : string[] {

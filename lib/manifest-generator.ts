@@ -142,6 +142,9 @@ class ManifestGenerator {
         // HACK: force point in time and "for work" for winner
         if (propertyId === 'P1346')
             qualifiers.push('P585', 'P1686');
+        // HACK: force "object has role" for has parts
+        if (propertyId === 'P527')
+            qualifiers.push('P3831');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
