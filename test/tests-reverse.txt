@@ -1,3 +1,13 @@
+Utterance: who is john cabot ' s parents ?
+TT:
+[ father , mother ] of @wd . entity ( ) filter id == " Q85642 " ^^wd:entity ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q85642> <http://www.wikidata.org/prop/direct/P22>|<http://www.wikidata.org/prop/direct/P25> ?x. 
+}
+
+====
+
 Utterance: what four regions make up the united kingdom ?
 TT:
 [ contains_administrative_territorial_entity ] of ( @wd . country ( ) filter id == " Q145 " ^^wd:country ) [ 1 : 4 ] ;

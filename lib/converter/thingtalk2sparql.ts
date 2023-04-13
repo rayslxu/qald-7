@@ -333,7 +333,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
-        assert(node.args.length === 1 || node.computations.length === 1);
+        assert(node.args.length > 0 || node.computations.length === 1);
         if (node.args.length === 1) {
             const arg = node.args[0];
             if (arg === 'id')
@@ -359,6 +359,17 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.setResultVariable(v);
                 this._add(this._subject, arg, '==', v);
             }
+        } else if (node.args.length > 1) { 
+            assert(this._target_projection && this._target_projection.split('|').length > 0);
+            const targetProjections = this._target_projection?.split('|');
+            const properties = [];
+            for (const arg of node.args) {
+                assert(targetProjections.includes(arg));
+                properties.push(this._converter.getWikidataProperty(arg));
+            } 
+            const v = this._converter.getEntityVariable();
+            this._converter.setResultVariable(v);
+            this._statements.push(`${this._node(this._subject)} ${properties.map((p) => `<${PROPERTY_PREFIX}${p}>`).join('|')} ${this._node(v)}.`);
         } else {
             const computation = node.computations[0];
             if (computation instanceof Ast.FilterValue) {
@@ -827,9 +838,9 @@ export default class ThingTalkToSPARQLConverter {
 
     private _targetProjectionName(ast : Ast.Expression) {
         if (ast instanceof Ast.ProjectionExpression) {
-            assert(ast.args.length === 1 || ast.computations.length === 1);
-            if (ast.args.length === 1) 
-                return ast.args[0];
+            assert(ast.args.length > 0 || ast.computations.length === 1);
+            if (ast.args.length > 0) 
+                return ast.args.join('|');
             if (ast.computations.length === 1)
                 return ast.computations[0].prettyprint();
         }
