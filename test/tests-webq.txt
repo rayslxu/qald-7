@@ -1,3 +1,28 @@
+Utterance: what four regions make up the united kingdom ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+SELECT DISTINCT ?x WHERE { 
+    wd:Q145 wdt:P150 ?x. 
+} LIMIT 4
+TT:
+[ contains_administrative_territorial_entity ] of ( @wd . country ( ) filter id == " Q145 " ^^wd:country ) [ 1 : 4 ] ;
+
+====
+
+Utterance: what fourth regions make up the united kingdom ?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+SELECT DISTINCT ?x WHERE { 
+    wd:Q145 wdt:P150 ?x. 
+} LIMIT 1 OFFSET 3 
+TT:
+[ contains_administrative_territorial_entity ] of ( @wd . country ( ) filter id == " Q145 " ^^wd:country ) [ 4 ] ;
+
+====
+
+
 Utterance: what did julia roberts won an oscar for?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 

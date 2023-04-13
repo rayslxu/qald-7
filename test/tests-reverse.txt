@@ -1,3 +1,23 @@
+Utterance: what four regions make up the united kingdom ?
+TT:
+[ contains_administrative_territorial_entity ] of ( @wd . country ( ) filter id == " Q145 " ^^wd:country ) [ 1 : 4 ] ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q145> <http://www.wikidata.org/prop/direct/P150> ?x. 
+} LIMIT 4
+
+====
+
+Utterance: what fourth regions make up the united kingdom ?
+TT:
+[ contains_administrative_territorial_entity ] of ( @wd . country ( ) filter id == " Q145 " ^^wd:country ) [ 4 ] ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q145> <http://www.wikidata.org/prop/direct/P150> ?x. 
+} LIMIT 1 OFFSET 3 
+
+====
+
 Utterance: what did julia roberts won an oscar for?
 TT:
 [ for_work of ( winner filter value == " Q40523 " ^^wd:p_winner ) ] of @wd . entity ( ) filter instance_of == " Q19020 " ^^wd:entity_subdomain ;

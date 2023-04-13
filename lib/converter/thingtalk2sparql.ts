@@ -471,14 +471,20 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitIndexExpression(node : ThingTalk.Ast.IndexExpression) : boolean {
-        assert(node.indices.length === 1 && (node.indices[0] as Ast.NumberValue).value === 1);
+        assert(node.indices.length === 1);
         this._converter.setLimit(1);
+        const limit = (node.indices[0] as Ast.NumberValue).value;
+        if (limit !== 1)
+            this._converter.setOffset(limit - 1);
         return true;
     }
 
     visitSliceExpression(node : ThingTalk.Ast.SliceExpression) : boolean {
-        assert((node.base as Ast.NumberValue).value === 1);
-        this._converter.setLimit((node.limit as Ast.NumberValue).value);
+        const base = (node.base as Ast.NumberValue).value;
+        const limit = (node.limit as Ast.NumberValue).value;
+        this._converter.setLimit(limit - base + 1);
+        if (base !== 1)
+            this._converter.setOffset(base - 1);
         return true;
     }
 
@@ -670,6 +676,7 @@ export default class ThingTalkToSPARQLConverter {
     private _having : string[];
     private _order : Order|null;
     private _limit : number|null;
+    private _offset : number|null;
     private _aggregation : Aggregation|null;
     private _humanReadableInstanceOf : boolean;
 
@@ -717,6 +724,7 @@ export default class ThingTalkToSPARQLConverter {
         this._isBooleanQuestion = false;
         this._order = null;
         this._limit = null;
+        this._offset = null;
         this._aggregation = null;
     }
 
@@ -782,6 +790,10 @@ export default class ThingTalkToSPARQLConverter {
         this._limit = index;
     }
 
+    setOffset(offset : number) {
+        this._offset = offset;
+    }
+
     setAggregation(operator : string, variable : string) {
         this._aggregation = { operator, variable };
     }
@@ -793,6 +805,7 @@ export default class ThingTalkToSPARQLConverter {
         this._having = [];
         this._order = null;
         this._limit = null;
+        this._offset = null;
         this._resultVariable = null;
         this._isBooleanQuestion = false;
         this._aggregation = null;
@@ -899,6 +912,8 @@ export default class ThingTalkToSPARQLConverter {
             sparql += ` ORDER BY ${this._order.direction === 'desc'? `DESC(${this._order.variable})` : this._order.variable}`;
         if (this._limit)
             sparql += ` LIMIT ${this._limit}`;
+        if (this._offset)
+            sparql += ` OFFSET ${this._offset}`;
         return sparql;
     }
 }

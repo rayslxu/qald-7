@@ -305,9 +305,11 @@ export default class ConverterHelper {
         
     }
 
-    addLimit(base : Ast.Expression, limit ?: number) : Ast.Expression {
-        if (limit)
-            return  new Ast.IndexExpression(null, base, [new Ast.Value.Number(limit)], null);
+    addLimit(base : Ast.Expression, limit ?: number, offset = 0) : Ast.Expression {
+        if (limit === 1)
+            return new Ast.IndexExpression(null, base, [new Ast.Value.Number(offset + 1)], null);
+        else if (limit)
+            return new Ast.SliceExpression(null, base, new Ast.Value.Number(offset + 1), new Ast.Value.Number(offset + limit), null);
         return base;
     }
 
