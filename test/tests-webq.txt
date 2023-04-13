@@ -107,7 +107,7 @@ SELECT DISTINCT ?x WHERE {
   FILTER((?y < ?w) && (?z >= ?w)) 
 }
 TT:
-@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . organization ( ) filter id == " Q742787 " ^^wd:organization ) , " Q11696 " ^^wd:p_position_held ) ;
+@wd . human ( ) filter contains ( position_held filter point_in_time == any ( [ inception ] of @wd . entity ( ) filter id == " Q742787 " ^^wd:entity ) , " Q11696 " ^^wd:entity ) ;
 
 ====
 
@@ -168,7 +168,7 @@ SELECT DISTINCT ?x WHERE {
     FILTER(?y = ?z) 
 }
 TT:
-@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;
+@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:entity ) ;
 
 ====
 
@@ -265,7 +265,7 @@ SELECT DISTINCT ?x WHERE {
     ?y wdt:P131 ?x. 
 }
 TT:
-[ < electoral_district / located_in_the_administrative_territorial_entity > of ( position_held filter value == " Q4416090 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q76 " ^^wd:entity ;
+[ < electoral_district / located_in_the_administrative_territorial_entity > of ( position_held filter value == " Q4416090 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " Q76 " ^^wd:entity ;
 
 ====
 
@@ -303,7 +303,7 @@ SELECT DISTINCT ?x WHERE {
     FILTER NOT EXISTS { ?p pq:P582 ?z. }
 } 
 TT: 
-@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;
+@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:entity ) , " Q4416090 " ^^wd:entity ) ;
 
 ====
 
@@ -318,7 +318,7 @@ SELECT DISTINCT ?x WHERE {
     FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
 }
 TT: 
-@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:p_located_in_the_administrative_territorial_entity ) , " Q4416090 " ^^wd:p_position_held ) ;
+@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q1581 " ^^wd:entity ) , " Q4416090 " ^^wd:entity ) ;
 
 ====
 
