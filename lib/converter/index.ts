@@ -192,6 +192,7 @@ async function main() {
 
                 async transform(ex, encoding, callback) {
                     try {
+                        console.log('processing example ' + ex.id + ' ...');
                         // use prediction field for SPARQL, target_code field for result 
                         // so we leverage the default DatasetStringifier
                         if (ex.target_code in manualConversion)
@@ -206,6 +207,7 @@ async function main() {
                         }
                         callback(null, ex);
                     } catch(e) {
+                        console.log('example ' + ex.id + ' failed: ' + (e as Error).message);
                         ex.target_code = '';
                         ex.prediction = ex.prediction ?? 'NULL';
                         callback(null, ex);
