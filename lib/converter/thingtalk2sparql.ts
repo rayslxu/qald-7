@@ -43,11 +43,13 @@ interface TripleOptions {
 class TableInfoVisitor extends Ast.NodeVisitor {
     private _converter : ThingTalkToSPARQLConverter;
     subject ?: string;
-    domainName ?: string;
+    mainDomain ?: string; // main domain
+    domainNames : string[]; // find all non-qid domain names (including main domain and projection type constraints) so we can get their qids ahead of time
 
     constructor(converter : ThingTalkToSPARQLConverter) {
         super();
         this._converter = converter;
+        this.domainNames = [];
     }
 
     visitChainExpression(node : ThingTalk.Ast.ChainExpression) : boolean {
@@ -60,17 +62,18 @@ class TableInfoVisitor extends Ast.NodeVisitor {
         if (node.name === 'id' && node.value instanceof Ast.EntityValue)
             this.subject = `<${ENTITY_PREFIX}${node.value.value}>`;
         if (node.name === 'instance_of' && node.value instanceof Ast.EntityValue) 
-            this.domainName = node.value.value!;
+            this.mainDomain = node.value.value!;
         return true;
     }
 
     visitInvocation(node : ThingTalk.Ast.Invocation) : boolean {
         if (node.channel !== 'entity') {
             if (this._converter.humanReadableInstanceOf) {
-                this.domainName = node.channel.replace(/_/g, ' ');
+                this.mainDomain = node.channel.replace(/_/g, ' ');
+                this.domainNames.push(this.mainDomain);
             } else {
                 const query = this._converter.class.getFunction('query', node.channel);
-                this.domainName = (query?.getImplementationAnnotation('wikidata_subject') as string[])[0];
+                this.mainDomain = (query?.getImplementationAnnotation('wikidata_subject') as string[])[0];
             } 
         }
         return true;
@@ -78,6 +81,16 @@ class TableInfoVisitor extends Ast.NodeVisitor {
 
     visitComparisonSubqueryBooleanExpression(node : ThingTalk.Ast.ComparisonSubqueryBooleanExpression) : boolean {
         return false;
+    }
+
+    visitProjectionExpression2(node : ThingTalk.Ast.ProjectionExpression2) : boolean {
+        for (const proj of node.projections) {
+            for (const type of proj.types) {
+                if (type instanceof Type.Entity)
+                    this.domainNames.push(type.type.slice(TP_DEVICE_NAME.length + 1).replace(/_/g, ' '));
+            }
+        }
+        return true;
     }
 }
 
@@ -320,7 +333,7 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitProjectionExpression(node : ThingTalk.Ast.ProjectionExpression) : boolean {
-        assert(node.args.length === 1 || node.computations.length === 1);
+        assert(node.args.length > 0 || node.computations.length === 1);
         if (node.args.length === 1) {
             const arg = node.args[0];
             if (arg === 'id')
@@ -346,6 +359,17 @@ class TripleGenerator extends Ast.NodeVisitor {
                     this._converter.setResultVariable(v);
                 this._add(this._subject, arg, '==', v);
             }
+        } else if (node.args.length > 1) { 
+            assert(this._target_projection && this._target_projection.split('|').length > 0);
+            const targetProjections = this._target_projection?.split('|');
+            const properties = [];
+            for (const arg of node.args) {
+                assert(targetProjections.includes(arg));
+                properties.push(this._converter.getWikidataProperty(arg));
+            } 
+            const v = this._converter.getEntityVariable();
+            this._converter.setResultVariable(v);
+            this._statements.push(`${this._node(this._subject)} ${properties.map((p) => `<${PROPERTY_PREFIX}${p}>`).join('|')} ${this._node(v)}.`);
         } else {
             const computation = node.computations[0];
             if (computation instanceof Ast.FilterValue) {
@@ -471,14 +495,20 @@ class TripleGenerator extends Ast.NodeVisitor {
     }
 
     visitIndexExpression(node : ThingTalk.Ast.IndexExpression) : boolean {
-        assert(node.indices.length === 1 && (node.indices[0] as Ast.NumberValue).value === 1);
+        assert(node.indices.length === 1);
         this._converter.setLimit(1);
+        const limit = (node.indices[0] as Ast.NumberValue).value;
+        if (limit !== 1)
+            this._converter.setOffset(limit - 1);
         return true;
     }
 
     visitSliceExpression(node : ThingTalk.Ast.SliceExpression) : boolean {
-        assert((node.base as Ast.NumberValue).value === 1);
-        this._converter.setLimit((node.limit as Ast.NumberValue).value);
+        const base = (node.base as Ast.NumberValue).value;
+        const limit = (node.limit as Ast.NumberValue).value;
+        this._converter.setLimit(limit - base + 1);
+        if (base !== 1)
+            this._converter.setOffset(base - 1);
         return true;
     }
 
@@ -670,6 +700,7 @@ export default class ThingTalkToSPARQLConverter {
     private _having : string[];
     private _order : Order|null;
     private _limit : number|null;
+    private _offset : number|null;
     private _aggregation : Aggregation|null;
     private _humanReadableInstanceOf : boolean;
 
@@ -717,6 +748,7 @@ export default class ThingTalkToSPARQLConverter {
         this._isBooleanQuestion = false;
         this._order = null;
         this._limit = null;
+        this._offset = null;
         this._aggregation = null;
     }
 
@@ -750,10 +782,10 @@ export default class ThingTalkToSPARQLConverter {
     }
 
     getWikidataDomain(domain : string) : string|null {
-        if (domain in this._domainMap)
-            return this._domainMap[domain];
         if (this._kb.isEntity(domain))
             return domain;
+        if (domain in this._domainMap)
+            return this._domainMap[domain];
         throw new Error('Unknown domain: ' + domain);
     }
 
@@ -782,6 +814,10 @@ export default class ThingTalkToSPARQLConverter {
         this._limit = index;
     }
 
+    setOffset(offset : number) {
+        this._offset = offset;
+    }
+
     setAggregation(operator : string, variable : string) {
         this._aggregation = { operator, variable };
     }
@@ -793,6 +829,7 @@ export default class ThingTalkToSPARQLConverter {
         this._having = [];
         this._order = null;
         this._limit = null;
+        this._offset = null;
         this._resultVariable = null;
         this._isBooleanQuestion = false;
         this._aggregation = null;
@@ -801,9 +838,9 @@ export default class ThingTalkToSPARQLConverter {
 
     private _targetProjectionName(ast : Ast.Expression) {
         if (ast instanceof Ast.ProjectionExpression) {
-            assert(ast.args.length === 1 || ast.computations.length === 1);
-            if (ast.args.length === 1) 
-                return ast.args[0];
+            assert(ast.args.length > 0 || ast.computations.length === 1);
+            if (ast.args.length > 0) 
+                return ast.args.join('|');
             if (ast.computations.length === 1)
                 return ast.computations[0].prettyprint();
         }
@@ -832,7 +869,7 @@ export default class ThingTalkToSPARQLConverter {
         }
         if (isMainExpression && isVariable(subject))
             this.setResultVariable(subject);
-        const domain = tableInfoVisitor.domainName ? this.getWikidataDomain(tableInfoVisitor.domainName) : null;
+        const domain = tableInfoVisitor.mainDomain ? this.getWikidataDomain(tableInfoVisitor.mainDomain) : null;
         this._variableMap = variableMapping;
         const tripleGenerator = new TripleGenerator(this, subject, subjectProperties, isMainExpression ? this._targetProjectionName(ast) : null, domain);
         ast.visit(tripleGenerator);
@@ -865,6 +902,7 @@ export default class ThingTalkToSPARQLConverter {
         // hack: collect properties for the subject
         // node visitors can not be async, so we need to prepare this information ahead of time
         // this won't work for subquery where subject is different
+        // also collect domains that need to find QID 
         const tableInfoVisitor = new TableInfoVisitor(this);
         table.visit(tableInfoVisitor);
         const properties = [];
@@ -873,6 +911,14 @@ export default class ThingTalkToSPARQLConverter {
             const connectedProperties = await this._kb.getConnectedProperty(subject, false);
             const connectedQualifiers = await this._kb.getConnectedPropertyQualifiers(subject, connectedProperties);
             properties.push(...connectedProperties, ...connectedQualifiers);
+        }
+        for (const domainName of tableInfoVisitor.domainNames) {
+            if (domainName in this._domainMap)
+                continue;
+            const domain = await this._kb.getEntityByName(domainName);
+            if (domain === null)
+                throw new Error('Unknown domain: ' + domainName);
+            this._domainMap[domainName] = domain;
         }
 
         const statements = await this.convertExpression(table, properties);  
@@ -899,6 +945,8 @@ export default class ThingTalkToSPARQLConverter {
             sparql += ` ORDER BY ${this._order.direction === 'desc'? `DESC(${this._order.variable})` : this._order.variable}`;
         if (this._limit)
             sparql += ` LIMIT ${this._limit}`;
+        if (this._offset)
+            sparql += ` OFFSET ${this._offset}`;
         return sparql;
     }
 }

@@ -210,7 +210,7 @@ class QueryGenerator {
         let expression : Ast.Expression = baseQuery(table.name);
         expression = this._converter.helper.addFilters(expression, filters);
         expression = this._converter.helper.addOrdering(expression, table, query.order);
-        expression = this._converter.helper.addLimit(expression, query.limit);
+        expression = this._converter.helper.addLimit(expression, query.limit, query.offset);
         expression = this._converter.helper.addProjectionsAndAggregations(expression, mainSubject, projections);
         return expression;
     }

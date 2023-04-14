@@ -192,13 +192,14 @@ async function main() {
 
                 async transform(ex, encoding, callback) {
                     try {
+                        console.log('processing example ' + ex.id + ' ...');
                         // use prediction field for SPARQL, target_code field for result 
                         // so we leverage the default DatasetStringifier
                         if (ex.target_code in manualConversion)
                             ex.prediction = manualConversion[ex.target_code];
                         else 
                             ex.prediction = await converter.convert(ex.preprocessed, ex.target_code);
-                        if (ex.prediction.includes(' null ')) {
+                        if (ex.prediction.includes(' null ') || ex.prediction.includes('NULL')) {
                             ex.target_code = '';
                         } else {
                             const result = await wikidata.query(ex.prediction);
@@ -206,6 +207,7 @@ async function main() {
                         }
                         callback(null, ex);
                     } catch(e) {
+                        console.log('example ' + ex.id + ' failed: ' + (e as Error).message);
                         ex.target_code = '';
                         ex.prediction = ex.prediction ?? 'NULL';
                         callback(null, ex);
