@@ -337,6 +337,16 @@ const patterns = {
         <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P527> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P527> <http://www.wikidata.org/entity/$0>; 
            <http://www.wikidata.org/prop/qualifier/P3831> ?x. 
+    }`,
+
+    // WebQTrn-2570
+    // who was the leader of X country during wwii
+    '@wd . ENTITY ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time ] of @wd . entity ( ) filter id == " Q362 " ^^wd:entity ) , " $0 " ^^wd:p_position_held );':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?y. 
+        ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P580> ?z; <http://www.wikidata.org/prop/qualifier/P582> ?p. 
+        <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
+        FILTER(((?z >= ?w) && (?z <= ?v)) || ((?p >= ?w) && (?p <= ?v))) 
     }`
 };
 
