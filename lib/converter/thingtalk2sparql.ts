@@ -73,7 +73,9 @@ class TableInfoVisitor extends Ast.NodeVisitor {
                 this.domainNames.push(this.mainDomain);
             } else {
                 const query = this._converter.class.getFunction('query', node.channel);
-                this.mainDomain = (query?.getImplementationAnnotation('wikidata_subject') as string[])[0];
+                if (!query) 
+                    throw new Error('Unknown query domain: ' + node.channel);
+                this.mainDomain = (query.getImplementationAnnotation('wikidata_subject') as string[])[0];
             } 
         }
         return true;
@@ -202,6 +204,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         if (typeof value === 'string') {
             assert(isVariable(value) && ['==', 'contains', 'in_array'].includes(operator));
             const p = this._converter.getWikidataProperty(property);
+            if (p === undefined)
+                throw new Error('Unknown property: ' + property);
             if (p in ABSTRACT_PROPERTIES) {
                 if (ABSTRACT_PROPERTIES[p].type === 'all') {
                     const realProperties = ABSTRACT_PROPERTIES[p].properties;
@@ -253,6 +257,8 @@ class TripleGenerator extends Ast.NodeVisitor {
         } 
 
         const p = property === 'value' && this._inPredicate ? property : this._converter.getWikidataProperty(property);
+        if (p === undefined)
+            throw new Error('Unknown property: ' + property);
 
         // filter on point in time 
         if (p === 'P585') {
