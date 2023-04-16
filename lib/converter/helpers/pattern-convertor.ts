@@ -171,17 +171,17 @@ const patterns = {
     }`,
 
     // what year did X go to the world series
-    '[ point_in_time ] of @wd . entity ( ) filter contains ( participating_team , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ;':
+    '[ point_in_time ] of @wd . entity ( ) filter contains ( sports_season_of_league_or_competition , " $0 " ^^wd:entity ) && contains ( participating_team , " $1 " ^^wd:entity ) ;':
     `SELECT DISTINCT ?x WHERE { 
-        ?y <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/Q265538>; <http://www.wikidata.org/prop/P1923> ?z; <http://www.wikidata.org/prop/direct/P585> ?x. 
-        ?z <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$0>. 
+        ?y <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/P1923> ?z; <http://www.wikidata.org/prop/direct/P585> ?x. 
+        ?z <http://www.wikidata.org/prop/statement/P1923> <http://www.wikidata.org/entity/$1>. 
     }`,
 
     // what years did X win the world series
-    '[ point_in_time ] of @wd . entity ( ) filter contains ( winner , " $0 " ^^wd:entity ) && instance_of == " Q265538 " ^^wd:domain ;':
+    '[ point_in_time ] of @wd . entity ( ) filter contains ( sports_season_of_league_or_competition , " $0 " ^^wd:entity ) && contains ( winner , " $1 " ^^wd:entity ) ;':
     `SELECT DISTINCT ?x WHERE { 
-        ?p <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/Q265538>; <http://www.wikidata.org/prop/P1346> ?y; <http://www.wikidata.org/prop/direct/P585> ?x. 
-        ?y <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/$0>. 
+        ?p <http://www.wikidata.org/prop/direct/P3450> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/P1346> ?y; <http://www.wikidata.org/prop/direct/P585> ?x. 
+        ?y <http://www.wikidata.org/prop/statement/P1346> <http://www.wikidata.org/entity/$1>. 
     }`,
 
     // when was the last time X won the world series
@@ -343,11 +343,10 @@ const patterns = {
     // who was the leader of X country during wwii
     '@wd . ENTITY ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time ] of @wd . entity ( ) filter id == " Q362 " ^^wd:entity ) , " $0 " ^^wd:p_position_held );':
     `SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/P39> ?y. 
-        ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P580> ?z; <http://www.wikidata.org/prop/qualifier/P582> ?p. 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
         <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
-        FILTER(((?z >= ?w) && (?z <= ?v)) || ((?p >= ?w) && (?p <= ?v))) 
-    }`
+        FILTER(((?y >= ?w) && (?y <= ?v))) }`
 };
 
 // convert examples based on manual patterns 
