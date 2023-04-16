@@ -23,6 +23,8 @@ export const DOMAIN_OVERRIDE : Record<string, string> = {
     "Q571": "Q47461344" // book -> written work
 };
 
+const MAXIMUM_ATTEMPT = 1;
+
 const PROPERTY_BLACKLIST = [
     'P31',
     // obsolete properties
@@ -316,12 +318,12 @@ export default class WikidataUtils {
         }
         try {
             const result = await Tp.Helpers.Http.get(url, { accept: 'application/json' });
+            const parsed = JSON.parse(result);
             if (caching)
                 await this._setCache('http_requests', url, result);
-            const parsed = JSON.parse(result);
             return parsed;
         } catch(e) {
-            if (attempts < 2)
+            if (attempts < MAXIMUM_ATTEMPT)
                 return this._request(url, caching, attempts + 1);
 
             // only warn failure for NON sparql request, sparql queries will only be warned if optimized version still fails
@@ -360,6 +362,16 @@ export default class WikidataUtils {
         const instanceOfStatement = match[0];
         const sparqlWithoutInstanceOf = sparql.replace(instanceOfStatement, '');
         const candidates = await this.query(sparqlWithoutInstanceOf, true);
+        if (candidates.length > 2000) {
+            try {
+                const candidates2 = await this.query(`SELECT DISTINCT ?x WHERE {
+                    ${instanceOfStatement}
+                }`, true);
+                return candidates.filter((c) => candidates2.includes(c));
+            } catch(e) {
+                // continue 
+            }
+        }
         const results = [];
         for (let i = 0; i < candidates.length; i += 50) {
             const batch = candidates.slice(i, i + 50);
