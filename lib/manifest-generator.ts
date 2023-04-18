@@ -326,7 +326,6 @@ class ManifestGenerator {
                     (triple.object as IriTerm).termType === 'NamedNode') {
                     const domain = triple.object.value.slice(ENTITY_PREFIX.length);
                     variables[triple.subject.value] = domain;
-                    this._propertiesByDomainInQald[domain] = new Set();
                 }
             }
             for (const triple of triples) {
