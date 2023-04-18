@@ -356,6 +356,13 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
         ?x <http://www.wikidata.org/prop/P161> ?z. 
         ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
+    }`,
+
+    // what state is X from?
+    '[ administrative_territorial_entity ] of @wd . entity ( ) filter in_array ( id , any ( [ place_of_birth ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
     }`
 };
 
