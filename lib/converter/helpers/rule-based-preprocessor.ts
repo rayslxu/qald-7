@@ -46,8 +46,11 @@ export class RuleBasedPreprocessor {
             };
             let country, held_by;
             if (position_held === 'Q218295') {
-                country = 'Q159';
+                country = 'Q159'; // russian
                 held_by = 'P35';
+            } else if (position_held === 'Q4376682') {
+                country = 'Q15180'; // soviet union
+                held_by = 'P6';
             } else {
                 for (const office in office_held_by) {
                     const result = await this._wikidata.query(`SELECT DISTINCT ?x WHERE {

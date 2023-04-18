@@ -352,11 +352,12 @@ const patterns = {
 
     // WebQTrn-2570
     // who was the leader/president of X country during wwii
-    '@wd . ENTITY ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time ] of @wd . ENTITY ( ) filter id == " Q362 " ^^wd:ENTITY ) , " $0 " ^^wd:p_position_held ) ;':
+    '[ head_of_government filter point_in_time == any ( [ point_in_time ] of @wd . ENTITY ( ) filter id == " $1 " ^^wd:ENTITY ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P6> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P6> ?x; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
-        <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/direct/P580> ?w; 
+        <http://www.wikidata.org/prop/direct/P582> ?v. 
         FILTER(((?y >= ?w) && (?y <= ?v))) 
     }`,
 
