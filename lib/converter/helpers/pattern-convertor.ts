@@ -277,7 +277,7 @@ const patterns = {
     } ORDER BY ?y LIMIT 1`,
 
     // what state was X from
-    '[ < place_of_birth / located_in_the_administrative_territorial_entity > : ENTITY ( wd:federated_state ) ] of @wd . human ( ) filter id == " $0 " ^^wd:human ;':
+    '[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
