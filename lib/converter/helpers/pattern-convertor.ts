@@ -17,6 +17,16 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
     }`, 
+
+    // who are the X state representatives
+    '@wd . ENTITY ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:ENTITY ) , " Q13218630 " ^^wd:ENTITY ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q13218630>. 
+        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
+        ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
+        FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. } 
+    }`,
     
     // WebQTrn-598
     // who are the senator from XXX (state) in 2010 ?
@@ -277,10 +287,11 @@ const patterns = {
     } ORDER BY ?y LIMIT 1`,
 
     // what state was X from
-    '[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
+    '[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . human ( ) filter id == " $0 " ^^wd:human ;':
+    `PREFIX wd:  PREFIX wdt:  
+    SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P131>+ ?x. 
+        ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390> 
     }`,
 
     // which country was X born
@@ -348,6 +359,14 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P6> ?x; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
         <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
         FILTER(((?y >= ?w) && (?y <= ?v))) 
+    }`,
+
+    // what episode of Y is X on ?
+    '@wd . television_series_episode ( ) filter contains ( part_of_the_series , " $0 " ^^wd:ENTITY ) && contains ( cast_member , " $1 " ^^wd:ENTITY ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
+        ?x <http://www.wikidata.org/prop/P161> ?z. 
+        ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
     }`
 };
 

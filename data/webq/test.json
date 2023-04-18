@@ -816,7 +816,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p wdt:P31 wd:Q17166756; wdt:P131 wd:Q1261. ?x p:P39 ?y. ?y ps:P39 wd:Q13218630; pq:P768 ?p. }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q13218630. ?p pq:P768 ?y. ?y wdt:P131 wd:Q1261. FILTER NOT EXISTS { ?p pq:P582 ?z. } }"
       }
     },
     {
@@ -1155,19 +1155,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q42051 p:P161 ?p. ?p ps:P161 ?x; pq:P453 wd:Q12206942. }"
-      }
-    },
-    {
-      "id": "WebQTest-115",
-      "question": [
-        {
-          "language": "en",
-          "string": "what super bowl did peyton manning win?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q32096; wdt:P1346 ?y; wdt:P585 ?z. wd:Q7539 p:P54 ?p. ?p ps:P54 ?w; pq:P580 ?v; pq:P582 ?u. FILTER((?w = ?y) && ((?z >= ?v) && (?z <= ?u))) }"
       }
     },
     {
@@ -8850,20 +8837,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { wd:Q76 p:P19 ?p. ?p ps:P19 ?y; pq:P131 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTest-905",
-      "question": [
-        {
-          "language": "en",
-          "string": "what years did joe montana win super bowl?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q32096; wdt:P1346 ?y; wdt:P585 ?z. wd:Q348011 p:P54 ?p. ?p ps:P54 ?w; pq:P580 ?v; pq:P582 ?u. FILTER((?w = ?y) && ((?z >= ?v) && (?z <= ?u))) }"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q76 wdt:P19/wdt:P131+ ?x. ?x wdt:P31/wdt:P279* wd:Q107390 }"
       }
     },
     {
@@ -11126,19 +11100,6 @@
       ],
       "query": {
         "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q16552 wdt:P131 ?x. }"
-      }
-    },
-    {
-      "id": "WebQTest-1127",
-      "question": [
-        {
-          "language": "en",
-          "string": "which country in north america is divided into provinces?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> SELECT DISTINCT ?x WHERE { ?p wdt:P31/wdt:P279 wd:Q34876; wdt:P17 ?y. ?x wdt:P31 wd:Q6256; wdt:P361 wd:Q49. FILTER(?y = ?x) }"
       }
     },
     {
@@ -18730,7 +18691,7 @@
         }
       ],
       "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?p wdt:P31 wd:Q17166756; wdt:P131 wd:Q1204. ?x p:P39 ?y. ?y ps:P39 wd:Q13218630; pq:P768 ?p; pq:P580 ?z; pq:P2937 ?w. } ORDER BY DESC (?w) LIMIT 118"
+        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> SELECT DISTINCT ?x WHERE { ?x p:P39 ?p. ?p ps:P39 wd:Q13218630. ?p pq:P768 ?y. ?y wdt:P131 wd:Q1204. FILTER NOT EXISTS { ?p pq:P582 ?z. } }"
       }
     },
     {
