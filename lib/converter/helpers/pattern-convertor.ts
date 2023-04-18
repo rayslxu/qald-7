@@ -348,6 +348,14 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/statement/P6> ?x; <http://www.wikidata.org/prop/qualifier/P580> ?y. 
         <http://www.wikidata.org/entity/Q362> <http://www.wikidata.org/prop/direct/P580> ?w; <http://www.wikidata.org/prop/direct/P582> ?v. 
         FILTER(((?y >= ?w) && (?y <= ?v))) 
+    }`,
+
+    // what episode of Y is X on ?
+    '@wd . television_series_episode ( ) filter contains ( part_of_the_series , " $0 " ^^wd:entity ) && contains ( cast_member , " $1 " ^^wd:entity ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
+        ?x <http://www.wikidata.org/prop/P161> ?z. 
+        ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
     }`
 };
 
