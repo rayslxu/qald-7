@@ -17,6 +17,16 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
         FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. }
     }`, 
+
+    // who are the X state representatives
+    '@wd . ENTITY ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:ENTITY ) , " Q13218630 " ^^wd:ENTITY ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?p. 
+        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q13218630>. 
+        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
+        ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
+        FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. } 
+    }`,
     
     // WebQTrn-598
     // who are the senator from XXX (state) in 2010 ?
@@ -357,17 +367,6 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
         ?x <http://www.wikidata.org/prop/P161> ?z. 
         ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
-    }`,
-
-    // who are the X state representatives
-    '@wd . entity ( ) filter contains ( position_held filter contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:entity ) , " Q13218630 " ^^wd:entity ) ;':
-    `PREFIX wd:  PREFIX wdt:  PREFIX p:  PREFIX ps:  PREFIX pq: 
-    SELECT DISTINCT ?x WHERE { 
-        ?x <http://www.wikidata.org/prop/P39> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q13218630>. 
-        ?p <http://www.wikidata.org/prop/qualifier/P768> ?y. 
-        ?y <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
-        FILTER NOT EXISTS { ?p <http://www.wikidata.org/prop/qualifier/P582> ?z. } 
     }`
 };
 
