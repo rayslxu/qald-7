@@ -326,19 +326,6 @@
       }
     },
     {
-      "id": "WebQTest-38",
-      "question": [
-        {
-          "language": "en",
-          "string": "who did george w. bush run against for the second term?",
-          "keywords": ""
-        }
-      ],
-      "query": {
-        "sparql": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> SELECT DISTINCT ?x WHERE { wd:Q464075 wdt:P726 ?x. FILTER(?x NOT IN(wd:Q207)) }"
-      }
-    },
-    {
       "id": "WebQTest-39",
       "question": [
         {
