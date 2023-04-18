@@ -278,9 +278,10 @@ const patterns = {
 
     // what state was X from
     '[ < place_of_birth / located_in_the_administrative_territorial_entity > : ENTITY ( wd:federated_state ) ] of @wd . human ( ) filter id == " $0 " ^^wd:human ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
+    `PREFIX wd:  PREFIX wdt:  
+    SELECT DISTINCT ?x WHERE { 
+        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P131>+ ?x. 
+        ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390> 
     }`,
 
     // which country was X born
@@ -356,13 +357,6 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
         ?x <http://www.wikidata.org/prop/P161> ?z. 
         ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
-    }`,
-
-    // what state is X from?
-    '[ administrative_territorial_entity ] of @wd . ENTITY ( ) filter in_array ( id , any ( [ place_of_birth ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
     }`
 };
 
