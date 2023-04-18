@@ -359,7 +359,7 @@ const patterns = {
     }`,
 
     // what state is X from?
-    '[ administrative_territorial_entity ] of @wd . entity ( ) filter in_array ( id , any ( [ place_of_birth ] of @wd . entity ( ) filter id == " $0 " ^^wd:entity ) ) ;':
+    '[ administrative_territorial_entity ] of @wd . ENTITY ( ) filter in_array ( id , any ( [ place_of_birth ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) ) ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P19> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P19> ?y; <http://www.wikidata.org/prop/qualifier/P131> ?x. 
