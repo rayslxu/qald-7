@@ -1,7 +1,43 @@
 import assert from 'assert';
-import { Triple, IriTerm, VariableTerm, PropertyPath, UnionPattern } from 'sparqljs';
-import { isBasicGraphPattern, isNamedNode, isPropertyPath, isSequencePropertyPath, isUnaryPropertyPath, isWikidataEntityNode, isWikidataPropertyNode } from './sparqljs-typeguard';
-import { ABSTRACT_PROPERTIES, PROPERTY_PREDICATE_PREFIX, ENTITY_PREFIX, PROPERTY_PREFIX, PROPERTY_QUALIFIER_PREFIX, PROPERTY_STATEMENT_PREFIX } from './wikidata';
+import {
+    IriTerm, 
+    VariableTerm, 
+    PropertyPath,
+    SelectQuery,
+    AskQuery,
+    Pattern,
+    Grouping,
+    Expression,
+    Ordering,
+    BgpPattern,
+    FilterPattern,
+    UnionPattern,
+    ServicePattern,
+    Triple,
+    OperationExpression
+} from 'sparqljs';
+import { 
+    isBasicGraphPattern, 
+    isNamedNode, 
+    isPropertyPath, 
+    isSequencePropertyPath, 
+    isUnaryPropertyPath, 
+    isWikidataEntityNode, 
+    isWikidataPropertyNode,
+    isSelectQuery, 
+    isFilterPattern,
+    isUnionPattern,
+    isWikidataLabelServicePattern,
+    isOperationExpression
+} from './sparqljs-typeguard';
+import { 
+    ABSTRACT_PROPERTIES, 
+    PROPERTY_PREDICATE_PREFIX, 
+    ENTITY_PREFIX, 
+    PROPERTY_PREFIX, 
+    PROPERTY_QUALIFIER_PREFIX, 
+    PROPERTY_STATEMENT_PREFIX 
+} from './wikidata';
 
 /**
  * Given a parsed object returned by sparqljs, extract rdf triples out of it
@@ -196,4 +232,110 @@ export function normalize(sparql : string) : string {
         }
     }
     return sparql.replace(/\s+/g, ' ').trim();
+}
+
+export abstract class NodeVisitor {
+    visit(node : SelectQuery|AskQuery) {
+        for (const pattern of node.where ?? []) 
+            this._visitPattern(pattern);
+        if (isSelectQuery(node)) {
+            for (const grouping of node.group ?? [])
+                this._visitGrouping(grouping);
+            for (const expression of node.having ?? [])
+                this._visitExpression(expression);
+            for (const ordering of node.order ?? [])
+                this._visitOrdering(ordering);
+        }
+    }
+
+    _visitPattern(node : Pattern) {
+        if (isBasicGraphPattern(node))
+            this._visitBgpPattern(node);
+        else if (isFilterPattern(node)) 
+            this._visitFilterPattern(node);
+        else if (isUnionPattern(node)) 
+            this._visitUnionPattern(node);
+        else if (isWikidataLabelServicePattern(node))
+            this._visitWikidataLabelServicePattern(node);
+
+        return true;
+    }
+
+    _visitGrouping(node : Grouping) {
+        return true;
+    }
+
+    _visitExpression(node : Expression) {
+        if (!isOperationExpression(node))
+            throw new Error(`Unsupported: non-operation expression: ${node}`);
+        if (node.operator === '!')
+            this._visitBasicFilter(node.args[0] as OperationExpression);
+        else if (node.operator === '||' || node.operator === '&&')
+            node.args.forEach((exp) => this._visitBasicFilter(exp as OperationExpression));
+        else if (node.args.length === 1)
+            return this._visitUnaryOperation(node);
+        else if (node.args.length === 2)
+            return this._visitBinaryOperation(node);
+        return true;
+    }
+
+    _visitOrdering(node : Ordering) {
+        return true;
+    }
+
+    _visitBgpPattern(node : BgpPattern) {
+        for (const triple of node.triples) 
+            this._visitTriple(triple);
+        return true;
+    }
+
+    _visitFilterPattern(node : FilterPattern) {
+        this._visitExpression(node.expression);
+        return true;
+    }
+
+    _visitUnionPattern(node : UnionPattern) {
+        for (const pattern of node.patterns) {
+            assert(isBasicGraphPattern(pattern));
+            this._visitBgpPattern(pattern);
+        }
+        return true;
+    }
+
+    _visitWikidataLabelServicePattern(node : ServicePattern) {
+        return true;
+    }
+
+    _visitTriple(node : Triple) {
+        return true;
+    }
+
+    _visitBasicFilter(node : OperationExpression) {
+        return true;
+    }
+
+    _visitUnaryOperation(node : OperationExpression) {
+        throw Error('Not implemented');
+    }
+
+    _visitBinaryOperation(node : OperationExpression) {
+        return true;
+    }
+}
+
+export class PreprocessVisitor extends NodeVisitor {
+    _visitUnionPattern(node : UnionPattern|BgpPattern) {
+        const triple = preprocessSpecialUnion(node as UnionPattern);
+        if (triple) {
+            this._visitTriple(triple);
+            node.type = 'bgp';
+            (node as BgpPattern).triples = [triple];
+        }
+        return true;
+    }
+
+    _visitTriple(node : Triple) {
+        node.predicate =  preprocessPropertyPath(node.predicate);
+        return true;
+    }
 }

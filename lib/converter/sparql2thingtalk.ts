@@ -30,6 +30,7 @@ import {
 import { PostProcessor } from './helpers/post-processor';
 import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 import { PatternConverter } from './helpers/pattern-convertor';
+import { PreprocessVisitor } from '../utils/sparqljs';
 
 
 export class Projection {
@@ -372,6 +373,11 @@ export default class SPARQLToThingTalkConverter {
 
         this._init(sparql, utterance);
         const query = this._sparqlParser.parse(sparql) as SelectQuery|AskQuery;
+
+        // preprocess the query
+        const preprocessor = new PreprocessVisitor();
+        preprocessor.visit(query);
+
         await this._parser.parse(query);
         return this._generator.generate(query);
     }    

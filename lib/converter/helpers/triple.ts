@@ -5,9 +5,6 @@ import {
 } from 'sparqljs';
 import { Ast, Type } from 'thingtalk';
 import { 
-    preprocessPropertyPath
-} from '../../utils/sparqljs';
-import { 
     isNamedNode, 
     isPropertyPath,
     isWikidataEntityNode,
@@ -193,7 +190,6 @@ export default class TripleParser {
     async parse(pattern : BgpPattern) : Promise<ArrayCollection<Ast.BooleanExpression>> {
         const filtersBySubject = new ArrayCollection<Ast.BooleanExpression>();
         for (const triple of pattern.triples) {
-            triple.predicate = preprocessPropertyPath(triple.predicate);
             if (isOrPropertyPath(triple.predicate))
                 filtersBySubject.merge(await this._parseOrPathTriple(triple));
             else if (isPropertyPath(triple.predicate))
