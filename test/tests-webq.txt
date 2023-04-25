@@ -1,3 +1,16 @@
+Utterance: what country was osama bin laden killed in?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+SELECT DISTINCT ?x WHERE { 
+    wd:Q1317 wdt:P20 ?p.
+    ?p wdt:P17 ?x. 
+}
+TT:
+[ < place_of_death / country > ] of @wd . human ( ) filter id == " Q1317 " ^^wd:human ;
+
+====
+
 Utterance: what four regions make up the united kingdom ?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 

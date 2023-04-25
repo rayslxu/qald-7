@@ -265,7 +265,7 @@ SELECT DISTINCT ?number WHERE {
     ?uri <http://www.wikidata.org/prop/direct/P1082> ?number . 
 }
 TT:
-[ population ] of @wd . entity ( ) filter in_array ( id , any ( [ capital ] of @wd . country ( ) filter id == " Q408 " ^^wd:country ( " australia " ) ) ) ;
+[ < capital / population > ] of @wd . country ( ) filter id == " Q408 " ^^wd:country ( " australia " ) ;
 
 ====
 Utterance: Was the Cuban Missile Crisis earlier than the Bay of Pigs Invasion?

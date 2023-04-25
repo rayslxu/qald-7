@@ -7,14 +7,16 @@ import {
     AskQuery,
     Pattern,
     Expression,
-    Grouping
+    Grouping,
+    Triple
 } from 'sparqljs';
 import {
     isFilterPattern,
     isBasicGraphPattern,
     isUnionPattern,
     isSelectQuery,
-    isWikidataLabelServicePattern
+    isWikidataLabelServicePattern,
+    isVariable
 } from '../utils/sparqljs-typeguard';
 import ConverterHelper from './helpers';
 import { 
@@ -30,7 +32,7 @@ import {
 import { PostProcessor } from './helpers/post-processor';
 import { RuleBasedPreprocessor } from './helpers/rule-based-preprocessor';
 import { PatternConverter } from './helpers/pattern-convertor';
-import { PreprocessVisitor } from '../utils/sparqljs';
+import { PreprocessVisitor, PropertyPathFinder, PropertyPathOptimizer } from '../utils/sparqljs';
 
 
 export class Projection {
@@ -377,6 +379,20 @@ export default class SPARQLToThingTalkConverter {
         // preprocess the query
         const preprocessor = new PreprocessVisitor();
         preprocessor.visit(query);
+
+        // optimize for property path
+        const propertyPathFinder = new PropertyPathFinder();
+        propertyPathFinder.visit(query);
+        const variablesForPropertyPath : Record<string, Triple> = {};
+        for (const [variable, Triple] of Object.entries(propertyPathFinder.variableSubjectTriple)) {
+            if (isSelectQuery(query) && query.variables.some((v) => isVariable(v) && v.value === variable))
+                continue;
+            const counter = propertyPathFinder.variableUsageCount[variable];
+            if (counter.subject === 1 && counter.object === 1 && counter.other === 0)
+                variablesForPropertyPath[variable] = Triple;
+        }
+        const propertyPathOptimizer = new PropertyPathOptimizer(variablesForPropertyPath);
+        propertyPathOptimizer.visit(query);
 
         await this._parser.parse(query);
         return this._generator.generate(query);

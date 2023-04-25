@@ -28,7 +28,9 @@ import {
     isFilterPattern,
     isUnionPattern,
     isWikidataLabelServicePattern,
-    isOperationExpression
+    isOperationExpression,
+    isVariable,
+    isAggregateExpression
 } from './sparqljs-typeguard';
 import { 
     ABSTRACT_PROPERTIES, 
@@ -262,24 +264,34 @@ export abstract class NodeVisitor {
     }
 
     _visitGrouping(node : Grouping) {
+        this._visitExpression(node.expression);
         return true;
     }
 
     _visitExpression(node : Expression) {
-        if (!isOperationExpression(node))
+        if (isAggregateExpression(node)) {
+            this._visitExpression(node.expression);
+        } else if (isBasicGraphPattern(node)) {
+            this._visitBgpPattern(node);
+        } else if (isVariable(node)) {
+            this._visitVariable(node);
+        } else if (isOperationExpression(node)) {
+            if (node.operator === '!')
+                this._visitExpression(node.args[0] as OperationExpression);
+            else if (node.operator === '||' || node.operator === '&&')
+                node.args.forEach((exp) => this._visitExpression(exp as OperationExpression));
+            else if (node.args.length === 1)
+                this._visitUnaryOperation(node);
+            else if (node.args.length === 2)
+                this._visitBinaryOperation(node);
+        } else {
             throw new Error(`Unsupported: non-operation expression: ${node}`);
-        if (node.operator === '!')
-            this._visitBasicFilter(node.args[0] as OperationExpression);
-        else if (node.operator === '||' || node.operator === '&&')
-            node.args.forEach((exp) => this._visitBasicFilter(exp as OperationExpression));
-        else if (node.args.length === 1)
-            return this._visitUnaryOperation(node);
-        else if (node.args.length === 2)
-            return this._visitBinaryOperation(node);
+        }
         return true;
     }
 
     _visitOrdering(node : Ordering) {
+        this._visitExpression(node.expression);
         return true;
     }
 
@@ -310,15 +322,15 @@ export abstract class NodeVisitor {
         return true;
     }
 
-    _visitBasicFilter(node : OperationExpression) {
+    _visitUnaryOperation(node : OperationExpression) {
         return true;
     }
 
-    _visitUnaryOperation(node : OperationExpression) {
-        throw Error('Not implemented');
+    _visitBinaryOperation(node : OperationExpression) {
+        return true;
     }
 
-    _visitBinaryOperation(node : OperationExpression) {
+    _visitVariable(node : VariableTerm) {
         return true;
     }
 }
@@ -336,6 +348,97 @@ export class PreprocessVisitor extends NodeVisitor {
 
     _visitTriple(node : Triple) {
         node.predicate =  preprocessPropertyPath(node.predicate);
+        return true;
+    }
+}
+
+
+export class PropertyPathFinder extends NodeVisitor {
+    variableUsageCount : Record<string, { subject : number, object : number, other : number }>
+    variableSubjectTriple : Record<string, Triple>;
+
+    constructor() {
+        super();
+        this.variableUsageCount = {};
+        this.variableSubjectTriple = {};
+    }
+
+    _add(variable : string, part : 'subject'|'object'|'other', triple ?: Triple) {
+        if (!(variable in this.variableUsageCount))
+            this.variableUsageCount[variable] = { subject: 0, object: 0, other: 0 };
+        this.variableUsageCount[variable][part] += 1;
+
+        if (part === 'subject')
+            this.variableSubjectTriple[variable] = triple!;
+    }
+
+    _visitTriple(node : Triple) {
+        const parts : Array<'subject'|'object'> = ['subject', 'object'];
+        for (const part of parts) {
+            if (isVariable(node[part])) {
+                if (isWikidataPropertyNode(node.predicate) && !isWikidataPropertyNode(node.predicate, 'P31'))
+                    this._add(node[part].value, part, node);
+                else 
+                    this._add(node[part].value, 'other'); // if it's not simple triple, count as other and do not optimize
+            }
+        }
+        return true;
+    }
+
+    _visitUnaryOperation(node : OperationExpression) {
+        if (isVariable(node.args[0]))
+            this._add(node.args[0].value, 'other');
+        return true;
+    }
+
+    _visitBinaryOperation(node : OperationExpression) {
+        if (isVariable(node.args[0]))
+            this._add(node.args[0].value, 'other');
+        if (isVariable(node.args[1]))
+            this._add(node.args[1].value, 'other');
+        return true;
+    }
+
+    _visitVariable(node : VariableTerm) {
+        this._add(node.value, 'other');
+        return true;
+    }
+    
+}
+
+export class PropertyPathOptimizer extends NodeVisitor {
+    variableSubjectTriple : Record<string, Triple>;
+
+    constructor(variableSubjectTriple : Record<string, Triple>) {
+        super();
+        this.variableSubjectTriple = variableSubjectTriple;
+    }
+
+    _visitBgpPattern(node : BgpPattern) {
+        const triples = [];
+        for (const triple of node.triples) {
+            if (this._visitTriple(triple))
+                triples.push(triple);
+        }
+        node.triples = triples;
+        return true;
+    }
+
+    _visitTriple(node : Triple) {
+        if (isVariable(node.subject) && node.subject.value in this.variableSubjectTriple)
+            return false;
+        
+        if (isVariable(node.object) && node.object.value in this.variableSubjectTriple) {
+            const subquery = this.variableSubjectTriple[node.object.value];
+            assert(isWikidataPropertyNode(node.predicate) && isWikidataPropertyNode(subquery.predicate));
+            // change node to a property path triple
+            node.object = subquery.object;
+            node.predicate = {
+                type: 'path',
+                pathType: '/',
+                items: [node.predicate, subquery.predicate]
+            };
+        } 
         return true;
     }
 }
