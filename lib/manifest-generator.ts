@@ -52,7 +52,7 @@ class ManifestGenerator {
     private _domainLabels : Record<string, string>; // Record<QID, domain label>
     private _subdomains : Record<string, string[]>; // subdomains for each domain
     private _domainSamples : Record<string, Record<string, string|null>>; // Record<QID, entities> 
-    private _propertiesByDomainInQald : Record<string, Set<string>>; // Record<QID, Set<PID>>, domain and properties in QALD examples
+    private _datasetProperties : Record<string, Set<string>>; // Record<PID, Set<QID>>, properties in dataset examples and domain they are used
     /**
      * @member _properties: an object with PID as key, and argument definition as value, 
      * to record all properties in different functions, so we can add them 
@@ -89,7 +89,7 @@ class ManifestGenerator {
         this._subdomains = {};
         this._domainSamples = {};
         this._entities = {};
-        this._propertiesByDomainInQald = {};
+        this._datasetProperties = {};
         this._properties = {};
         this._propertyValues = { entities: {}, strings: {} };
         this._propertyTypes = {};
@@ -339,9 +339,9 @@ class ManifestGenerator {
                     domain = variables[triple.subject.value];
                 }
                 for (const property of extractProperties(triple.predicate)) {
-                    if (!(domain in this._propertiesByDomainInQald))
-                        this._propertiesByDomainInQald[domain] = new Set();
-                    this._propertiesByDomainInQald[domain].add(property);
+                    if (!(property in this._datasetProperties))
+                        this._datasetProperties[property] = new Set();
+                    this._datasetProperties[property].add(domain);
                 }
             }
         } catch(e) {
@@ -576,28 +576,35 @@ class ManifestGenerator {
                 }
             }
         );
-        for (const domain in this._propertiesByDomainInQald) {
-            const domainLabel = this._domainLabels[domain];
-            for (const id of this._propertiesByDomainInQald[domain]) {
-                const label = await this._wikidata.getLabel(id);
-                const pname = cleanName(label!);
-                if (id in this._properties || id === 'P31')
-                    continue;
-                const type = await this._getPropertyType(id, pname);
-                console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
+        for (const id in this._datasetProperties) {
+            if (id === 'P31')
+                continue;
+            const label = await this._wikidata.getLabel(id);
+            const pname = cleanName(label!);
+            const type = await this._getPropertyType(id, pname);
+            if (!(id in this._properties)) {
                 // add entity 
                 this._addEntity(
                     `p_${pname}`, 
                     label!, 
                     [`${TP_DEVICE_NAME}:entity`]
                 );
-                // add the entity domain
+                // add property
                 this._properties[id] = fakeProperty(id, pname, type ?? undefined);
-                // add to the dedicated domain as well for domain that is not "entity" (Q35120)
+            }
+
+            for (const domain of this._datasetProperties[id]) {
+                const domainLabel = this._domainLabels[domain];
+                
+                // add to the dedicated domain for domain that is not "entity" (Q35120)
                 if (domain === 'Q35120' || !domainLabel)
                     continue;
                 const fname = cleanName(domainLabel);
                 const oldFunctionDef = queries[fname];
+                if (oldFunctionDef.hasArgument(pname))
+                    continue;
+
+                console.log(`Adding missing property in domain ${domain}: ${pname} (${id}, type: ${type})`);
                 const args = oldFunctionDef.args.map((arg) => oldFunctionDef.getArgument(arg)!);
                 args.push(this._properties[id]);
                 queries[fname] = new Ast.FunctionDef(null, 'query', null, fname, ['entity'], {
