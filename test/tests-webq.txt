@@ -196,7 +196,7 @@ SELECT DISTINCT ?x WHERE {
     wd:Q85642 wdt:P22|wdt:P25 ?x. 
 }
 TT:
-[ father , mother ] of @wd . human ( ) filter id == " Q85642 " ^^wd:human ;
+[ father , mother ] of @wd . entity ( ) filter id == " Q85642 " ^^wd:entity ;
 
 ====
 
