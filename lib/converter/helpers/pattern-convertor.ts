@@ -367,6 +367,20 @@ const patterns = {
         ?p <http://www.wikidata.org/prop/direct/P179> <http://www.wikidata.org/entity/$0>; <http://www.wikidata.org/prop/direct/P527> ?x. 
         ?x <http://www.wikidata.org/prop/P161> ?z. 
         ?z <http://www.wikidata.org/prop/statement/P161> <http://www.wikidata.org/entity/$1>. 
+    }`, 
+
+    // who was the secretary of state when richard nixon was president?
+    '@wd . ENTITY ( ) filter contains ( position_held filter ( point_in_time == any ( [ point_in_time of position_held filter value == " $0 " ^^wd:ENTITY ] of @wd . ENTITY ( ) filter id == " $1 " ^^wd:ENTITY ) ) , " $2 " ^^wd:ENTITY ) ;':
+    `SELECT DISTINCT ?x WHERE { 
+        ?x <http://www.wikidata.org/prop/P39> ?y. 
+        ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$2>; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?p; 
+           <http://www.wikidata.org/prop/qualifier/P582> ?q. 
+        <http://www.wikidata.org/entity/$1> <http://www.wikidata.org/prop/P39> ?z. 
+        ?z <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$0>; 
+           <http://www.wikidata.org/prop/qualifier/P580> ?w; 
+           <http://www.wikidata.org/prop/qualifier/P582> ?v. 
+        FILTER((?p >= ?w) && (?q <= ?v)) 
     }`
 };
 
