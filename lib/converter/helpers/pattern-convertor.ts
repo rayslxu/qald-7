@@ -94,13 +94,6 @@ const patterns = {
         FILTER((?y < ?w) && (?z >= ?w)) }
     `,
 
-    // who did X sign with, who does X play for
-    '[ member_of_sports_team ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE {
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P54> ?x. 
-    }
-    `,
-
     // who plays X in Y
     '[ cast_member filter character_role == " $0 " ^^wd:ENTITY ] of @wd . ENTITY ( ) filter id == " $1 " ^^wd:ENTITY ;':
     `SELECT DISTINCT ?x WHERE { 
@@ -135,43 +128,12 @@ const patterns = {
         FILTER((?y < "2003-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?y >= "2002-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
     }`,
 
-    // what is X parents name
-    '[ father , mother ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P22>|<http://www.wikidata.org/prop/direct/P25> ?x. 
-    }`,
-
-    // where do X people come from
-    '@wd . country ( ) filter contains ( ethnic_group , " $0 " ^^wd:ENTITY ) ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P66> ?x. 
-    }`,
-
     // what degree did X get
     '[ educated_at . academic_degree ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P69> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P69> ?y; <http://www.wikidata.org/prop/qualifier/P512> ?x. 
         ?y <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q38723>. 
-    }`,
-
-    // where did X come from
-    '[ place_of_birth ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P19> ?x. 
-    }`,
-
-    // where was X (team/band) from
-    '[ location_of_formation ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P740> ?x. 
-    }`,
-
-    // where did X live
-    '[ residence ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P551> ?p. 
-        ?p <http://www.wikidata.org/prop/statement/P551> ?x. 
     }`,
 
     // what state did X live
@@ -207,12 +169,6 @@ const patterns = {
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> ?x. ?x ((<http://www.wikidata.org/prop/direct/P31>*)/(<http://www.wikidata.org/prop/direct/P279>*)) <http://www.wikidata.org/entity/Q294414>. 
-    }`,
-
-    // who has X dated
-    '[ unmarried_partner ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P451> ?x. 
     }`,
 
     // what are the names of X in order ? 
