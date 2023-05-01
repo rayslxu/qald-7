@@ -1,3 +1,16 @@
+Utterance: who was johnny cash 's first wife?
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> PREFIX p: <http://www.wikidata.org/prop/> PREFIX ps: <http://www.wikidata.org/prop/statement/> PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+SELECT DISTINCT ?x WHERE { 
+    <http://www.wikidata.org/entity/Q42775> <http://www.wikidata.org/prop/P26> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P26> ?x; 
+       <http://www.wikidata.org/prop/qualifier/P580> ?y. 
+} ORDER BY ?y LIMIT 1
+TT: 
+[ spouse ] of sort ( spouse . start_time asc of @wd . entity ( ) filter id == " Q42775 " ^^wd:entity ( " johnny cash " ) ) [ 1 ] ;
+
+====
+
 Utterance: show me all museums
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 

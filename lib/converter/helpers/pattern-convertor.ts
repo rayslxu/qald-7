@@ -1,4 +1,7 @@
+import { Ast, Type } from 'thingtalk';
 import { normalize } from '../../utils/sparqljs';
+import { ENTITY_PREFIX } from '../../utils/wikidata';
+import SPARQLToThingTalkConverter from '../sparql2thingtalk';
 
 const patterns = {
 
@@ -342,9 +345,11 @@ const patterns = {
 
 // convert examples based on manual patterns 
 export class PatternConverter {
+    private _converter ?: SPARQLToThingTalkConverter;
     private _patterns : Array<{ thingtalk : string, sparql : string }>;
 
-    constructor() {
+    constructor(converter ?: SPARQLToThingTalkConverter) {
+        this._converter = converter;
         this._patterns = [];
         this._loadPatterns();
     }
@@ -385,13 +390,32 @@ export class PatternConverter {
         return null;
     }
 
-    fromSPARQL(sparql : string) {
+    async fromSPARQL(sparql : string) {
         for (const pattern of this._patterns) {
             const match = this.match(normalize(sparql), pattern.sparql, 'sparql');
             let thingtalk = pattern.thingtalk.replace(/ENTITY/g, 'entity');
             if (match) {
                 for (let i = 0; i < match.length; i++) 
                     thingtalk = thingtalk.replace('$' + i, match[i]);
+
+                const entityRegex = new RegExp('" (Q[0-9]+) " \\^\\^(wd:[^\\s]+)', 'g');
+                let entityMatch;
+                const toReplace : Record<string, string> = {};
+                while ((entityMatch = entityRegex.exec(thingtalk)) !== null) {
+                    const qid = entityMatch[1];
+                    const domain = entityMatch[2];
+                    const thingtalkValue = await this._converter!.helper.convertValue(`${ENTITY_PREFIX}${qid}`, new Type.Entity(domain));
+                    if (!(thingtalkValue instanceof Ast.EntityValue))
+                        continue;
+                    if (thingtalkValue.display === null)
+                        continue;
+                    toReplace[entityMatch[0]] = `${entityMatch[0]} ( " ${thingtalkValue.display} " )`;
+                }
+                for (const [entity, entityWithDisplay] of Object.entries(toReplace)) {
+                    while (thingtalk.includes(entity)) 
+                        thingtalk = thingtalk.replace(entity, 'PLACEHOLDER');
+                    thingtalk = thingtalk.replace(/PLACEHOLDER/g, entityWithDisplay);
+                }
                 return thingtalk;
             }
         }

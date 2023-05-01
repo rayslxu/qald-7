@@ -269,7 +269,7 @@ export default class SPARQLToThingTalkConverter {
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
         this._preprocessor = new RuleBasedPreprocessor(this._kb);
-        this._patternConverter = new PatternConverter();
+        this._patternConverter = new PatternConverter(this);
         this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
         this._parser = new QueryParser(this);
@@ -365,15 +365,15 @@ export default class SPARQLToThingTalkConverter {
     async convert(sparql : string, utterance : string) : Promise<Ast.Program> {
         // preprocess
         sparql = await this._preprocessor.preprocess(sparql, 'sparql');
+        this._init(sparql, utterance);
 
         // try pattern match first
-        const patternConverterResult = this._patternConverter.fromSPARQL(sparql);
+        const patternConverterResult = await this._patternConverter.fromSPARQL(sparql);
         if (patternConverterResult) {
             const program = Syntax.parse(patternConverterResult, Syntax.SyntaxType.Tokenized, {}, { timezone: 'utc' });
             return program as Ast.Program;
         }
 
-        this._init(sparql, utterance);
         const query = this._sparqlParser.parse(sparql) as SelectQuery|AskQuery;
 
         // preprocess the query
