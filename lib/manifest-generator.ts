@@ -9,7 +9,7 @@ import { extractProperties, extractTriples } from './utils/sparqljs';
 import { Example, preprocessQALD } from './utils/qald';
 import { cleanName, sampleAltLabels, waitFinish } from './utils/misc';
 import { idArgument, elemType, instanceOfArgument, fakeProperty } from './utils/thingtalk';
-import WikidataUtils, { DOMAIN_OVERRIDE } from './utils/wikidata';
+import WikidataUtils, { ABSTRACT_PROPERTIES, DOMAIN_OVERRIDE } from './utils/wikidata';
 import { PROPERTY_PREFIX, ENTITY_PREFIX, TP_DEVICE_NAME } from './utils/wikidata';
 
 interface Entity {
@@ -145,6 +145,9 @@ class ManifestGenerator {
         // HACK: force "object has role" for has parts
         if (propertyId === 'P527')
             qualifiers.push('P3831');
+        // HACK: force location to have point_in_time
+        if (propertyId === 'P276')
+            qualifiers.push('P580');
 
         // make sure start time and end time come in pairs 
         if (qualifiers.includes('P580') && !qualifiers.includes('P582'))
@@ -437,7 +440,16 @@ class ManifestGenerator {
             for (const p of ['P580', 'P582', 'P585']) 
                 propertyValues[p] = [];
         }
-
+        for (const [abstractProperty, abstraction] of Object.entries(ABSTRACT_PROPERTIES)) {
+            const abstractPropertyValues = propertyValues[abstractProperty] ?? [];
+            for (const realProperty of abstraction.properties) {
+                if (realProperty in propertyValues)
+                    abstractPropertyValues.push(...propertyValues[realProperty]);
+            }
+            if (abstractPropertyValues.length > 0)
+                propertyValues[abstractProperty] = abstractPropertyValues;
+        }
+ 
         const propertyLabels = await this._wikidata.getLabelsByBatch(...Object.keys(propertyValues));
         const entityValues = Object.values(propertyValues).flat().filter(this._wikidata.isEntity);
         const valueLabels = await this._wikidata.getLabelsByBatch(...entityValues);
