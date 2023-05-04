@@ -427,7 +427,8 @@ export default class WikidataUtils {
             return 'Q5';
             
         const bootlegType = await this._bootleg.getType(entityId);
-        if (bootlegType) {
+        // bootleg sometimes predicts "Wikimedia news" for totally irrelevant entities, skip it
+        if (bootlegType && bootlegType !== "Q17633526") {
             if (bootlegType in this._domains && !excludes.includes(bootlegType))
                 return bootlegType;
             return this.getTopLevelDomain([bootlegType], excludes);
