@@ -58,33 +58,73 @@ function dateRangeToDataPiece(ast1 : Ast.BooleanExpression, ast2 : Ast.BooleanEx
     return null;
 }
 
+
+
+const GENERIC_WORDS = [
+    'in',
+    'locality'
+];
+
+const CONCRETE_WORDS = [
+    // residence
+    'live',
+    'lives',
+
+    // administrative territorial entity
+    'county',
+    'counties',
+    'country',
+    'countries',
+    'city',
+    'cities',
+
+    // place of birth
+    'from',
+    'grew up',
+
+    // end time
+    'end',
+    'ends',
+    'ended',
+    'ending',
+    'stops',
+    'stopped',
+
+    // voice actor
+    'voice',
+    'voices',
+    'voiced'
+
+
+];
+
 class PostProcessVisitor extends Ast.NodeVisitor {
-    private _ttAbstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>; 
+    private _utterance : string;
+    private _abstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>; 
+    private _propertyLabels : Record<string, string[]>;
 
-    constructor() {
+    constructor(utterance : string, 
+                abstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>,
+                propertyLabels : Record<string, string[]>) {
         super();
-        this._ttAbstractProperties = {};
+        this._utterance = utterance;
+        this._abstractProperties = abstractProperties;
+        this._propertyLabels = propertyLabels;
     }
 
-    async init(wikidata : WikidataUtils) {
-        for (const [abstractProperty, abstraction] of Object.entries(ABSTRACT_PROPERTIES)) {
-            const abstractPropertyLabel = await wikidata.getLabel(abstractProperty);
-            if (!abstractPropertyLabel)
-                continue;
-            const ttAbstractProperty = cleanName(abstractPropertyLabel);
-            this._ttAbstractProperties[ttAbstractProperty] = { type: abstraction.type, properties: [] };
-            for (const realProperty of abstraction.properties) {
-                const label = await wikidata.getLabel(realProperty);
-                if (label)
-                    this._ttAbstractProperties[ttAbstractProperty].properties.push(cleanName(label));
-            }
-        }
-    }
 
     private _abstractProperty(p : string) : string {
-        for (const [abstractProperty, abstraction] of Object.entries(this._ttAbstractProperties)) {
-            if (abstraction.type === 'any' && abstraction.properties.includes(p))
+        for (const [abstractProperty, abstraction] of Object.entries(this._abstractProperties)) {
+            if (p === abstractProperty)
+                continue;
+            if (abstraction.type === 'any' && abstraction.properties.includes(p)) {
+                if (this._propertyLabels[p].some((l) => (new RegExp(`\\b${l}\\b`)).test(this._utterance))) 
+                    continue;
+                if (CONCRETE_WORDS.some((w) => (new RegExp(`\\b${w}\\b`).test(this._utterance))))
+                    continue;
+                console.log(`${p} replaced by ${abstractProperty}: "${this._utterance}"`);
                 return abstractProperty;
+            }
         }
         return p;
     }
@@ -113,6 +153,10 @@ class PostProcessVisitor extends Ast.NodeVisitor {
     }
 
     visitAtomBooleanExpression(node : Ast.AtomBooleanExpression) : boolean {
+        // for filter with a country or continent, do not abstract, it's probably clear enough
+        if (['continent'].includes(node.name) || node.name.startsWith('country'))
+            return true;
+        
         node.name = this._abstractProperty(node.name);
         if (node.value instanceof Ast.Value.Entity && node.value.type.startsWith(`${TP_DEVICE_NAME}:p_`))
             node.value.type = `${TP_DEVICE_NAME}:p_${node.name}`;
@@ -143,17 +187,46 @@ class PostProcessVisitor extends Ast.NodeVisitor {
 
 
 export class PostProcessor {
+    private _initialized : boolean;
     private _wikidata : WikidataUtils;
-    private _visitor : PostProcessVisitor;
+    private _ttAbstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>; 
+    private _propertyLabels : Record<string, string[]>;
 
     constructor(wikidata : WikidataUtils) {
+        this._initialized = false;
         this._wikidata = wikidata;
-        this._visitor = new PostProcessVisitor();
+        this._ttAbstractProperties = {};
+        this._propertyLabels = {};
     }
 
-    async postProcess(ast : Ast.Program) {
-        await this._visitor.init(this._wikidata);
-        ast.visit(this._visitor);
+    private async _init() {
+        for (const [abstractProperty, abstraction] of Object.entries(ABSTRACT_PROPERTIES)) {
+            const abstractPropertyLabel = await this._wikidata.getLabel(abstractProperty);
+            if (!abstractPropertyLabel)
+                continue;
+            const ttAbstractProperty = cleanName(abstractPropertyLabel);
+            this._ttAbstractProperties[ttAbstractProperty] = { type: abstraction.type, properties: [] };
+            for (const realProperty of abstraction.properties) {
+                const label = await this._wikidata.getLabel(realProperty);
+                if (label) {
+                    this._ttAbstractProperties[ttAbstractProperty].properties.push(cleanName(label));
+                    if (!(realProperty in this._propertyLabels)) {
+                        this._propertyLabels[cleanName(label)] = [label];
+                        const altLabels = await this._wikidata.getAltLabels(realProperty);
+                        this._propertyLabels[cleanName(label)].push(...altLabels.map((l) => l.toLowerCase()).filter((l) => !GENERIC_WORDS.includes(l)));
+                    }
+                }
+            }
+        }
+        this._initialized = true;
+    }
+
+    async postProcess(utterance : string, ast : Ast.Program) {
+        if (!this._initialized)
+            await this._init();
+
+        const visitor = new PostProcessVisitor(utterance, this._ttAbstractProperties, this._propertyLabels);
+        ast.visit(visitor);
         return ast.optimize();
     }
 }

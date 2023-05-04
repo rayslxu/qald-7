@@ -233,7 +233,7 @@ class QueryGenerator {
 
     async generate(query : SelectQuery|AskQuery) : Promise<Ast.Program> {
         const expression = isSelectQuery(query) ? (await this._generateSelectQuery(query)) : this._generateAskQuery(query);
-        return this._postprocessor.postProcess(makeProgram(expression));
+        return this._postprocessor.postProcess(this._converter.utterance!, makeProgram(expression));
     }
 }
 
