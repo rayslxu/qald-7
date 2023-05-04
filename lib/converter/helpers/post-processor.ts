@@ -1,4 +1,6 @@
 import { Ast } from 'thingtalk';
+import { cleanName } from '../../utils/misc';
+import WikidataUtils, { ABSTRACT_PROPERTIES, TP_DEVICE_NAME } from '../../utils/wikidata';
 
 interface DateRangeEndPoint {
     property : 'start_time'|'end_time'|'point_in_time',
@@ -57,6 +59,36 @@ function dateRangeToDataPiece(ast1 : Ast.BooleanExpression, ast2 : Ast.BooleanEx
 }
 
 class PostProcessVisitor extends Ast.NodeVisitor {
+    private _ttAbstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>; 
+
+    constructor() {
+        super();
+        this._ttAbstractProperties = {};
+    }
+
+    async init(wikidata : WikidataUtils) {
+        for (const [abstractProperty, abstraction] of Object.entries(ABSTRACT_PROPERTIES)) {
+            const abstractPropertyLabel = await wikidata.getLabel(abstractProperty);
+            if (!abstractPropertyLabel)
+                continue;
+            const ttAbstractProperty = cleanName(abstractPropertyLabel);
+            this._ttAbstractProperties[ttAbstractProperty] = { type: abstraction.type, properties: [] };
+            for (const realProperty of abstraction.properties) {
+                const label = await wikidata.getLabel(realProperty);
+                if (label)
+                    this._ttAbstractProperties[ttAbstractProperty].properties.push(cleanName(label));
+            }
+        }
+    }
+
+    private _abstractProperty(p : string) : string {
+        for (const [abstractProperty, abstraction] of Object.entries(this._ttAbstractProperties)) {
+            if (abstraction.type === 'any' && abstraction.properties.includes(p))
+                return abstractProperty;
+        }
+        return p;
+    }
+
     visitAndBooleanExpression(node : Ast.AndBooleanExpression) : boolean {
         const operands : Ast.BooleanExpression[] = [];
         const candidates : Ast.BooleanExpression[] = [];
@@ -79,17 +111,48 @@ class PostProcessVisitor extends Ast.NodeVisitor {
         node.operands = operands;
         return true;   
     }
+
+    visitAtomBooleanExpression(node : Ast.AtomBooleanExpression) : boolean {
+        node.name = this._abstractProperty(node.name);
+        if (node.value instanceof Ast.Value.Entity && node.value.type.startsWith(`${TP_DEVICE_NAME}:p_`))
+            node.value.type = `${TP_DEVICE_NAME}:p_${node.name}`;
+        return true;
+    }
+
+    visitProjectionExpression(node : Ast.ProjectionExpression) : boolean {
+        node.args = node.args.map((a) => this._abstractProperty(a));
+        return true;
+    }
+
+    visitProjectionElement(node : Ast.ProjectionElement) : boolean {
+        if (typeof node.value === 'string')
+            node.value = this._abstractProperty(node.value);
+        return true;
+    }
+
+    visitVarRefValue(node : Ast.VarRefValue) : boolean {
+        node.name = this._abstractProperty(node.name);
+        return true;
+    }
+
+    visitPropertyPathElement(node : Ast.PropertyPathElement) : boolean {
+        node.property = this._abstractProperty(node.property);
+        return true;
+    }
 }
 
 
 export class PostProcessor {
+    private _wikidata : WikidataUtils;
     private _visitor : PostProcessVisitor;
 
-    constructor() {
+    constructor(wikidata : WikidataUtils) {
+        this._wikidata = wikidata;
         this._visitor = new PostProcessVisitor();
     }
 
-    postProcess(ast : Ast.Program) {
+    async postProcess(ast : Ast.Program) {
+        await this._visitor.init(this._wikidata);
         ast.visit(this._visitor);
         return ast.optimize();
     }

@@ -189,7 +189,7 @@ class QueryGenerator {
 
     constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
-        this._postprocessor = new PostProcessor();
+        this._postprocessor = new PostProcessor(this._converter.kb);
     }
 
     private async _generateSelectQuery(query : SelectQuery) : Promise<Ast.Expression> {
