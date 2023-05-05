@@ -69,7 +69,7 @@ const patterns = {
     } ORDER BY DESC(?x) LIMIT 1`,
 
     // who was the vp of X
-    '@wd . ENTITY ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:ENTITY ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) , " Q11699 " ^^wd:ENTITY ) ;':
+    '@wd . ENTITY ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time of ( position_held filter value == " Q11696 " ^^wd:ENTITY ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) , " Q11699 " ^^wd:ENTITY ) ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11699>; 
@@ -285,7 +285,7 @@ const patterns = {
     // WebQTrn-411
     /// who is the first president of XXX -> this is normalized to use head of government / head of state depending on the country
     // TODO: add support to sort values of a property
-    '[ head_of_state ] of ( sort ( head_of_state . start_time asc of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) ) [ 1 ] ;':
+    '[ head_of_state ] of sort ( head_of_state . start_time asc of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P35> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P35> ?x; 
