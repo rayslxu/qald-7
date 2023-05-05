@@ -1098,6 +1098,8 @@ export default class WikidataUtils {
                 }
             }`;
             const result = await this._query(sparql);
+            if (result === null)
+                continue;
             qualifiers.push(...result.filter((r : any) => !!r.qualifier)
                 .map((r : any) => r.qualifier.value.slice(PROPERTY_QUALIFIER_PREFIX.length))
                 .filter((p : string) => !PROPERTY_BLACKLIST.includes(p))
