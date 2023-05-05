@@ -122,7 +122,6 @@ class PostProcessVisitor extends Ast.NodeVisitor {
                     continue;
                 if (CONCRETE_WORDS.some((w) => (new RegExp(`\\b${w}\\b`).test(this._utterance))))
                     continue;
-                console.log(`${p} replaced by ${abstractProperty}: "${this._utterance}"`);
                 return abstractProperty;
             }
         }
