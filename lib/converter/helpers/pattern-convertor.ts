@@ -294,7 +294,7 @@ const patterns = {
 
     // WebQTrn-866
     // TODO: add support to sort values of a property 
-    '[ spouse ] of ( sort ( spouse . start_time asc of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) ) [ 1 ] ;':
+    '[ spouse ] of sort ( spouse . start_time asc of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) [ 1 ] ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P26> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P26> ?x; 
