@@ -53,7 +53,7 @@ function dateRangeToDataPiece(ast1 : Ast.BooleanExpression, ast2 : Ast.BooleanEx
         const year1 = dateToYear(left.date);
         const year2 = dateToYear(right.date);
         if (year1 && year2 && year1 + 1 === year2) 
-            return new Ast.AtomBooleanExpression(null, 'point_in_time', '==', new Ast.DateValue(new Ast.DatePiece(year1, null, null, null)), null);
+            return new Ast.AtomBooleanExpression(null, 'point_in_time', '==', left.date, null);
     }
     return null;
 }

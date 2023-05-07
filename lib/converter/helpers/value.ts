@@ -60,7 +60,7 @@ export default class ValueConverter {
 
     private _toThingTalkDate(value : string) : Ast.DateValue {
         const date = new Date(value);
-        return new Ast.DateValue(new Ast.DatePiece(date.getUTCFullYear(), date.getUTCMonth() + 1 , date.getUTCDate(), null));
+        return new Ast.DateValue(date);
     }
 
     async toThingTalkValue(value : any, type : Type) : Promise<Ast.Value> {
