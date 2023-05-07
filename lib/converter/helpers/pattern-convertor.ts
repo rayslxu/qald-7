@@ -365,6 +365,7 @@ export class PatternConverter {
         // make regex out of the pattern
         // replace(/[.*+?^${}()|[\]\\]/g, '\\$&'): escape special characters in pattern
         // replace(/\\\$[0-9]/g, '(Q[0-9]+)')): replace $? with regex for QID
+        const placeholders = [...pattern.matchAll(/\$([0-9])/g)].map((m) => parseInt(m[1]));
         let regexString = '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)') + '$';
         if (patternLanguage === 'thingtalk')
             regexString = regexString.replace(/ENTITY/g, '[^\\s]*');
@@ -373,7 +374,8 @@ export class PatternConverter {
         if (!match) 
             return null;
         // the first match is the full code, the rest is the matching group, i.e., the QIDs
-        return match.slice(1);
+        const entities = match.slice(1);
+        return placeholders.map((i) => entities[i]);
     }
 
 
