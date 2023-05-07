@@ -329,7 +329,7 @@ const patterns = {
     }`, 
 
     // who was the secretary of state when richard nixon was president?
-    '@wd . ENTITY ( ) filter contains ( position_held filter ( point_in_time == any ( [ point_in_time of position_held filter value == " $0 " ^^wd:ENTITY ] of @wd . ENTITY ( ) filter id == " $1 " ^^wd:ENTITY ) ) , " $2 " ^^wd:ENTITY ) ;':
+    '@wd . ENTITY ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time of ( position_held filter value == " $0 " ^^wd:ENTITY ) ] of @wd . ENTITY ( ) filter id == " $1 " ^^wd:ENTITY ) , " $2 " ^^wd:ENTITY ) ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?y. 
         ?y <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/$2>; 
