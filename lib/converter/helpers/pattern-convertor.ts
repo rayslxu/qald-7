@@ -139,13 +139,6 @@ const patterns = {
         ?y <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q38723>. 
     }`,
 
-    // what state did X live
-    '[ residence : Entity ( wd:federated_state ) ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P551> ?x. 
-        ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q35657>. 
-    }`,
-
     // what year did X go to the world series
     '[ point_in_time ] of @wd . ENTITY ( ) filter contains ( sports_season_of_league_or_competition , " $0 " ^^wd:ENTITY ) && contains ( participating_team , " $1 " ^^wd:ENTITY ) ;':
     `SELECT DISTINCT ?x WHERE { 
@@ -244,13 +237,6 @@ const patterns = {
         ?z <http://www.wikidata.org/prop/P725> ?w. 
         ?w <http://www.wikidata.org/prop/statement/P725> ?x; <http://www.wikidata.org/prop/qualifier/P453> <http://www.wikidata.org/entity/$0>. 
     } ORDER BY ?y LIMIT 1`,
-
-    // what state was X from
-    '[ < place_of_birth / located_in_the_administrative_territorial_entity > : Entity ( wd:federated_state ) ] of @wd . human ( ) filter id == " $0 " ^^wd:human ;':
-    `SELECT DISTINCT ?x WHERE { 
-        <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P131>+ ?x. 
-        ?x <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q107390> 
-    }`,
 
     // which country was X born
     '[ country ] of @wd . ENTITY ( ) filter in_array ( id , any ( [ place_of_birth ] of @wd . ENTITY ( ) filter id == " $0 " ^^wd:ENTITY ) ) ;':
