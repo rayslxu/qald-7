@@ -109,7 +109,7 @@ SELECT DISTINCT ?x WHERE {
 
 Utterance: who was vp for nixon?
 TT:
-@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;
+@wd . entity ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time of ( position_held filter value == " Q11696 " ^^wd:p_position_held ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:p_position_held ) ;
 SPARQL: 
 SELECT DISTINCT ?x WHERE { 
     ?x <http://www.wikidata.org/prop/P39> ?p. 
@@ -129,9 +129,9 @@ TT:
 min ( start_time of [ start_time of ( member_of_sports_team filter value == any ( @wd . entity ( ) filter contains ( league , " Q155223 " ^^wd:entity ) ) ) ] of @wd . entity ( ) filter id == " Q169452 " ^^wd:entity ) ;
 SPARQL:
 SELECT DISTINCT ?x WHERE { 
-    <http://www.wikidata.org/entity/Q155223> <http://www.wikidata.org/prop/P54> ?p. 
+    <http://www.wikidata.org/entity/Q169452> <http://www.wikidata.org/prop/P54> ?p. 
     ?p <http://www.wikidata.org/prop/statement/P54> ?y. 
-    ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q169452>. 
+    ?y <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q155223>. 
     ?p <http://www.wikidata.org/prop/qualifier/P580> ?x. 
 } ORDER BY ?x LIMIT 1
 

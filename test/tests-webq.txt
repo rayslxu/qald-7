@@ -181,8 +181,7 @@ SELECT DISTINCT ?x WHERE {
     FILTER(?y = ?z) 
 }
 TT:
-@wd . entity ( ) filter contains ( position_held filter start_time == any ( [ start_time of ( position_held filter value == " Q11696 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:entity ) ;
-
+@wd . entity ( ) filter contains ( position_held filter point_in_time == any ( [ point_in_time of ( position_held filter value == " Q11696 " ^^wd:entity ) ] of @wd . entity ( ) filter id == " Q9588 " ^^wd:entity ) , " Q11699 " ^^wd:entity ) ;
 ====
 
 Utterance: who succeeded william mckinley as president ?
@@ -209,7 +208,7 @@ SELECT DISTINCT ?x WHERE {
     wd:Q85642 wdt:P22|wdt:P25 ?x. 
 }
 TT:
-[ father , mother ] of @wd . entity ( ) filter id == " Q85642 " ^^wd:entity ;
+[ father , mother ] of @wd . human ( ) filter id == " Q85642 " ^^wd:human ;
 
 ====
 

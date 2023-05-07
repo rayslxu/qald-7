@@ -289,7 +289,7 @@ ASK WHERE {
     FILTER(?date1 < ?date2) 
 }
 TT:
-[ end_time <= any ( [ start_time ] of @wd . entity ( ) filter id == " Q191721 " ^^wd:entity ( " bay of pigs invasion " ) ) ] of @wd . entity ( ) filter id == " Q128160 " ^^wd:entity ( " cuban missile crisis " ) ;
+[ point_in_time <= any ( [ point_in_time ] of @wd . entity ( ) filter id == " Q191721 " ^^wd:entity ( " bay of pigs invasion " ) ) ] of @wd . entity ( ) filter id == " Q128160 " ^^wd:entity ( " cuban missile crisis " ) ;
 
 ====
 Utterance: Show me all basketball players that are higher than 2 meters .
