@@ -1,3 +1,25 @@
+Utterance: who is the senator of connecticut 2010?",
+SPARQL:
+PREFIX wd: <http://www.wikidata.org/entity/> 
+PREFIX wdt: <http://www.wikidata.org/prop/direct/> 
+PREFIX p: <http://www.wikidata.org/prop/> 
+PREFIX ps: <http://www.wikidata.org/prop/statement/> 
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+SELECT DISTINCT ?x WHERE { 
+    ?x p:P39 ?p. 
+    ?p ps:P39 wd:Q4416090; 
+       pq:P768 ?w; 
+       pq:P580 ?y; 
+       pq:P582 ?z. 
+    ?w wdt:P131 wd:Q779. 
+    FILTER((?y < "2011-01-01T00:00:00Z"^^xsd:dateTime) && (?z >= "2010-01-01T00:00:00Z"^^xsd:dateTime)) 
+}
+TT:
+@wd . entity ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q779 " ^^wd:entity ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:entity ) ;
+
+====
+
 Utterance: what country was osama bin laden killed in?
 SPARQL:
 PREFIX wd: <http://www.wikidata.org/entity/> 

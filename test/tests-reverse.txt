@@ -1,3 +1,20 @@
+
+Utterance: who is the senator of connecticut 2010?,
+TT: 
+@wd . entity ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " Q779 " ^^wd:entity ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:entity ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { 
+    ?x <http://www.wikidata.org/prop/P39> ?p. 
+    ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; 
+       <http://www.wikidata.org/prop/qualifier/P768> ?w; 
+       <http://www.wikidata.org/prop/qualifier/P580> ?y; 
+       <http://www.wikidata.org/prop/qualifier/P582> ?z. 
+    ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/Q779>. 
+    FILTER((?y < "2011-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2010-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+}
+
+====
+
 Utterance: who is john cabot ' s parents ?
 TT:
 [ father , mother ] of @wd . entity ( ) filter id == " Q85642 " ^^wd:entity ;
