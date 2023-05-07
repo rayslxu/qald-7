@@ -70,7 +70,7 @@ async function main() {
         const data = await dataset.read(); 
         for (const ex of data.values()) {
             expectedSPARQL[ex.id] = ex.sparql;
-            expectedAnswer[ex.id] = await wikidata.query(ex.sparql);
+            expectedAnswer[ex.id] = ex.sparql === 'NULL' ? [] : await wikidata.query(ex.sparql);
         }
     } else {
         dataset = args.dataset.pipe(JSONStream.parse('questions.*')).pipe(new stream.PassThrough({ objectMode: true }));
