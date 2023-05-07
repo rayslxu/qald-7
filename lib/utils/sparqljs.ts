@@ -233,6 +233,8 @@ export function normalize(sparql : string) : string {
             sparql = sparql.replace(`${abbr}:${id}`, `<${prefixes[abbr]}${id}>`);
         }
     }
+    sparql = sparql.replace('PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>', '').replace(/xsd:dateTime/g, '<http://www.w3.org/2001/XMLSchema#dateTime>');
+    sparql = sparql.replace('PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>', '').replace(/rdfs:label/g, 'http://www.w3.org/2000/01/rdf-schema#label>');
     return sparql.replace(/\s+/g, ' ').trim();
 }
 
