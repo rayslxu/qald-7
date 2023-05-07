@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { Ast, Type } from 'thingtalk';
 import { normalize } from '../../utils/sparqljs';
 import { ENTITY_PREFIX } from '../../utils/wikidata';
@@ -33,12 +34,12 @@ const patterns = {
     
     // WebQTrn-598
     // who are the senator from XXX (state) in 2010 ?
-    '@wd . ENTITY ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:ENTITY ) && point_in_time == new Date ( 2010 ) ) , " Q4416090 " ^^wd:ENTITY ) ;':
+    '@wd . ENTITY ( ) filter contains ( position_held filter ( contains ( < electoral_district / located_in_the_administrative_territorial_entity > , " $0 " ^^wd:ENTITY ) && point_in_time == new Date ( #YEAR ) ) , " Q4416090 " ^^wd:ENTITY ) ;':
     `SELECT DISTINCT ?x WHERE { 
         ?x <http://www.wikidata.org/prop/P39> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q4416090>; <http://www.wikidata.org/prop/qualifier/P768> ?w; <http://www.wikidata.org/prop/qualifier/P580> ?y; <http://www.wikidata.org/prop/qualifier/P582> ?z. 
         ?w <http://www.wikidata.org/prop/direct/P131> <http://www.wikidata.org/entity/$0>. 
-        FILTER((?y < "2013-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "2012-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+        FILTER((?y < "#YEAR+1-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?z >= "#YEAR-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
     }`,
 
     // what state is barack obama senator for ?
@@ -124,11 +125,11 @@ const patterns = {
     } ORDER BY DESC (?y) LIMIT 1`,
 
     // who won the X (Championship) in 2002
-    '[ winner ] of @wd . ENTITY ( ) filter instance_of == " $0 " ^^wd:domain && point_in_time < new Date ( 2003 ) && point_in_time >= new Date ( 2002 ) ;':
+    '[ winner ] of @wd . ENTITY ( ) filter instance_of == " $0 " ^^wd:domain && point_in_time == new Date ( #YEAR ) ;':
     `SELECT DISTINCT ?x WHERE { 
         <http://www.wikidata.org/entity/$0> <http://www.wikidata.org/prop/P1346> ?p. 
         ?p <http://www.wikidata.org/prop/statement/P1346> ?x; <http://www.wikidata.org/prop/qualifier/P585> ?y. 
-        FILTER((?y < "2003-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?y >= "2002-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
+        FILTER((?y < "#YEAR+1-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>) && (?y >= "#YEAR-01-01T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime>)) 
     }`,
 
     // what degree did X get
@@ -347,12 +348,14 @@ export class PatternConverter {
         }
     }
     
-    match(code : string, pattern : string, patternLanguage : 'thingtalk'|'sparql') : string[]|null {
+    match(code : string, pattern : string, patternLanguage : 'thingtalk'|'sparql') : [string[], string[]]|null {
         // make regex out of the pattern
         // replace(/[.*+?^${}()|[\]\\]/g, '\\$&'): escape special characters in pattern
         // replace(/\\\$[0-9]/g, '(Q[0-9]+)')): replace $? with regex for QID
-        const placeholders = [...pattern.matchAll(/\$([0-9])/g)].map((m) => parseInt(m[1]));
         let regexString = '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\$[0-9]/g, '(Q[0-9]+)') + '$';
+        // replace #YEAR+1 for numbers without matching group
+        // replace #YEAR for numbers with matching group
+        regexString = regexString.replace(/#YEAR\\\+1/g, '[0-9]+').replace(/#YEAR/g, '([0-9]+)');
         if (patternLanguage === 'thingtalk')
             regexString = regexString.replace(/ENTITY/g, '[^\\s]*');
         const regex = new RegExp(regexString);
@@ -360,8 +363,10 @@ export class PatternConverter {
         if (!match) 
             return null;
         // the first match is the full code, the rest is the matching group, i.e., the QIDs
-        const entities = match.slice(1);
-        return placeholders.map((i) => entities[i]);
+        const entities = match.slice(1).filter((m) => m.startsWith('Q'));
+        const years = match.slice(1).filter((m) => !m.startsWith('Q'));
+        const placeholders = [...pattern.matchAll(/\$([0-9])/g)].map((m) => parseInt(m[1]));
+        return [placeholders.map((i) => entities[i]), years];
     }
 
 
@@ -370,8 +375,14 @@ export class PatternConverter {
             const match = this.match(thingtalk, pattern.thingtalk, 'thingtalk');
             let sparql = pattern.sparql;
             if (match) {
+                const [entities, years] = match;
                 for (let i = 0; i < match.length; i++) 
-                    sparql = sparql.replace('$' + i, match[i]);
+                    sparql = sparql.replace('$' + i, entities[i]);
+                assert(years.length <= 1);
+                if (years.length === 1) {
+                    sparql = sparql.replace('#YEAR+1', (parseInt(years[0]) + 1).toString());
+                    sparql = sparql.replace('#YEAR', years[0]);
+                }
                 return sparql;
             }
         }
@@ -383,8 +394,12 @@ export class PatternConverter {
             const match = this.match(normalize(sparql), pattern.sparql, 'sparql');
             let thingtalk = pattern.thingtalk.replace(/ENTITY/g, 'entity');
             if (match) {
+                const [entities, years] = match;
                 for (let i = 0; i < match.length; i++) 
-                    thingtalk = thingtalk.replace('$' + i, match[i]);
+                    thingtalk = thingtalk.replace('$' + i, entities[i]);
+                assert(years.length <= 1);
+                if (years.length === 1) 
+                    thingtalk = thingtalk.replace('#YEAR', years[0]);
 
                 const entityRegex = new RegExp('" (Q[0-9]+) " \\^\\^(wd:[^\\s]+)', 'g');
                 let entityMatch;
