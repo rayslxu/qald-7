@@ -136,7 +136,7 @@ async function main() {
                     EntityUtils.makeDummyEntities(preprocessed), 
                     { 
                         locale: 'en', 
-                        timezone: undefined, 
+                        timezone: args.timezone, 
                         includeEntityValue: args.include_entity_value, 
                         excludeEntityDisplay: args.exclude_entity_display
                     }
@@ -158,7 +158,7 @@ async function main() {
         const domains = JSON.parse(fs.readFileSync(args.domains, { encoding: 'utf8' })).data;
         const converter = new ThingTalkToSPARQLConverter(classDef, domains, {
             locale: args.locale,
-            timezone: 'utc',
+            timezone: args.timezone,
             cache: args.cache,
             save_cache: args.save_cache,
             bootleg: args.bootleg_db,

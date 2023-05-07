@@ -44,7 +44,7 @@ async function main() {
                 converted, 
                 preprocessed,
                 EntityUtils.makeDummyEntities(preprocessed),
-                { locale: 'en', timezone: undefined, includeEntityValue: true, excludeEntityDisplay }
+                { locale: 'en', timezone: 'utc', includeEntityValue: true, excludeEntityDisplay }
             ).join(' ');
 
             assert.strictEqual(thingtalk, expected);
