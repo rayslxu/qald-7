@@ -78,6 +78,9 @@ const CONCRETE_WORDS = [
     'city',
     'cities',
 
+    // coordinate location
+    'map',
+
     // place of birth
     'from',
     'grew up',
@@ -156,7 +159,9 @@ class PostProcessVisitor extends Ast.NodeVisitor {
         if (['continent'].includes(node.name) || node.name.startsWith('country'))
             return true;
         
-        node.name = this._abstractProperty(node.name);
+        const abstractPropertyName = this._abstractProperty(node.name);
+        if (abstractPropertyName === node.name)
+            return true;
         if (node.value instanceof Ast.Value.Entity && node.value.type.startsWith(`${TP_DEVICE_NAME}:p_`))
             node.value.type = `${TP_DEVICE_NAME}:p_${node.name}`;
         return true;
