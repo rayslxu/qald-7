@@ -376,7 +376,7 @@ export class PatternConverter {
             let sparql = pattern.sparql;
             if (match) {
                 const [entities, years] = match;
-                for (let i = 0; i < match.length; i++) 
+                for (let i = 0; i < entities.length; i++) 
                     sparql = sparql.replace('$' + i, entities[i]);
                 assert(years.length <= 1);
                 if (years.length === 1) {
@@ -395,7 +395,7 @@ export class PatternConverter {
             let thingtalk = pattern.thingtalk.replace(/ENTITY/g, 'entity');
             if (match) {
                 const [entities, years] = match;
-                for (let i = 0; i < match.length; i++) 
+                for (let i = 0; i < entities.length; i++) 
                     thingtalk = thingtalk.replace('$' + i, entities[i]);
                 assert(years.length <= 1);
                 if (years.length === 1) 
