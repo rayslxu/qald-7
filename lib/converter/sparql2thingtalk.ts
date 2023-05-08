@@ -189,7 +189,7 @@ class QueryGenerator {
 
     constructor(converter : SPARQLToThingTalkConverter) {
         this._converter = converter;
-        this._postprocessor = new PostProcessor(this._converter.kb);
+        this._postprocessor = new PostProcessor(this._converter.kb, { abstractProperty: converter.abstractProperty });
     }
 
     private async _generateSelectQuery(query : SelectQuery) : Promise<Ast.Expression> {
@@ -243,6 +243,7 @@ interface SPARQLToThingTalkConverterOptions {
     save_cache : boolean;
     bootleg_db : string;
     human_readable_instance_of : boolean;
+    abstract_property : boolean;
 }
 
 export default class SPARQLToThingTalkConverter {
@@ -262,6 +263,7 @@ export default class SPARQLToThingTalkConverter {
     private _parser : QueryParser;
     private _generator : QueryGenerator;
     private _humanReadableInstanceOf : boolean;
+    private _abstractProperty : boolean;
 
     constructor(classDef : Ast.ClassDef, options : SPARQLToThingTalkConverterOptions) {
         this._sparqlParser = new Parser();
@@ -269,6 +271,10 @@ export default class SPARQLToThingTalkConverter {
         this._schema = new WikidataSchema(classDef);
         this._kb = new WikidataUtils(options.cache, options.bootleg_db, options.save_cache);
         this._preprocessor = new RuleBasedPreprocessor(this._kb);
+
+        this._humanReadableInstanceOf = options.human_readable_instance_of;
+        this._abstractProperty = options.abstract_property;
+
         this._patternConverter = new PatternConverter(this);
         this._helper = new ConverterHelper(this);
         this._tokenizer = new I18n.LanguagePack('en').getTokenizer();
@@ -280,7 +286,6 @@ export default class SPARQLToThingTalkConverter {
         this._tables = {};
         this._crossTableComparison = [];
         this._keywords = [];
-        this._humanReadableInstanceOf = options.human_readable_instance_of;
     } 
 
     get class() : Ast.ClassDef {
@@ -321,6 +326,10 @@ export default class SPARQLToThingTalkConverter {
 
     get humanReadableInstanceOf() : boolean {
         return this._humanReadableInstanceOf;
+    }
+
+    get abstractProperty() : boolean {
+        return this._abstractProperty;
     }
      
     updateTable(subject : string, update ?: Ast.BooleanExpression|Projection|string) {

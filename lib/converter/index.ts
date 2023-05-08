@@ -97,6 +97,17 @@ async function main() {
         help: 'Use human readable string for instance_of instead of QID.',
         default: false
     });
+    parser.add_argument('--property-abstraction', {
+        required: false,
+        action: 'store_true',
+        default:true,
+        help: 'Apply property abstraction heuristics (from SPARQL to ThingTalk)'
+    });
+    parser.add_argument('--no-property-abstraction', {
+        required: false,
+        action: 'store_false',
+        dest: 'property-abstraction',
+    });
     const args = parser.parse_args();
 
     const tpClient = new Tp.FileClient({ thingpedia: args.manifest, locale: 'en' });

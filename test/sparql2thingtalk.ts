@@ -24,7 +24,8 @@ async function main() {
             cache: 'wikidata_cache.sqlite', 
             save_cache: false,
             bootleg_db: 'bootleg.sqlite',
-            human_readable_instance_of: false
+            human_readable_instance_of: false,
+            abstract_property : true
         };
         const converter = new SPARQLToThingTalkConverter(classDef, options);
         const tokenizer = new I18n.LanguagePack('en').getTokenizer();

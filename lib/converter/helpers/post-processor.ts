@@ -191,12 +191,14 @@ class PostProcessVisitor extends Ast.NodeVisitor {
 
 
 export class PostProcessor {
+    private _abstractProperty : boolean;
     private _initialized : boolean;
     private _wikidata : WikidataUtils;
     private _ttAbstractProperties : Record<string, { type : 'any'|'all', properties : string[] }>; 
     private _propertyLabels : Record<string, string[]>;
 
-    constructor(wikidata : WikidataUtils) {
+    constructor(wikidata : WikidataUtils, options : { abstractProperty : boolean }) {
+        this._abstractProperty = options.abstractProperty;
         this._initialized = false;
         this._wikidata = wikidata;
         this._ttAbstractProperties = {};
@@ -226,7 +228,7 @@ export class PostProcessor {
     }
 
     async postProcess(utterance : string, ast : Ast.Program) {
-        if (!this._initialized)
+        if (this._abstractProperty && !this._initialized)
             await this._init();
 
         const visitor = new PostProcessVisitor(utterance, this._ttAbstractProperties, this._propertyLabels);
