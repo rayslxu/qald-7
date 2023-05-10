@@ -5,6 +5,7 @@ import json
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file')
+    parser.add_argument('--model', default='questions_model', help="the name of the model or a path to the finetuned model")
     args = parser.parse_args()
 
     output = {}

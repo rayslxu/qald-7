@@ -74,6 +74,11 @@ async function main() {
         help: "the NER module to load",
         choices: ['falcon', 'oracle', 'azure', 'gpt3', 'refined', 'ensemble'],
     });
+    parser.add_argument('--refined-model', {
+        required: false,
+        default: 'questions_model',
+        help: "the name of the model or the path to the finetuned model for ReFinED ned system"
+    });
     parser.add_argument('--ner-cache', {
         required: false,
         help: `the path to the cache db, default to the module name if absent`
@@ -121,7 +126,7 @@ async function main() {
     if (args.module === 'gpt3' || args.module === 'ensemble')
         linkers.push(new GPT3Linker(wikidata, args));
     if (args.module === 'refined' || args.module === 'ensemble')
-        linkers.push(new ReFinEDLinker(wikidata, args.input.path));
+        linkers.push(new ReFinEDLinker(wikidata, args.input.path, args.refined_model));
     
     if (linkers.length === 0)
         throw new Error('Unknown NER module');

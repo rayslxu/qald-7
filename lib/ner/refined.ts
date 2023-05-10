@@ -5,11 +5,13 @@ import WikidataUtils from '../utils/wikidata';
 export class ReFinEDLinker extends Linker {
     private _wikidata : WikidataUtils;
     private _path : string;
+    private _model : string;
 
-    constructor(wikidata : WikidataUtils, path : string) {
+    constructor(wikidata : WikidataUtils, path : string, model ?: string) {
         super();
         this._wikidata = wikidata;
         this._path = path;
+        this._model = model ?? 'questions_model';
     }
     
     async run(id : string, utterance : string, thingtalk : string) : Promise<LinkerResult> {
@@ -17,7 +19,7 @@ export class ReFinEDLinker extends Linker {
     }
 
     async saferunAll(examples : Example[]) {
-        const process = child_process.spawn('python', [`${__dirname}/../../../python/run_refined.py`, this._path], { stdio: ['pipe', 'pipe', 'inherit'] });
+        const process = child_process.spawn('python', [`${__dirname}/../../../python/run_refined.py`, this._path, '--model', this._model], { stdio: ['pipe', 'pipe', 'inherit'] });
         const stdout : string = await new Promise((resolve, reject) => {
             process.on('error', reject);
             process.stdout.setEncoding('utf8');
