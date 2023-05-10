@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     output = {}
 
-    refined = Refined.from_pretrained(model_name='questions_model',
+    refined = Refined.from_pretrained(model_name=args.model,
                                       entity_set="wikidata",
                                       download_files=True,
                                       use_precomputed_descriptions=True)
