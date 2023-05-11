@@ -1,7 +1,8 @@
 import fs from 'fs';
 import * as argparse from 'argparse';
 import csvparse from 'csv-parse';
-import { StreamUtils } from 'genie-toolkit';
+import { Ast, Syntax } from 'thingtalk';
+import { EntityUtils, StreamUtils, ThingTalkUtils } from 'genie-toolkit';
 import { Linker } from './base';
 import { Falcon } from './falcon';
 import { OracleLinker } from './oracle';
@@ -26,11 +27,63 @@ export {
     AzureEntityLinker
 };
 
+class EntityValueRemover extends Ast.NodeVisitor {
+    private _missingEntityIDs : string[];
+
+    constructor(missingEntities : Entity[]) {
+        super();
+        this._missingEntityIDs = missingEntities.map((e) => e.id);
+    }
+    visitEntityValue(node : Ast.EntityValue) : boolean {
+        if (node.value && node.display && this._missingEntityIDs.includes(node.value))
+            node.value = null;
+        return true;
+    }
+}
+
+function removeMissingEntityValues(
+    utterance : string, 
+    thingtalk : string, 
+    missingEntities : Entity[],
+    options : {
+        include_entity_value : boolean,
+        exclude_entity_display : boolean
+    }) : string {
+    const entityValueRemover = new EntityValueRemover(missingEntities);
+    const entities = EntityUtils.makeDummyEntities(utterance);
+    const program = Syntax.parse(thingtalk, Syntax.SyntaxType.Tokenized, {}, { timezone: 'utc' });
+    program.visit(entityValueRemover);
+    try {
+        const updated =ThingTalkUtils.serializePrediction(
+            program.optimize(), 
+            utterance, 
+            entities,
+            { 
+                locale: 'en', 
+                timezone: 'utc', 
+                includeEntityValue: options.include_entity_value,
+                excludeEntityDisplay: options.exclude_entity_display,
+                ignoreEntityNotFound: true
+            }
+        );
+        return updated.join(' ');
+    } catch(e) {
+        console.log(utterance);
+        console.log(program.prettyprint());
+        return thingtalk;
+    } 
+}
+
 // run the linker in one batch
 async function link(linkers : Linker[], 
                     oracleLinker : OracleLinker, 
                     examples : Example[], 
-                    options : { is_synthetic : boolean }) {
+                    options : { 
+                        is_synthetic : boolean, 
+                        entity_recovery_mode : boolean,
+                        include_entity_value : boolean,
+                        exclude_entity_display : boolean
+                    }) {
     for (const linker of linkers)
         await linker.saferunAll(examples);
 
@@ -39,17 +92,25 @@ async function link(linkers : Linker[],
     for (const ex of examples) {
         countTotal += 1;
         const oracle = await oracleLinker.run(ex.id, ex.sentence, ex.thingtalk);
-        let hasMissingEntity = false;
+        const missingEntities : Entity[] = [];
         for (const entity of oracle.entities) {
             if (ex.entities!.some((e) => e.id === entity.id))
                 continue;
-            hasMissingEntity = true;
-            // if we are working on the synthetic set, add the correct entities into the list
-            if (options.is_synthetic)
-                ex.entities!.push(entity);
+            missingEntities.push(entity);
         }
-        if (hasMissingEntity)
+        let updated = false;
+        if (missingEntities.length > 0) {
             countFail += 1;
+            if (options.entity_recovery_mode) {
+                ex.thingtalk = removeMissingEntityValues(ex.sentence, ex.thingtalk, missingEntities, options);
+                updated = true;
+            } else if (options.is_synthetic) {
+                // if we are working on the synthetic set when entity recovery mode is disabled, add the correct entities into the list
+                ex.entities!.push(...missingEntities);
+            }
+        }
+        if (!updated && options.exclude_entity_display)
+            ex.thingtalk = ex.thingtalk.replace(/ \( " [^"]+ " \)/g, '');
     }
     console.log('Failed: ', countFail);
     console.log('Total: ', countTotal);
@@ -105,6 +166,19 @@ async function main() {
         action: 'store_true',
         help: 'If we are handling a synthetic dataset, if so, we want to make sure gold entities are always presented'
     });
+    parser.add_argument('--entity-recovery-mode', {
+        default: false,
+        action: 'store_true',
+        help: 'Enable entity recovery model'
+    });
+    parser.add_argument('--include-entity-value', {
+        action: 'store_true',
+        default: false
+    });
+    parser.add_argument('--exclude-entity-display', {
+        action: 'store_true',
+        default: false
+    });
 
     const args = parser.parse_args();
     if (!args.ner_cache)
@@ -141,7 +215,7 @@ async function main() {
 
     // run entity linking 
     await link(linkers, oracleLinker, examples, args);
-
+    
     // output linker result
     for (const ex of examples) {
         const nedInfo = ['<e>'];
