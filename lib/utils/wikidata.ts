@@ -401,6 +401,8 @@ export default class WikidataUtils {
     async getPropertyValue(entityId : string, propertyId : string) : Promise<string[]> {
         const sparql = `SELECT ?v WHERE { wd:${entityId} wdt:${propertyId} ?v. }`;
         const res = await this._query(sparql);
+        if (!res) 
+            return [];
         return res.map((r : any) => r.v.value.slice(ENTITY_PREFIX.length));
     }
 
