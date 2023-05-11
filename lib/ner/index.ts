@@ -51,9 +51,9 @@ function removeMissingEntityValues(
     }) : string {
     const entityValueRemover = new EntityValueRemover(missingEntities);
     const entities = EntityUtils.makeDummyEntities(utterance);
-    const program = Syntax.parse(thingtalk, Syntax.SyntaxType.Tokenized, {}, { timezone: 'utc' });
-    program.visit(entityValueRemover);
     try {
+        const program = Syntax.parse(thingtalk, Syntax.SyntaxType.Tokenized, {}, { timezone: 'utc' });
+        program.visit(entityValueRemover);
         const updated =ThingTalkUtils.serializePrediction(
             program.optimize(), 
             utterance, 
@@ -69,7 +69,7 @@ function removeMissingEntityValues(
         return updated.join(' ');
     } catch(e) {
         console.log(utterance);
-        console.log(program.prettyprint());
+        console.log(thingtalk);
         return thingtalk;
     } 
 }
