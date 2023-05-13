@@ -690,7 +690,7 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/${fname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) {
+                if (display && display !== value) {
                     const tokenized = this._tokenizer.tokenize(display);
                     data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
                 }
@@ -709,7 +709,7 @@ class ManifestGenerator {
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const value of values) {
                 const display = await this._wikidata.getLabel(value);
-                if (display) {
+                if (display && display !== value) {
                     const tokenized = this._tokenizer.tokenize(display);
                     const name = tokenized.rawTokens.join(' ');
                     if (this._humanReadableInstanceOf)
@@ -743,7 +743,7 @@ class ManifestGenerator {
             const paramDataset = fs.createWriteStream(dir + `/parameter-datasets/p_${pname}.json`);
             const data : Record<string, any> = { result: "ok", data: [] };
             for (const [value, display] of Object.entries(values)) {
-                if (display) {
+                if (display && value !== display) {
                     const tokenized = this._tokenizer.tokenize(display);
                     data.data.push({ value: value, name: display, canonical: tokenized.rawTokens.join(' ') });
                 }
