@@ -45,11 +45,13 @@ class TableInfoVisitor extends Ast.NodeVisitor {
     subject ?: string;
     mainDomain ?: string; // main domain
     domainNames : string[]; // find all non-qid domain names (including main domain and projection type constraints) so we can get their qids ahead of time
+    unresolvedEntityValues : Ast.EntityValue[];
 
     constructor(converter : ThingTalkToSPARQLConverter) {
         super();
         this._converter = converter;
         this.domainNames = [];
+        this.unresolvedEntityValues = [];
     }
 
     visitChainExpression(node : ThingTalk.Ast.ChainExpression) : boolean {
@@ -92,6 +94,12 @@ class TableInfoVisitor extends Ast.NodeVisitor {
                     this.domainNames.push(type.type.slice(TP_DEVICE_NAME.length + 1).replace(/_/g, ' '));
             }
         }
+        return true;
+    }
+
+    visitEntityValue(node : ThingTalk.Ast.EntityValue) : boolean {
+        if (!node.value)
+            this.unresolvedEntityValues.push(node);
         return true;
     }
 }
@@ -926,8 +934,15 @@ export default class ThingTalkToSPARQLConverter {
                 throw new Error('Unknown domain: ' + domainName);
             this._domainMap[domainName] = domain;
         }
+        for (const entity of tableInfoVisitor.unresolvedEntityValues) {
+            if (!entity.display)
+                continue;
+            const qid = await this._kb.getEntityByName(entity.display);
+            if (qid)
+                entity.value = qid;
+        }
 
-        const statements = await this.convertExpression(table, properties);  
+        const statements = this.convertExpression(table, properties);  
         statements.forEach((stmt) => this.addStatement(stmt));
 
         let sparql = '';

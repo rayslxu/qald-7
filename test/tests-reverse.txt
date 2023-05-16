@@ -1,3 +1,10 @@
+Utterance: where is washington dc located what state ?
+TT:
+[ located_in_the_administrative_territorial_entity ] of @wd . entity ( ) filter id == null ^^wd:entity ( " washington dc " ) ;
+SPARQL:
+SELECT DISTINCT ?x WHERE { <http://www.wikidata.org/entity/Q61> <http://www.wikidata.org/prop/direct/P131>+ ?x. }
+
+====
 
 Utterance: who is the senator of connecticut 2010?,
 TT: 
