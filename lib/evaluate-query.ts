@@ -94,7 +94,7 @@ async function main() {
                     console.log('Missing display for entity: ' + entity);
                     continue;
                 }
-                const qid = await wikidata.getEntityByName(entity.display);
+                const qid = await wikidata.getEntityByName(entity.display.replace(/ \./g, '.'));
                 if (!qid) {
                     console.log('Failed to find QID for: ' + entity.display);
                     continue;

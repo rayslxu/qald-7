@@ -937,7 +937,7 @@ export default class ThingTalkToSPARQLConverter {
         for (const entity of tableInfoVisitor.unresolvedEntityValues) {
             if (!entity.display)
                 continue;
-            const qid = await this._kb.getEntityByName(entity.display);
+            const qid = await this._kb.getEntityByName(entity.display.replace(/ \./g, '.'));
             if (qid)
                 entity.value = qid;
         }
