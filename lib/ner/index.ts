@@ -104,9 +104,6 @@ async function link(linkers : Linker[],
             if (options.entity_recovery_mode) {
                 ex.thingtalk = removeMissingEntityValues(ex.sentence, ex.thingtalk, missingEntities, options);
                 updated = true;
-            } else if (options.is_synthetic) {
-                // if we are working on the synthetic set when entity recovery mode is disabled, add the correct entities into the list
-                ex.entities!.push(...missingEntities);
             }
         }
         if (!updated && options.exclude_entity_display)
