@@ -88,41 +88,39 @@ async function main() {
     }
 
     const predictions = fs.readFileSync(args.prediction, { encoding: 'utf8' }).split('\n');
-    const TP : number[] = [];
-    const FP : number[] = [];
-    const FN : number[] = [];
+
     let exactMatch = 0;
-    let hitAtOne = 0;
     let total = 0;
+    const F1 = [];
     for (const line of predictions) {
         if (line.trim().length === 0)
             continue;
         total += 1;
         const [id, , answers, sparql] = line.split('\t');
-        if (sparql === expectedSPARQL[id])
+        if (sparql === expectedSPARQL[id]) {
             exactMatch += 1;
+            F1.push(1);
+            continue;
+        }
         const expected = expectedAnswer[id];
-        const predicted = answers.split(' ');
-        if (expected.length === 0 && predicted.length === 0)
-            hitAtOne += 1;
-        else if (predicted.length > 0 && expected.includes(predicted[0]))
-            hitAtOne += 1;
-        TP.push(predicted.filter((r) => expected.includes(r)).length);
-        FP.push(predicted.filter((r) => !expected.includes(r)).length);
-        FN.push(expected.filter((r) => !predicted.includes(r)).length);
+        const predicted = answers.length === 0 ? [] : answers.split(' ');
+        if (expected.length === 0 && predicted.length === 0) {
+            F1.push(1);
+            continue;
+        }
+        const tp = predicted.filter((r) => expected.includes(r)).length;
+        const fp = predicted.filter((r) => !expected.includes(r)).length;
+        const fn = expected.filter((r) => !predicted.includes(r)).length;
+        const precision = safeDivide(tp, tp + fp);
+        const recall = safeDivide(tp, tp + fn);
+        if (precision + recall === 0)
+            F1.push(0);
+        else 
+            F1.push(2 * precision * recall / (precision + recall));
     }
 
-    const microF1 = sum(TP) / (sum(TP) + (sum(FP) + sum(FN)) / 2);
-    const macroPrecision = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FP[i]))));
-    const macroRecall = avg([...Array(TP.length).keys()].map((i) => safeDivide(TP[i], (TP[i] + FN[i]))));
-    const macroF1 = 2 * macroPrecision * macroRecall / (macroPrecision + macroRecall);
     console.log('Query Accuracy: ' + exactMatch/total);
-    console.log('Answer Accuracy');
-    console.log('Micro F1: ', microF1);
-    console.log('Macro F1: ', macroF1);
-    console.log('Macro Precision: ', macroPrecision);
-    console.log('Macro Recall: ', macroRecall);
-    console.log('Hits@1: ', hitAtOne/total);
+    console.log('Answer Accuracy: ' + avg(F1));
     await waitFinish(dataset);
 }
 
