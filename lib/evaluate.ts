@@ -8,14 +8,6 @@ import { waitFinish } from './utils/misc';
 import WikidataUtils from './utils/wikidata';
 import { StreamUtils } from 'genie-toolkit';
 
-function sum(x : number[]) {
-    return x.reduce((sum, a) => sum += a, 0);
-}
-
-function avg(x : number[]) {
-    return sum(x) / x.length;
-}
-
 function safeDivide(x : number, y : number) {
     if (x === 0 && y === 0)
         return 1;
@@ -89,38 +81,63 @@ async function main() {
 
     const predictions = fs.readFileSync(args.prediction, { encoding: 'utf8' }).split('\n');
 
-    let exactMatch = 0;
-    let total = 0;
-    const F1 = [];
+
+    const WWQ = {
+        queryExactMatch: 0,
+        answerExactMatch: 0,
+        F1sum: 0,
+        total: 0
+    };
+    const WWQSP = {
+        queryExactMatch: 0,
+        total: 0
+    };
+
     for (const line of predictions) {
         if (line.trim().length === 0)
             continue;
-        total += 1;
-        const [id, , answers, sparql] = line.split('\t');
-        if (sparql === expectedSPARQL[id]) {
-            exactMatch += 1;
-            F1.push(1);
-            continue;
-        }
-        const expected = expectedAnswer[id];
-        const predicted = answers.length === 0 ? [] : answers.split(' ');
-        if (expected.length === 0 && predicted.length === 0) {
-            F1.push(1);
-            continue;
-        }
-        const tp = predicted.filter((r) => expected.includes(r)).length;
-        const fp = predicted.filter((r) => !expected.includes(r)).length;
-        const fn = expected.filter((r) => !predicted.includes(r)).length;
-        const precision = safeDivide(tp, tp + fp);
-        const recall = safeDivide(tp, tp + fn);
-        if (precision + recall === 0)
-            F1.push(0);
-        else 
-            F1.push(2 * precision * recall / (precision + recall));
-    }
+        WWQSP.total += 1;
 
-    console.log('Query Accuracy: ' + exactMatch/total);
-    console.log('Answer Accuracy: ' + avg(F1));
+        const [id, , answers, sparql] = line.split('\t');
+        const expected = expectedAnswer[id];
+        if (expected.length === 0) {
+            if (sparql === expectedSPARQL[id])
+                WWQSP.queryExactMatch += 1;
+        } else {
+            WWQ.total += 1;
+            if (sparql === expectedSPARQL[id]) {
+                WWQ.queryExactMatch += 1;
+                WWQ.answerExactMatch += 1;
+                WWQ.F1sum += 1;
+                WWQSP.queryExactMatch += 1;
+                continue;
+            }
+
+            const predicted = answers.length === 0 ? [] : answers.split(' ');
+            const tp = predicted.filter((r) => expected.includes(r)).length;
+            const fp = predicted.filter((r) => !expected.includes(r)).length;
+            const fn = expected.filter((r) => !predicted.includes(r)).length;
+            const precision = safeDivide(tp, tp + fp);
+            const recall = safeDivide(tp, tp + fn);
+            if (precision + recall === 0) {
+                WWQ.F1sum += 0;
+            } else { 
+                const f1 = 2 * precision * recall / (precision + recall);
+                WWQ.F1sum += f1;
+                if (f1 === 1)
+                    WWQ.answerExactMatch += 1;
+            }
+        }
+    }
+    console.log('WWQ');
+    console.log('Total: ' + WWQ.total);
+    console.log('Query Accuracy: ' + WWQ.queryExactMatch/WWQ.total);
+    console.log('Answer Accuracy: ' + WWQ.answerExactMatch/WWQ.total);
+    console.log('Answer F1: ' + WWQ.F1sum/WWQ.total);
+
+    console.log('WWQSP');
+    console.log('Total:' + WWQSP.total);
+    console.log('Query Accuracy: ' + WWQSP.queryExactMatch/WWQSP.total);
     await waitFinish(dataset);
 }
 
