@@ -88,72 +88,7 @@ const PROPERTY_BLACKLIST = [
 ];
 
 export const ABSTRACT_PROPERTIES : Record<string, { type : 'any'|'all', properties : string[] }> = {
-    // time
-    'P585': {
-        type: 'any', 
-        properties: [
-            'P585', // point in time
-            'P580', // start time
-            'P571', // inception
-            'P575', // time of discovery or invention
-            'P582', // end time
-        ]
-    },
-
-    // location
-    'P276': {
-        type: 'any',
-        properties: [
-            'P131', // located in the administrative territorial entity
-            'P3842', // located in the present-day administrative territorial entity
-            'P159', // headquarter location
-            'P276', // location
-            'P551', // residence
-            'P17', // country
-            'P27', // country of citizenship
-            'P495', // country of origin
-            'P19', // place of birth
-            'P30', // continent
-            'P625', // coordinate location
-        ]
-    },
-
-    // religion
-    'P140': {
-        type: 'any', 
-        properties: [
-            'P140', // religion or worldview
-            'P3075' // official religion
-        ]
-    },
-
-    // actor
-    'P161': {
-        type: 'any', 
-        properties: [
-            'P161', // cast member
-            'P725'  // voice actor
-        ]
-    }, 
-
-    // partner
-    'P451': {
-        type: 'all', 
-        properties: [
-            'P451', // unmarried partner
-            'P26'   // spouse
-        ]
-    },
-
-    // influenced by 
-    'P737': {
-        type: 'all',
-        properties: [
-            'P737',   // influenced by
-            'P1066',  // student of 
-            'P184'    // doctor advisor
-        ]
-    }
+    
 };
 
 // these domains are too big, querying its entities without more filters
