@@ -14,7 +14,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q937> <http://www.wikidata.org/prop/direct/P184> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q937 wdt:P184 ?x. }"
       },
       "answers": [
         {
@@ -50,7 +50,7 @@
         }
       ],
       "query": {
-        "sparql": "ASK WHERE { <http://www.wikidata.org/entity/Q276186> <http://www.wikidata.org/prop/direct/P166>  <http://www.wikidata.org/entity/Q844804> . }"
+        "sparql": "ASK WHERE { wd:Q276186 wdt:P166  wd:Q844804 . }"
       },
       "answers": [
         {
@@ -73,7 +73,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q780394> <http://www.wikidata.org/prop/direct/P86> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q780394 wdt:P86 ?x. }"
       },
       "answers": [
         {
@@ -109,7 +109,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q43653> <http://www.wikidata.org/prop/direct/P1029> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q43653 wdt:P1029 ?x. }"
       },
       "answers": [
         {
@@ -157,7 +157,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?company WHERE { ?company  <http://www.wikidata.org/prop/direct/P452> <http://www.wikidata.org/entity/Q581105> ;  <http://www.wikidata.org/prop/direct/P740> <http://www.wikidata.org/entity/Q956> . } "
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P452 wd:Q581105 ; wdt:P740 wd:Q956 . } "
       },
       "answers": [
         {
@@ -199,7 +199,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q14169302> <http://www.wikidata.org/prop/direct/P527> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q14169302 wdt:P527 ?x. }"
       },
       "answers": [
         {
@@ -235,7 +235,7 @@
         }
       ],
       "query": {
-        "sparql": "ASK WHERE { <http://www.wikidata.org/entity/Q91> <http://www.wikidata.org/prop/direct/P26> ?spouse .  ?spouse <http://www.w3.org/2000/01/rdf-schema#label> ?name .  FILTER(regex(?name,'Mary')) }"
+        "sparql": "ASK WHERE { wd:Q91 wdt:P26 ?x . ?x <http://www.w3.org/2000/01/rdf-schema#label> ?y .  FILTER(regex(?y,'Mary')) }"
       },
       "answers": [
         {
@@ -258,7 +258,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT (COUNT(DISTINCT ?uri) as ?count) WHERE {  ?uri <http://www.wikidata.org/prop/direct/P57> <http://www.wikidata.org/entity/Q315484> . }"
+        "sparql": "SELECT (COUNT(DISTINCT ?x) as ?count) WHERE { ?x wdt:P57 wd:Q315484 . }"
       },
       "answers": [
         {
@@ -295,7 +295,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q130018> <http://www.wikidata.org/prop/direct/P131> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q130018 wdt:P131 ?x. }"
       },
       "answers": [
         {
@@ -331,7 +331,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4830453>  . ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q668> . ?uri <http://www.wikidata.org/prop/direct/P1128> ?employees . } ORDER BY DESC(?employees) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q4830453 . ?x wdt:P17 wd:Q668 . ?x wdt:P1128 ?y . } ORDER BY DESC(?y) LIMIT 1"
       },
       "answers": [
         {
@@ -367,7 +367,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q76> <http://www.wikidata.org/prop/direct/P26>/<http://www.wikidata.org/prop/direct/P69> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q76 wdt:P26/wdt:P69 ?x. }"
       },
       "answers": [
         {
@@ -415,7 +415,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q1124023> <http://www.wikidata.org/prop/direct/P559> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q1124023 wdt:P559 ?x. }"
       },
       "answers": [
         {
@@ -457,7 +457,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q1009> <http://www.wikidata.org/prop/direct/P36> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q1009 wdt:P36 ?x. }"
       },
       "answers": [
         {
@@ -493,7 +493,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q19024> <http://www.wikidata.org/prop/direct/P585> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q19024 wdt:P585 ?x. }"
       },
       "answers": [
         {
@@ -530,7 +530,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q5620660> ^<http://www.wikidata.org/prop/qualifier/P453>/<http://www.wikidata.org/prop/statement/P161> ?uri } "
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q5620660 ^pq:P453/ps:P161 ?x. } "
       },
       "answers": [
         {
@@ -566,7 +566,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q8337> <http://www.wikidata.org/prop/direct/P50> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q8337 wdt:P50 ?x. }"
       },
       "answers": [
         {
@@ -602,7 +602,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q8539> <http://www.wikidata.org/prop/direct/P161> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q8539 wdt:P161 ?x. }"
       },
       "answers": [
         {
@@ -722,7 +722,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P2046> ?area .} ORDER BY DESC(?area) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q6256 . ?x wdt:P2046 ?y .} ORDER BY DESC(?y) LIMIT 1"
       },
       "answers": [
         {
@@ -758,7 +758,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q1204> <http://www.wikidata.org/prop/direct/P47> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q1204 wdt:P47 ?x . }"
       },
       "answers": [
         {
@@ -824,7 +824,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT (SUM(?goals) as ?total) WHERE { <http://www.wikidata.org/entity/Q12897> <http://www.wikidata.org/prop/P54> ?teamMembership .  ?teamMembership <http://www.wikidata.org/prop/qualifier/P1351> ?goals . }"
+        "sparql": "SELECT (SUM(?x) as ?total) WHERE { wd:Q12897 p:P54 ?p . ?p pq:P1351 ?x . }"
       },
       "answers": [
         {
@@ -861,7 +861,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q986> <http://www.wikidata.org/prop/direct/P35> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q986 wdt:P35 ?x. }"
       },
       "answers": [
         {
@@ -897,7 +897,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q82594> . ?uri <http://www.wikidata.org/prop/direct/P166> ?award . ?award <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q19020> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P106 wd:Q82594 . ?x wdt:P166 ?y . ?y wdt:P31/wdt:P279* wd:Q19020 . }"
       },
       "answers": [
         {
@@ -963,7 +963,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q5930> <http://www.wikidata.org/prop/direct/P170> ?uri}"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q5930 wdt:P170 ?x. }"
       },
       "answers": [
         {
@@ -999,7 +999,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q36> <http://www.wikidata.org/prop/direct/P1082> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q36 wdt:P1082 ?x }"
       },
       "answers": [
         {
@@ -1036,7 +1036,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q90> <http://www.wikidata.org/prop/direct/P6>/<http://www.wikidata.org/prop/direct/P102> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q90 wdt:P6/wdt:P102 ?x }"
       },
       "answers": [
         {
@@ -1072,7 +1072,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q5480> <http://www.wikidata.org/prop/direct/P725> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q5480 wdt:P725 ?x }"
       },
       "answers": [
         {
@@ -1108,7 +1108,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q44578> <http://www.wikidata.org/prop/direct/P86> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q44578 wdt:P86 ?x }"
       },
       "answers": [
         {
@@ -1144,7 +1144,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?date WHERE {  <http://www.wikidata.org/entity/Q76334> <http://www.wikidata.org/prop/P106>/<http://www.wikidata.org/prop/qualifier/P582> ?date }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q76334 p:P106/pq:P582 ?x }"
       },
       "answers": [
         {
@@ -1181,7 +1181,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q3665646> . ?uri <http://www.wikidata.org/prop/direct/P2048> ?height .  FILTER(?height > 200)}"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P106 wd:Q3665646 . ?x wdt:P2048 ?y .  FILTER(?y > 200)}"
       },
       "answers": [
         {
@@ -13733,7 +13733,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q2663195> <http://www.wikidata.org/prop/direct/P17> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q2663195 wdt:P17 ?x }"
       },
       "answers": [
         {
@@ -13769,7 +13769,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q5284> <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P17> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q5284 wdt:P19/wdt:P17 ?x }"
       },
       "answers": [
         {
@@ -13805,7 +13805,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P1056> <http://www.wikidata.org/entity/Q17130715>}"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P1056 wd:Q17130715. }"
       },
       "answers": [
         {
@@ -13841,7 +13841,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q214622> <http://www.wikidata.org/prop/direct/P20> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q214622 wdt:P20 ?x }"
       },
       "answers": [
         {
@@ -13877,7 +13877,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT (COUNT(DISTINCT ?uri) as ?count) WHERE { <http://www.wikidata.org/entity/Q83233> <http://www.wikidata.org/prop/direct/P40>/<http://www.wikidata.org/prop/direct/P40> ?uri }"
+        "sparql": "SELECT (COUNT(DISTINCT ?x) as ?count) WHERE { wd:Q83233 wdt:P40/wdt:P40 ?x }"
       },
       "answers": [
         {
@@ -13914,7 +13914,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P57> <http://www.wikidata.org/entity/Q2001>}"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P57 wd:Q2001 }"
       },
       "answers": [
         {
@@ -14040,7 +14040,7 @@
         }
       ],
       "query": {
-        "sparql": "ASK WHERE {  <http://www.wikidata.org/entity/Q142794> <http://www.wikidata.org/prop/direct/P54> <http://www.wikidata.org/entity/Q8682>}"
+        "sparql": "ASK WHERE {  wd:Q142794 wdt:P54 wd:Q8682. }"
       },
       "answers": [
         {
@@ -14063,7 +14063,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?num WHERE { <http://www.wikidata.org/entity/Q128446> <http://www.wikidata.org/prop/direct/P115>/<http://www.wikidata.org/prop/direct/P1083> ?num }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q128446 wdt:P115/wdt:P1083 ?x }"
       },
       "answers": [
         {
@@ -14100,7 +14100,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q1564644> <http://www.wikidata.org/prop/direct/P527> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q1564644 wdt:P527 ?x. }"
       },
       "answers": [
         {
@@ -14172,7 +14172,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q34851> . ?uri <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q151973> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P161 wd:Q34851 . ?x wdt:P161 wd:Q151973 . }"
       },
       "answers": [
         {
@@ -14274,7 +14274,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q11297> <http://www.wikidata.org/prop/direct/P131> ?uri . { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . } UNION {?uri <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q515> . } }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q11297 wdt:P131 ?x . ?x wdt:P31/wdt:P279* wd:Q515 . }"
       },
       "answers": [
         {
@@ -14310,7 +14310,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q236> <http://www.wikidata.org/prop/direct/P35>/<http://www.wikidata.org/prop/direct/P19> ?uri . ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q236 wdt:P35/wdt:P19 ?x . ?x wdt:P31/wdt:P279* wd:Q515 . }"
       },
       "answers": [
         {
@@ -14346,7 +14346,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P106> <http://www.wikidata.org/entity/Q36180> . ?uri <http://www.wikidata.org/prop/direct/P69>/<http://www.wikidata.org/prop/direct/P131>  <http://www.wikidata.org/entity/Q406> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P106 wd:Q36180 . ?x wdt:P69/wdt:P131  wd:Q406 . }"
       },
       "answers": [
         {
@@ -14598,7 +14598,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q90> <http://www.wikidata.org/prop/direct/P6> ?uri  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q90 wdt:P6 ?x. }"
       },
       "answers": [
         {
@@ -14634,7 +14634,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?s WHERE { <http://www.wikidata.org/entity/Q43274> <http://www.w3.org/2004/02/skos/core#altLabel> ?s  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q43274 <http://www.w3.org/2004/02/skos/core#altLabel> ?x . }"
       },
       "answers": [
         {
@@ -14769,7 +14769,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4022> . ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q148> . ?uri <http://www.wikidata.org/prop/direct/P2043> ?length } ORDER BY DESC(?length) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q4022 . ?x wdt:P17 wd:Q148 . ?x wdt:P2043 ?y } ORDER BY DESC(?y) LIMIT 1"
       },
       "answers": [
         {
@@ -14805,7 +14805,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q596> <http://www.wikidata.org/prop/direct/P61> ?uri  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q596 wdt:P61 ?x. }"
       },
       "answers": [
         {
@@ -14841,7 +14841,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q9685> <http://www.wikidata.org/prop/direct/P570> ?date  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q9685 wdt:P570 ?x. }"
       },
       "answers": [
         {
@@ -14878,7 +14878,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39>/<http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q30461> . ?uri <http://www.wikidata.org/prop/direct/P569> ?date . FILTER(year(?date)=1945) }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P39/wdt:P279 wd:Q30461 . ?x wdt:P569 ?y . FILTER(year(?y)=1945) }"
       },
       "answers": [
         {
@@ -15010,7 +15010,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q4970706> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P39 wd:Q4970706 . }"
       },
       "answers": [
         {
@@ -15094,7 +15094,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q111> <http://www.wikidata.org/prop/direct/P398> ?uri  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q111 wdt:P398 ?x. }"
       },
       "answers": [
         {
@@ -15136,7 +15136,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q482994> . ?uri <http://www.wikidata.org/prop/direct/P175> <http://www.wikidata.org/entity/Q15862> . ?uri <http://www.wikidata.org/prop/direct/P577> ?date } ORDER BY ?date LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q482994 . ?x wdt:P175 wd:Q15862 . ?x wdt:P577 ?y } ORDER BY ?y LIMIT 1"
       },
       "answers": [
         {
@@ -15172,7 +15172,7 @@
         }
       ],
       "query": {
-        "sparql": "ASK WHERE { <http://www.wikidata.org/entity/Q303> <http://www.wikidata.org/prop/direct/P40> ?uri }"
+        "sparql": "ASK WHERE { wd:Q303 wdt:P40 ?x. }"
       },
       "answers": [
         {
@@ -15195,7 +15195,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P19>/<http://www.wikidata.org/prop/direct/P17>  <http://www.wikidata.org/entity/Q16> . ?uri <http://www.wikidata.org/prop/direct/P551>  <http://www.wikidata.org/entity/Q30> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P19/wdt:P17 wd:Q16 . ?x wdt:P551 wd:Q30 . }"
       },
       "answers": [
         {
@@ -15237,7 +15237,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q171684> <http://www.wikidata.org/prop/direct/P119> ?uri  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q171684 wdt:P119 ?x  . }"
       },
       "answers": [
         {
@@ -15273,7 +15273,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P37> <http://www.wikidata.org/entity/Q5287> . } "
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q6256 . ?x wdt:P37 wd:Q5287 . } "
       },
       "answers": [
         {
@@ -15309,7 +15309,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q2045066> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P39 wd:Q2045066 . }"
       },
       "answers": [
         {
@@ -15345,7 +15345,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?film <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?film <http://www.wikidata.org/prop/direct/P162> ?uri . } GROUP BY ?uri ORDER BY DESC(COUNT(?film)) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?y wdt:P31/wdt:P279* wd:Q11424 . ?y wdt:P162 ?x . } GROUP BY ?x ORDER BY DESC(COUNT(?y)) LIMIT 1"
       },
       "answers": [
         {
@@ -15381,7 +15381,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . { ?uri <http://www.wikidata.org/prop/direct/P495> <http://www.wikidata.org/entity/Q213> . } UNION { ?uri <http://www.wikidata.org/prop/direct/P495> <http://www.wikidata.org/entity/Q33946> . } }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P31/wdt:P279* wd:Q11424 . { ?x wdt:P495 wd:Q213 . } UNION { ?x wdt:P495 wd:Q33946 . } }"
       },
       "answers": [
         {
@@ -23055,7 +23055,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q4022> . ?uri <http://www.wikidata.org/prop/direct/P403> <http://www.wikidata.org/entity/Q1693> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P31/wdt:P279* wd:Q4022 . ?x wdt:P403 wd:Q1693 . }"
       },
       "answers": [
         {
@@ -23349,7 +23349,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q8641370> <http://www.wikidata.org/prop/direct/P580> ?date  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q8641370 wdt:P580 ?x. }"
       },
       "answers": [
         {
@@ -23386,7 +23386,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q213959> <http://www.wikidata.org/prop/direct/P115> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q213959 wdt:P115 ?x. }"
       },
       "answers": [
         {
@@ -23422,7 +23422,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q220> <http://www.wikidata.org/prop/direct/P421> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q220 wdt:P421 ?x. }"
       },
       "answers": [
         {
@@ -23458,7 +23458,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P171>* <http://www.wikidata.org/entity/Q5113> . ?uri <http://www.wikidata.org/prop/direct/P141> <http://www.wikidata.org/entity/Q219127> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P171* wd:Q5113 . ?x wdt:P141 wd:Q219127 . }"
       },
       "answers": [
         {
@@ -24832,7 +24832,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?val WHERE {  <http://www.wikidata.org/entity/Q2608065> <http://www.wikidata.org/prop/direct/P2130> ?val }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q2608065 wdt:P2130 ?x }"
       },
       "answers": [
         {
@@ -24869,7 +24869,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q170484> <http://www.wikidata.org/prop/direct/P61>/<http://www.wikidata.org/prop/direct/P106> ?uri }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q170484 wdt:P61/wdt:P106 ?x }"
       },
       "answers": [
         {
@@ -24917,7 +24917,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  { ?volcano <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q8072> . } UNION { ?volcano <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/Q8072> . } ?volcano <http://www.wikidata.org/prop/direct/P17> ?uri . } GROUP BY ?uri HAVING(COUNT(?volcano)>10)"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?y wdt:P31/wdt:P279* wd:Q8072 . ?y wdt:P17 ?x . } GROUP BY ?x HAVING(COUNT(?y)>10)"
       },
       "answers": [
         {
@@ -25115,7 +25115,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q35657> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q35657 . }"
       },
       "answers": [
         {
@@ -25445,7 +25445,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q23572> <http://www.wikidata.org/prop/direct/P86> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q23572 wdt:P86 ?x . }"
       },
       "answers": [
         {
@@ -25481,7 +25481,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?uri <http://www.wikidata.org/prop/direct/P162> <http://www.wikidata.org/entity/Q72792> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31 wd:Q11424 . ?x wdt:P162 wd:Q72792 . }"
       },
       "answers": [
         {
@@ -26453,7 +26453,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?uri <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q48410> . ?uri <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q40523> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q11424 . ?x wdt:P161 wd:Q48410 . ?x wdt:P161 wd:Q40523 . }"
       },
       "answers": [
         {
@@ -26495,7 +26495,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?date WHERE {  <http://www.wikidata.org/entity/Q53713> <http://www.wikidata.org/prop/P570> ?date }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q53713 wdt:P570 ?x }"
       },
       "answers": [
         {
@@ -26531,7 +26531,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT (COUNT(DISTINCT ?uri) as ?count) WHERE {  ?uri <http://www.wikidata.org/prop/direct/P39> <http://www.wikidata.org/entity/Q268218>}"
+        "sparql": "SELECT (COUNT(DISTINCT ?x) as ?count) WHERE { ?x wdt:P39 wd:Q268218. }"
       },
       "answers": [
         {
@@ -26568,7 +26568,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q571> . ?uri <http://www.wikidata.org/prop/direct/P50> <http://www.wikidata.org/entity/Q36107> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q571 . ?x wdt:P50 wd:Q36107 . }"
       },
       "answers": [
         {
@@ -26610,7 +26610,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P37> ?language . } GROUP BY ?uri ORDER BY DESC(COUNT(?language)) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q6256 . ?x wdt:P37 ?y . } GROUP BY ?x ORDER BY DESC(COUNT(?y)) LIMIT 1"
       },
       "answers": [
         {
@@ -26646,7 +26646,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q2831> <http://www.wikidata.org/prop/direct/P509> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q2831 wdt:P509 ?x . }"
       },
       "answers": [
         {
@@ -26682,7 +26682,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P522> <http://www.wikidata.org/entity/Q737809> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P522 wd:Q737809 . }"
       },
       "answers": [
         {
@@ -26724,7 +26724,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?film <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q11424> . ?film <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q37876> . ?film <http://www.wikidata.org/prop/direct/P162> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?y wdt:P31/wdt:P279* wd:Q11424 . ?y wdt:P161 wd:Q37876 . ?y wdt:P162 ?x . }"
       },
       "answers": [
         {
@@ -27060,7 +27060,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q483110> .  } UNION { ?uri <http://www.wikidata.org/prop/direct/P31> ?type . ?type <http://www.wikidata.org/prop/direct/P279> <http://www.wikidata.org/entity/Q483110> } ?uri <http://www.wikidata.org/prop/direct/P17> <http://www.wikidata.org/entity/Q29> .  ?uri <http://www.wikidata.org/prop/direct/P1083> ?num .  } ORDER BY DESC(?num) LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q483110. ?x wdt:P17 wd:Q29 . ?x wdt:P1083 ?z . } ORDER BY DESC(?z) LIMIT 1"
       },
       "answers": [
         {
@@ -27096,7 +27096,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?date WHERE { <http://www.wikidata.org/entity/Q367523> <http://www.wikidata.org/prop/direct/P837> ?date  . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q367523 wdt:P837 ?x. }"
       },
       "answers": [
         {
@@ -27132,7 +27132,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?height WHERE { ?uri <http://www.wikidata.org/prop/direct/P106>  <http://www.wikidata.org/entity/Q3665646> . ?uri <http://www.wikidata.org/prop/direct/P54>/<http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q155223> .  ?uri <http://www.wikidata.org/prop/P54> ?teamMembership . FILTER NOT EXISTS { ?teamMembership <http://www.wikidata.org/prop/qualifier/P582> ?endDate } ?uri  <http://www.wikidata.org/prop/direct/P2048> ?height } ORDER BY ?height LIMIT 1"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?y wdt:P106  wd:Q3665646 . ?y wdt:P54/wdt:P118 wd:Q155223 .  ?y p:P54 ?p . FILTER NOT EXISTS { ?p pq:P582 ?z } ?y  wdt:P2048 ?x } ORDER BY ?x LIMIT 1"
       },
       "answers": [
         {
@@ -27169,7 +27169,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q443120> <http://www.wikidata.org/prop/direct/P26> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q443120 wdt:P26 ?x . }"
       },
       "answers": [
         {
@@ -27205,7 +27205,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q159> <http://www.wikidata.org/prop/P122> ?q . ?q <http://www.wikidata.org/prop/statement/P122> ?uri . FILTER NOT EXISTS { ?q <http://www.wikidata.org/prop/qualifier/P582> ?x }} "
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q159 p:P122 ?p . ?p ps:P122 ?x . FILTER NOT EXISTS { ?q pq:P582 ?x }} "
       },
       "answers": [
         {
@@ -27253,7 +27253,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P161> <http://www.wikidata.org/entity/Q219512> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P161 wd:Q219512 . }"
       },
       "answers": [
         {
@@ -27463,7 +27463,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q476028> . ?uri <http://www.wikidata.org/prop/direct/P118> <http://www.wikidata.org/entity/Q9448> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { ?x wdt:P31/wdt:P279* wd:Q476028 . ?x wdt:P118 wd:Q9448 . }"
       },
       "answers": [
         {
@@ -27631,7 +27631,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q33506> . ?uri <http://www.wikidata.org/prop/direct/P276> <http://www.wikidata.org/entity/Q84> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P31/wdt:P279* wd:Q33506 . ?x wdt:P276 wd:Q84 . }"
       },
       "answers": [
         {
@@ -27667,7 +27667,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q6256> . ?uri <http://www.wikidata.org/prop/direct/P30> <http://www.wikidata.org/entity/Q18> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P31/wdt:P279* wd:Q6256 . ?x wdt:P30 wd:Q18 . }"
       },
       "answers": [
         {
@@ -27781,7 +27781,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q989> <http://www.wikidata.org/prop/P39> ?position . ?position <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q19546> . ?position <http://www.wikidata.org/prop/qualifier/P1366> ?uri } "
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q989 p:P39 ?p . ?p psP39 wd:Q19546 . ?p pq:P1366 ?x. } "
       },
       "answers": [
         {
@@ -27817,7 +27817,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P22> <http://www.wikidata.org/entity/Q179150> . ?uri <http://www.wikidata.org/prop/direct/P25> <http://www.wikidata.org/entity/Q12003> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P22 wd:Q179150 . ?x wdt:P25 wd:Q12003 . }"
       },
       "answers": [
         {
@@ -27853,7 +27853,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q408804> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P31/wdt:P279* wd:Q408804 . }"
       },
       "answers": [
         {
@@ -27913,7 +27913,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P50> <http://www.wikidata.org/entity/Q23434> . ?uri <http://www.wikidata.org/prop/direct/P136> <http://www.wikidata.org/entity/Q4184> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P50 wd:Q23434 . ?x wdt:P136 wd:Q4184 . }"
       },
       "answers": [
         {
@@ -27949,7 +27949,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q189080> <http://www.wikidata.org/prop/direct/P136> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q189080 wdt:P136 ?x . }"
       },
       "answers": [
         {
@@ -27985,7 +27985,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q40026> <http://www.wikidata.org/prop/direct/P551> ?uri . ?uri <http://www.wikidata.org/prop/direct/P31> <http://www.wikidata.org/entity/Q515> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q40026 wdt:P551 ?x . ?x wdt:P31/wdt:P279* wd:Q515 . }"
       },
       "answers": [
         {
@@ -28021,7 +28021,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q5582> <http://www.wikidata.org/prop/direct/P737> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q5582 wdt:P737 ?x . }"
       },
       "answers": [
         {
@@ -28063,7 +28063,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  ?uri <http://www.wikidata.org/prop/direct/P361> <http://www.wikidata.org/entity/Q1381762> . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  ?x wdt:P361 wd:Q1381762 . }"
       },
       "answers": [
         {
@@ -28123,7 +28123,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE {  <http://www.wikidata.org/entity/Q40540> <http://www.wikidata.org/prop/direct/P527> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE {  wd:Q40540 wdt:P527 ?x . }"
       },
       "answers": [
         {
@@ -28225,7 +28225,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q843> <http://www.wikidata.org/prop/direct/P37> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q843 wdt:P37 ?x . }"
       },
       "answers": [
         {
@@ -28267,7 +28267,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q9696> <http://www.wikidata.org/prop/P39> ?position . ?position  <http://www.wikidata.org/prop/statement/P39> <http://www.wikidata.org/entity/Q11696> . ?position <http://www.wikidata.org/prop/qualifier/P1366> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q9696 p:P39 ?p . ?p  ps:P39 wd:Q11696 . ?p pq:P1366 ?x . }"
       },
       "answers": [
         {
@@ -28303,7 +28303,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q854383> <http://www.wikidata.org/prop/direct/P176>/<http://www.wikidata.org/prop/direct/P159> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q854383 wdt:P176/wdt:P159 ?x . }"
       },
       "answers": [
         {
@@ -28339,7 +28339,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q317521> <http://www.wikidata.org/prop/direct/P61> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q317521 wdt:P61 ?x . }"
       },
       "answers": [
         {
@@ -28375,7 +28375,7 @@
         }
       ],
       "query": {
-        "sparql": "SELECT DISTINCT ?uri WHERE { <http://www.wikidata.org/entity/Q2695156> <http://www.wikidata.org/prop/direct/P460> ?uri . }"
+        "sparql": "SELECT DISTINCT ?x WHERE { wd:Q2695156 wdt:P460 ?x . }"
       },
       "answers": [
         {
